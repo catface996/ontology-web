@@ -72,8 +72,8 @@ erDiagram
     OntologyClass ||--o{ Property : has
     OntologyClass ||--o{ Instance : instantiates
     OntologyClass }o--o{ Relation : connected_by
-    Relation }o--|| OntologyClass : from
-    Relation }o--|| OntologyClass : to
+    Relation }o--|| OntologyClass : "from"
+    Relation }o--|| OntologyClass : "to"
     Property ||--o{ Constraint : constrained_by
     Instance }o--o{ Instance : linked_via_relation
 
