@@ -15,6 +15,7 @@ import InstancesPage from './pages/InstancesPage';
 import InstanceTopologyPage from './pages/InstanceTopologyPage';
 import InstanceEditorPage from './pages/InstanceEditorPage';
 import SparqlQueryPage from './pages/SparqlQueryPage';
+import ImportExportPage from './pages/ImportExportPage';
 import PagePlaceholder from './components/PagePlaceholder';
 
 function App() {
@@ -39,7 +40,7 @@ function App() {
             <Route path="instances/:instanceId/edit" element={<InstanceEditorPage />} />
             <Route path="sparql-query" element={<SparqlQueryPage />} />
             <Route path="reasoning" element={<PagePlaceholder title="Reasoning" />} />
-            <Route path="import-export" element={<PagePlaceholder title="Import/Export" />} />
+            <Route path="import-export" element={<ImportExportPage />} />
             <Route path="agent-chat" element={<PagePlaceholder title="Agent Chat" />} />
             <Route path="task-history" element={<PagePlaceholder title="Task History" />} />
             <Route path="data-sources" element={<PagePlaceholder title="Data Sources" />} />
