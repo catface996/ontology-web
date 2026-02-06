@@ -8,6 +8,13 @@ import KnowledgeGraphPage from './pages/KnowledgeGraphPage';
 import ClassesPage from './pages/ClassesPage';
 import ClassEditorPage from './pages/ClassEditorPage';
 import RelationsPage from './pages/RelationsPage';
+import RelationEditorPage from './pages/RelationEditorPage';
+import PropertiesPage from './pages/PropertiesPage';
+import PropertyEditorPage from './pages/PropertyEditorPage';
+import InstancesPage from './pages/InstancesPage';
+import InstanceTopologyPage from './pages/InstanceTopologyPage';
+import InstanceEditorPage from './pages/InstanceEditorPage';
+import SparqlQueryPage from './pages/SparqlQueryPage';
 import PagePlaceholder from './components/PagePlaceholder';
 
 function App() {
@@ -24,10 +31,13 @@ function App() {
             <Route path="classes" element={<ClassesPage />} />
             <Route path="classes/:classId/edit" element={<ClassEditorPage />} />
             <Route path="relations" element={<RelationsPage />} />
-            <Route path="relations/:relationId/edit" element={<PagePlaceholder title="Relation Editor" />} />
-            <Route path="properties" element={<PagePlaceholder title="Properties" />} />
-            <Route path="instances" element={<PagePlaceholder title="Instances" />} />
-            <Route path="sparql-query" element={<PagePlaceholder title="SPARQL Query" />} />
+            <Route path="relations/:relationId/edit" element={<RelationEditorPage />} />
+            <Route path="properties" element={<PropertiesPage />} />
+            <Route path="properties/:propertyId/edit" element={<PropertyEditorPage />} />
+            <Route path="instances" element={<InstancesPage />} />
+            <Route path="instances/:instanceId/topology" element={<InstanceTopologyPage />} />
+            <Route path="instances/:instanceId/edit" element={<InstanceEditorPage />} />
+            <Route path="sparql-query" element={<SparqlQueryPage />} />
             <Route path="reasoning" element={<PagePlaceholder title="Reasoning" />} />
             <Route path="import-export" element={<PagePlaceholder title="Import/Export" />} />
             <Route path="agent-chat" element={<PagePlaceholder title="Agent Chat" />} />

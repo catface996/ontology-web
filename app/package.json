@@ -10,10 +10,17 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@codemirror/lang-sql": "^6.10.0",
+    "@codemirror/lint": "^6.9.3",
+    "@codemirror/state": "^6.5.4",
+    "@codemirror/view": "^6.39.12",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "@lezer/highlight": "^1.2.3",
     "@mui/material": "^7.3.7",
     "@types/d3": "^7.4.3",
+    "@uiw/codemirror-themes": "^4.25.4",
+    "@uiw/react-codemirror": "^4.25.4",
     "d3": "^7.9.0",
     "lucide-react": "^0.563.0",
     "react": "^19.2.0",
