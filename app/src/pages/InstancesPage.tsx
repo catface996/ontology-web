@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import {
   Box, Breadcrumbs, Link, Typography, TextField, InputAdornment, Button,
   Table, TableBody, TableCell, TableContainer, TableHead,
-  TableRow, TablePagination, Checkbox, IconButton, Chip, Card,
+  TableRow, Checkbox, IconButton, Chip, Card,
 } from '@mui/material';
 import {
   Search, Plus, ChevronRight, LayoutGrid, List, MoreHorizontal, Share2, Pencil,
   Database, User, Building2, MapPin, Calendar, ChevronDown, ArrowUpDown,
 } from 'lucide-react';
+import Pagination from '../components/Pagination';
 
 interface InstanceData {
   id: string;
@@ -306,14 +307,13 @@ export default function InstancesPage() {
               </TableBody>
             </Table>
           </TableContainer>
-          <TablePagination
-            component="div"
+          <Pagination
             count={2585}
             page={page}
-            onPageChange={(_, p) => setPage(p)}
             rowsPerPage={rowsPerPage}
-            onRowsPerPageChange={(e) => setRowsPerPage(parseInt(e.target.value, 10))}
-            labelDisplayedRows={({ from, to, count }) => `Showing ${from}-${to} of ${count.toLocaleString()} instances`}
+            onPageChange={setPage}
+            onRowsPerPageChange={setRowsPerPage}
+            label="instances"
           />
         </Card>
       </Box>

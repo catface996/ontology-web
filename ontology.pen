@@ -22889,9 +22889,81 @@
                               "type": "frame",
                               "id": "tFKLZ",
                               "name": "User Message 1",
-                              "width": "fill_container",
+                              "width": 792,
                               "gap": 12,
+                              "justifyContent": "end",
                               "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "SqAcf",
+                                  "name": "Message Content",
+                                  "layout": "vertical",
+                                  "gap": 8,
+                                  "alignItems": "end",
+                                  "children": [
+                                    {
+                                      "type": "frame",
+                                      "id": "y38B2",
+                                      "name": "Message Header",
+                                      "gap": 12,
+                                      "justifyContent": "end",
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "QrSBK",
+                                          "name": "msgTime1",
+                                          "fill": "$--muted-foreground",
+                                          "content": "2 min ago",
+                                          "fontFamily": "$--font-secondary",
+                                          "fontSize": 12,
+                                          "fontWeight": "normal"
+                                        },
+                                        {
+                                          "type": "text",
+                                          "id": "3Ys4u",
+                                          "name": "msgName1",
+                                          "fill": "$--foreground",
+                                          "content": "You",
+                                          "fontFamily": "$--font-primary",
+                                          "fontSize": 14,
+                                          "fontWeight": "600"
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "2VnVe",
+                                      "name": "bubble",
+                                      "reusable": true,
+                                      "fill": "$--primary",
+                                      "cornerRadius": [
+                                        16,
+                                        16,
+                                        4,
+                                        16
+                                      ],
+                                      "layout": "vertical",
+                                      "padding": [
+                                        12,
+                                        16
+                                      ],
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "SCW3S",
+                                          "name": "newText",
+                                          "fill": "$--primary-foreground",
+                                          "content": "Create 10 new instances of Person class with sample data including name, email and organization.",
+                                          "lineHeight": 1.6,
+                                          "fontFamily": "$--font-secondary",
+                                          "fontSize": 14,
+                                          "fontWeight": "normal"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
                                 {
                                   "type": "frame",
                                   "id": "UdSZT",
@@ -22912,56 +22984,6 @@
                                       "fontFamily": "$--font-primary",
                                       "fontSize": 14,
                                       "fontWeight": "600"
-                                    }
-                                  ]
-                                },
-                                {
-                                  "type": "frame",
-                                  "id": "SqAcf",
-                                  "name": "Message Content",
-                                  "width": "fill_container",
-                                  "layout": "vertical",
-                                  "gap": 8,
-                                  "children": [
-                                    {
-                                      "type": "frame",
-                                      "id": "y38B2",
-                                      "name": "Message Header",
-                                      "gap": 12,
-                                      "alignItems": "center",
-                                      "children": [
-                                        {
-                                          "type": "text",
-                                          "id": "3Ys4u",
-                                          "name": "msgName1",
-                                          "fill": "$--foreground",
-                                          "content": "You",
-                                          "fontFamily": "$--font-primary",
-                                          "fontSize": 14,
-                                          "fontWeight": "600"
-                                        },
-                                        {
-                                          "type": "text",
-                                          "id": "QrSBK",
-                                          "name": "msgTime1",
-                                          "fill": "$--muted-foreground",
-                                          "content": "2 min ago",
-                                          "fontFamily": "$--font-secondary",
-                                          "fontSize": 12,
-                                          "fontWeight": "normal"
-                                        }
-                                      ]
-                                    },
-                                    {
-                                      "type": "text",
-                                      "id": "kM2NR",
-                                      "name": "msgText1",
-                                      "fill": "$--foreground",
-                                      "content": "Create 10 new instances of Person class with sample data including name, email and organization.",
-                                      "lineHeight": 1.6,
-                                      "fontFamily": "$--font-secondary",
-                                      "fontSize": 14,
-                                      "fontWeight": "normal"
                                     }
                                   ]
                                 }

@@ -17,6 +17,10 @@ import InstanceEditorPage from './pages/InstanceEditorPage';
 import SparqlQueryPage from './pages/SparqlQueryPage';
 import ImportExportPage from './pages/ImportExportPage';
 import ReasoningPage from './pages/ReasoningPage';
+import AgentChatPage from './pages/AgentChatPage';
+import TaskHistoryPage from './pages/TaskHistoryPage';
+import DataSourcesPage from './pages/DataSourcesPage';
+import AddConnectionPage from './pages/AddConnectionPage';
 import PagePlaceholder from './components/PagePlaceholder';
 
 function App() {
@@ -42,9 +46,10 @@ function App() {
             <Route path="sparql-query" element={<SparqlQueryPage />} />
             <Route path="reasoning" element={<ReasoningPage />} />
             <Route path="import-export" element={<ImportExportPage />} />
-            <Route path="agent-chat" element={<PagePlaceholder title="Agent Chat" />} />
-            <Route path="task-history" element={<PagePlaceholder title="Task History" />} />
-            <Route path="data-sources" element={<PagePlaceholder title="Data Sources" />} />
+            <Route path="agent-chat" element={<AgentChatPage />} />
+            <Route path="task-history" element={<TaskHistoryPage />} />
+            <Route path="data-sources" element={<DataSourcesPage />} />
+            <Route path="data-sources/add" element={<AddConnectionPage />} />
             <Route path="connectors" element={<PagePlaceholder title="Connectors" />} />
             <Route path="field-mapping" element={<PagePlaceholder title="Field Mapping" />} />
             <Route path="user-management" element={<PagePlaceholder title="User Management" />} />

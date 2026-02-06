@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import {
   Box, Breadcrumbs, Link, Typography, TextField, InputAdornment, Button,
   Table, TableBody, TableCell, TableContainer, TableHead,
-  TableRow, TablePagination, Checkbox, IconButton, Chip, Card,
+  TableRow, Checkbox, IconButton, Chip, Card,
 } from '@mui/material';
 import {
   Search, Plus, ChevronRight, LayoutGrid, List, MoreHorizontal, Pencil,
   ChevronDown, ArrowUpDown, Type, Hash, Mail, MapPin, Calendar, AlignLeft,
 } from 'lucide-react';
+import Pagination from '../components/Pagination';
 
 interface PropertyData {
   id: string;
@@ -301,14 +302,13 @@ export default function PropertiesPage() {
               </TableBody>
             </Table>
           </TableContainer>
-          <TablePagination
-            component="div"
+          <Pagination
             count={64}
             page={page}
-            onPageChange={(_, p) => setPage(p)}
             rowsPerPage={rowsPerPage}
-            onRowsPerPageChange={(e) => setRowsPerPage(parseInt(e.target.value, 10))}
-            labelDisplayedRows={({ from, to, count }) => `Showing ${from}-${to} of ${count} properties`}
+            onPageChange={setPage}
+            onRowsPerPageChange={setRowsPerPage}
+            label="properties"
           />
         </Card>
       </Box>

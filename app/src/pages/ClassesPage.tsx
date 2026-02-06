@@ -3,13 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import {
   Box, Breadcrumbs, Link, Typography, TextField, InputAdornment, Button,
   Table, TableBody, TableCell, TableContainer, TableHead,
-  TableRow, TablePagination, Checkbox, IconButton, Chip, Card,
+  TableRow, Checkbox, IconButton, Chip, Card,
 } from '@mui/material';
 import {
   Search, Plus, ChevronRight, LayoutGrid, List, MoreHorizontal, Pencil,
   Layers, GitBranch, File, ChevronDown, ArrowUpDown, CornerDownRight,
   Box as BoxIcon, User, Building2, MapPin, Calendar, FileText,
 } from 'lucide-react';
+import Pagination from '../components/Pagination';
 
 interface ClassData {
   id: string;
@@ -307,14 +308,13 @@ export default function ClassesPage() {
               </TableBody>
             </Table>
           </TableContainer>
-          <TablePagination
-            component="div"
+          <Pagination
             count={48}
             page={page}
-            onPageChange={(_, p) => setPage(p)}
             rowsPerPage={rowsPerPage}
-            onRowsPerPageChange={(e) => setRowsPerPage(parseInt(e.target.value, 10))}
-            labelDisplayedRows={({ from, to, count }) => `Showing ${from}-${to} of ${count} classes`}
+            onPageChange={setPage}
+            onRowsPerPageChange={setRowsPerPage}
+            label="classes"
           />
         </Card>
       </Box>

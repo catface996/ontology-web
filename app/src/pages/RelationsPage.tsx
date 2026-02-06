@@ -3,13 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import {
   Box, Breadcrumbs, Link, Typography, TextField, InputAdornment, Button,
   Table, TableBody, TableCell, TableContainer, TableHead,
-  TableRow, TablePagination, Checkbox, IconButton, Chip, Card,
+  TableRow, Checkbox, IconButton, Chip, Card,
 } from '@mui/material';
 import {
   Search, Plus, ChevronRight, LayoutGrid, List, MoreHorizontal, Pencil,
   Link as LinkIcon, ArrowRight, Type, ChevronDown, MapPin, Users,
   Briefcase, CalendarCheck, PenTool,
 } from 'lucide-react';
+import Pagination from '../components/Pagination';
 
 interface RelationData {
   id: string;
@@ -349,14 +350,13 @@ export default function RelationsPage() {
               </TableBody>
             </Table>
           </TableContainer>
-          <TablePagination
-            component="div"
+          <Pagination
             count={32}
             page={page}
-            onPageChange={(_, p) => setPage(p)}
             rowsPerPage={rowsPerPage}
-            onRowsPerPageChange={(e) => setRowsPerPage(parseInt(e.target.value, 10))}
-            labelDisplayedRows={({ from, to, count }) => `Showing ${from}-${to} of ${count} relations`}
+            onPageChange={setPage}
+            onRowsPerPageChange={setRowsPerPage}
+            label="relations"
           />
         </Card>
       </Box>
