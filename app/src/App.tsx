@@ -21,6 +21,7 @@ import AgentChatPage from './pages/AgentChatPage';
 import TaskHistoryPage from './pages/TaskHistoryPage';
 import DataSourcesPage from './pages/DataSourcesPage';
 import AddConnectionPage from './pages/AddConnectionPage';
+import ConnectorsPage from './pages/ConnectorsPage';
 import PagePlaceholder from './components/PagePlaceholder';
 
 function App() {
@@ -50,7 +51,7 @@ function App() {
             <Route path="task-history" element={<TaskHistoryPage />} />
             <Route path="data-sources" element={<DataSourcesPage />} />
             <Route path="data-sources/add" element={<AddConnectionPage />} />
-            <Route path="connectors" element={<PagePlaceholder title="Connectors" />} />
+            <Route path="connectors" element={<ConnectorsPage />} />
             <Route path="field-mapping" element={<PagePlaceholder title="Field Mapping" />} />
             <Route path="user-management" element={<PagePlaceholder title="User Management" />} />
             <Route path="roles-permissions" element={<PagePlaceholder title="Roles & Permissions" />} />
