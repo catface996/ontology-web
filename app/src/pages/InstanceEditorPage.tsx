@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box, Breadcrumbs, Link, Typography, TextField, Button, Card, IconButton,
-  Select, MenuItem, FormControl, InputLabel, Dialog,
+  Select, MenuItem, FormControl, InputLabel,
 } from '@mui/material';
 import {
   ChevronRight, Save, Database, FileText, Plus, Pencil, Trash2, Eye,
-  User, Building2, MapPin, Folder, Calendar, Check,
+  User, Building2, MapPin, Folder, Calendar,
 } from 'lucide-react';
+import SuccessModal from '../components/SuccessModal';
 
 interface PropertyValue {
   key: string;
@@ -231,40 +232,12 @@ export default function InstanceEditorPage() {
         </Box>
       </Box>
 
-      {/* Success Modal */}
-      <Dialog
+      <SuccessModal
         open={successModalOpen}
-        onClose={() => setSuccessModalOpen(false)}
-        PaperProps={{ sx: { borderRadius: 4, width: 440, maxWidth: '90vw' } }}
-      >
-        <Box display="flex" flexDirection="column" alignItems="center" gap={2} p={4} pb={3}>
-          <Box
-            width={56} height={56} borderRadius="50%"
-            bgcolor="rgba(34, 197, 94, 0.13)"
-            display="flex" alignItems="center" justifyContent="center"
-          >
-            <Check size={28} color="#22C55E" />
-          </Box>
-          <Typography variant="h6" fontWeight={600} textAlign="center" fontSize={20}>
-            Instance Saved
-          </Typography>
-          <Typography variant="body2" color="text.secondary" textAlign="center" lineHeight={1.6} px={2}>
-            The instance has been saved successfully. Your changes have been applied.
-          </Typography>
-        </Box>
-        <Box display="flex" justifyContent="center" px={4} pb={4}>
-          <Button
-            variant="contained"
-            onClick={() => { setSuccessModalOpen(false); navigate('/instances'); }}
-            sx={{
-              bgcolor: '#22C55E', '&:hover': { bgcolor: '#16A34A' },
-              borderRadius: 2.5, height: 44, px: 3, textTransform: 'none', fontWeight: 500, fontSize: 14,
-            }}
-          >
-            Done
-          </Button>
-        </Box>
-      </Dialog>
+        title="Instance Saved"
+        description="The instance has been saved successfully. Your changes have been applied."
+        onClose={() => { setSuccessModalOpen(false); navigate('/instances'); }}
+      />
     </>
   );
 }

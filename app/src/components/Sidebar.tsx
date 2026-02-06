@@ -35,6 +35,14 @@ import {
   Shield,
   Key,
   Activity,
+  FileText,
+  Gauge,
+  FlaskConical,
+  ArrowRightCircle,
+  ArrowLeftCircle,
+  ShieldCheck,
+  GitCompareArrows,
+  Fingerprint,
 } from 'lucide-react';
 
 const drawerWidth = 280;
@@ -43,6 +51,8 @@ interface NavItem {
   icon: React.ReactNode;
   label: string;
   path: string;
+  iconColor?: string;
+  openInNewTab?: boolean;
 }
 
 interface Domain {
@@ -70,11 +80,22 @@ const toolsItems: NavItem[] = [
   { icon: <Search size={20} />, label: 'SPARQL Query', path: '/sparql-query' },
   { icon: <Brain size={20} />, label: 'Reasoning', path: '/reasoning' },
   { icon: <Upload size={20} />, label: 'Import/Export', path: '/import-export' },
+  { icon: <FileText size={20} />, label: 'Reports', path: '/report-management' },
 ];
 
 const agentItems: NavItem[] = [
   { icon: <MessageCircle size={20} />, label: 'Agent Chat', path: '/agent-chat' },
   { icon: <ListChecks size={20} />, label: 'Task History', path: '/task-history' },
+];
+
+const agentFlowItems: NavItem[] = [
+  { icon: <Gauge size={20} />, label: 'Bottleneck', path: '/agent-chat/bottleneck', iconColor: '#8b5cf6', openInNewTab: true },
+  { icon: <FlaskConical size={20} />, label: 'What-if', path: '/agent-chat/what-if', iconColor: '#f59e0b', openInNewTab: true },
+  { icon: <ArrowRightCircle size={20} />, label: 'Forward', path: '/agent-chat/forward', iconColor: '#06b6d4', openInNewTab: true },
+  { icon: <ArrowLeftCircle size={20} />, label: 'Backward', path: '/agent-chat/backward', iconColor: '#a855f7', openInNewTab: true },
+  { icon: <ShieldCheck size={20} />, label: 'Constraint', path: '/agent-chat/constraint', iconColor: '#6366f1', openInNewTab: true },
+  { icon: <GitCompareArrows size={20} />, label: 'Diff', path: '/agent-chat/diff', iconColor: '#10b981', openInNewTab: true },
+  { icon: <Fingerprint size={20} />, label: 'Pattern', path: '/agent-chat/pattern', iconColor: '#ec4899', openInNewTab: true },
 ];
 
 const integrationItems: NavItem[] = [
@@ -85,12 +106,12 @@ const integrationItems: NavItem[] = [
 
 const settingsItems: NavItem[] = [
   { icon: <Users size={20} />, label: 'User Management', path: '/user-management' },
-  { icon: <Shield size={20} />, label: 'Roles & Permissions', path: '/roles-permissions' },
+  { icon: <Shield size={20} />, label: 'Roles', path: '/roles-permissions' },
   { icon: <Key size={20} />, label: 'API Keys', path: '/api-keys' },
   { icon: <Activity size={20} />, label: 'Audit Logs', path: '/audit-logs' },
 ];
 
-type SectionKey = 'domains' | 'ontologies' | 'tools' | 'agent' | 'integrations' | 'settings';
+type SectionKey = 'domains' | 'ontologies' | 'tools' | 'agent' | 'agentFlows' | 'integrations' | 'settings';
 
 export default function Sidebar() {
   const navigate = useNavigate();
@@ -101,6 +122,7 @@ export default function Sidebar() {
     ontologies: true,
     tools: true,
     agent: true,
+    agentFlows: true,
     integrations: true,
     settings: true,
   });
@@ -119,10 +141,12 @@ export default function Sidebar() {
         <ListItemButton
           key={item.label}
           selected={isSelected(item.path)}
-          onClick={() => navigate(item.path)}
+          onClick={() => item.openInNewTab ? window.open(item.path, '_blank') : navigate(item.path)}
           sx={{ borderRadius: 100 }}
         >
-          <ListItemIcon>{item.icon}</ListItemIcon>
+          <ListItemIcon sx={item.iconColor ? { color: item.iconColor } : undefined}>
+            {item.icon}
+          </ListItemIcon>
           <ListItemText primary={item.label} />
         </ListItemButton>
       ))}
@@ -189,6 +213,7 @@ export default function Sidebar() {
         {renderSection('ONTOLOGIES', 'ontologies', ontologyItems)}
         {renderSection('TOOLS', 'tools', toolsItems)}
         {renderSection('AGENT', 'agent', agentItems)}
+        {renderSection('AGENT FLOWS', 'agentFlows', agentFlowItems)}
         {renderSection('INTEGRATIONS', 'integrations', integrationItems)}
         {renderSection('SETTINGS', 'settings', settingsItems)}
       </Box>

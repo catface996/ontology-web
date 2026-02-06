@@ -3,12 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box, Breadcrumbs, Link, Typography, TextField, Button, Card,
   FormControl, InputLabel, Select, MenuItem, Checkbox, FormControlLabel,
-  IconButton, Tooltip, Dialog,
+  IconButton, Tooltip,
 } from '@mui/material';
 import {
   ChevronRight, Save, Info, Link as LinkIcon, Eye, Settings2,
-  Box as BoxIcon, ArrowRight, Key, Check,
+  Box as BoxIcon, ArrowRight, Key,
 } from 'lucide-react';
+import SuccessModal from '../components/SuccessModal';
 
 interface RelationData {
   id: string;
@@ -422,84 +423,10 @@ export default function RelationEditorPage() {
         </Box>
       </Box>
 
-      {/* Success Modal */}
-      <Dialog
+      <SuccessModal
         open={successModalOpen}
-        onClose={() => setSuccessModalOpen(false)}
-        PaperProps={{
-          sx: {
-            borderRadius: 4,
-            width: 440,
-            maxWidth: '90vw',
-          },
-        }}
-      >
-        <Box
-          display="flex"
-          flexDirection="column"
-          alignItems="center"
-          gap={2}
-          p={4}
-          pb={3}
-        >
-          {/* Icon */}
-          <Box
-            width={56}
-            height={56}
-            borderRadius="50%"
-            bgcolor="rgba(34, 197, 94, 0.13)"
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-          >
-            <Check size={28} color="#22C55E" />
-          </Box>
-
-          {/* Title */}
-          <Typography
-            variant="h6"
-            fontWeight={600}
-            textAlign="center"
-            fontSize={20}
-          >
-            Operation Successful
-          </Typography>
-
-          {/* Description */}
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            textAlign="center"
-            lineHeight={1.6}
-            px={2}
-          >
-            The operation has been completed successfully. Your changes have been saved.
-          </Typography>
-        </Box>
-
-        {/* Actions */}
-        <Box display="flex" justifyContent="center" px={4} pb={4}>
-          <Button
-            variant="contained"
-            onClick={() => {
-              setSuccessModalOpen(false);
-              navigate('/relations');
-            }}
-            sx={{
-              bgcolor: '#22C55E',
-              '&:hover': { bgcolor: '#16A34A' },
-              borderRadius: 2.5,
-              height: 44,
-              px: 3,
-              textTransform: 'none',
-              fontWeight: 500,
-              fontSize: 14,
-            }}
-          >
-            Done
-          </Button>
-        </Box>
-      </Dialog>
+        onClose={() => { setSuccessModalOpen(false); navigate('/relations'); }}
+      />
     </>
   );
 }

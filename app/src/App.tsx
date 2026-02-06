@@ -22,6 +22,18 @@ import TaskHistoryPage from './pages/TaskHistoryPage';
 import DataSourcesPage from './pages/DataSourcesPage';
 import AddConnectionPage from './pages/AddConnectionPage';
 import ConnectorsPage from './pages/ConnectorsPage';
+import FieldMappingPage from './pages/FieldMappingPage';
+import ReportManagementPage from './pages/ReportManagementPage';
+import ReportDetailPage from './pages/ReportDetailPage';
+import UserManagementPage from './pages/UserManagementPage';
+import RolesPermissionsPage from './pages/RolesPermissionsPage';
+import AgentConversationFlowPage from './pages/AgentConversationFlowPage';
+import WhatIfAgentPage from './pages/WhatIfAgentPage';
+import ForwardAgentPage from './pages/ForwardAgentPage';
+import BackwardAgentPage from './pages/BackwardAgentPage';
+import ConstraintAgentPage from './pages/ConstraintAgentPage';
+import DiffAgentPage from './pages/DiffAgentPage';
+import PatternAgentPage from './pages/PatternAgentPage';
 import PagePlaceholder from './components/PagePlaceholder';
 
 function App() {
@@ -32,6 +44,13 @@ function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/domain" element={<DomainSelection />} />
+          <Route path="/agent-chat/bottleneck" element={<AgentConversationFlowPage />} />
+          <Route path="/agent-chat/what-if" element={<WhatIfAgentPage />} />
+          <Route path="/agent-chat/forward" element={<ForwardAgentPage />} />
+          <Route path="/agent-chat/backward" element={<BackwardAgentPage />} />
+          <Route path="/agent-chat/constraint" element={<ConstraintAgentPage />} />
+          <Route path="/agent-chat/diff" element={<DiffAgentPage />} />
+          <Route path="/agent-chat/pattern" element={<PatternAgentPage />} />
           <Route path="/" element={<MainLayout />}>
             <Route index element={<Navigate to="/knowledge-graph" replace />} />
             <Route path="knowledge-graph" element={<KnowledgeGraphPage />} />
@@ -52,9 +71,11 @@ function App() {
             <Route path="data-sources" element={<DataSourcesPage />} />
             <Route path="data-sources/add" element={<AddConnectionPage />} />
             <Route path="connectors" element={<ConnectorsPage />} />
-            <Route path="field-mapping" element={<PagePlaceholder title="Field Mapping" />} />
-            <Route path="user-management" element={<PagePlaceholder title="User Management" />} />
-            <Route path="roles-permissions" element={<PagePlaceholder title="Roles & Permissions" />} />
+            <Route path="field-mapping" element={<FieldMappingPage />} />
+            <Route path="report-management" element={<ReportManagementPage />} />
+            <Route path="report-management/:reportId" element={<ReportDetailPage />} />
+            <Route path="user-management" element={<UserManagementPage />} />
+            <Route path="roles-permissions" element={<RolesPermissionsPage />} />
             <Route path="api-keys" element={<PagePlaceholder title="API Keys" />} />
             <Route path="audit-logs" element={<PagePlaceholder title="Audit Logs" />} />
           </Route>
