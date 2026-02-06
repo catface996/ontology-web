@@ -69,25 +69,25 @@ graph LR
 
 ```mermaid
 erDiagram
-    Class ||--o{ Property : has
-    Class ||--o{ Instance : instantiates
-    Class }o--o{ Relation : connected_by
-    Relation }o--|| Class : from
-    Relation }o--|| Class : to
+    OntologyClass ||--o{ Property : has
+    OntologyClass ||--o{ Instance : instantiates
+    OntologyClass }o--o{ Relation : connected_by
+    Relation }o--|| OntologyClass : from
+    Relation }o--|| OntologyClass : to
     Property ||--o{ Constraint : constrained_by
     Instance }o--o{ Instance : linked_via_relation
 
-    Class {
+    OntologyClass {
         string name
         string description
         string icon
-        Class parent
+        string parent
     }
     Relation {
         string name
         string type
-        Class domain
-        Class range
+        string domain
+        string range
     }
     Property {
         string name
@@ -96,8 +96,8 @@ erDiagram
     }
     Instance {
         string name
-        Class type
-        map properties
+        string type
+        string properties
     }
 ```
 
