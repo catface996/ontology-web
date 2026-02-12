@@ -1,4 +1,4 @@
-import { Box, TextField } from '@mui/material';
+import { InputNumber, Flex, Typography } from 'antd';
 
 interface DecimalConstraintsProps {
   precision: number;
@@ -22,41 +22,53 @@ export default function DecimalConstraints({
   onMaxValueChange,
 }: DecimalConstraintsProps) {
   return (
-    <Box display="flex" flexDirection="column" gap={2}>
-      <Box display="flex" gap={2}>
-        <TextField
-          fullWidth
-          label="Precision"
-          type="number"
-          value={precision}
-          onChange={(e) => onPrecisionChange(Number(e.target.value))}
-          inputProps={{ min: 1 }}
-        />
-        <TextField
-          fullWidth
-          label="Scale"
-          type="number"
-          value={scale}
-          onChange={(e) => onScaleChange(Number(e.target.value))}
-          inputProps={{ min: 0 }}
-        />
-      </Box>
-      <Box display="flex" gap={2}>
-        <TextField
-          fullWidth
-          label="Min Value"
-          type="number"
-          value={minValue}
-          onChange={(e) => onMinValueChange(Number(e.target.value))}
-        />
-        <TextField
-          fullWidth
-          label="Max Value"
-          type="number"
-          value={maxValue}
-          onChange={(e) => onMaxValueChange(Number(e.target.value))}
-        />
-      </Box>
-    </Box>
+    <Flex vertical gap={16}>
+      <Flex gap={16}>
+        <div style={{ flex: 1 }}>
+          <Typography.Text style={{ display: 'block', marginBottom: 4, fontSize: 14 }}>
+            Precision
+          </Typography.Text>
+          <InputNumber
+            style={{ width: '100%' }}
+            value={precision}
+            min={1}
+            onChange={(val) => onPrecisionChange(val ?? 1)}
+          />
+        </div>
+        <div style={{ flex: 1 }}>
+          <Typography.Text style={{ display: 'block', marginBottom: 4, fontSize: 14 }}>
+            Scale
+          </Typography.Text>
+          <InputNumber
+            style={{ width: '100%' }}
+            value={scale}
+            min={0}
+            onChange={(val) => onScaleChange(val ?? 0)}
+          />
+        </div>
+      </Flex>
+      <Flex gap={16}>
+        <div style={{ flex: 1 }}>
+          <Typography.Text style={{ display: 'block', marginBottom: 4, fontSize: 14 }}>
+            Min Value
+          </Typography.Text>
+          <InputNumber
+            style={{ width: '100%' }}
+            value={minValue}
+            onChange={(val) => onMinValueChange(val ?? 0)}
+          />
+        </div>
+        <div style={{ flex: 1 }}>
+          <Typography.Text style={{ display: 'block', marginBottom: 4, fontSize: 14 }}>
+            Max Value
+          </Typography.Text>
+          <InputNumber
+            style={{ width: '100%' }}
+            value={maxValue}
+            onChange={(val) => onMaxValueChange(val ?? 0)}
+          />
+        </div>
+      </Flex>
+    </Flex>
   );
 }

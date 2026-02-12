@@ -1,16 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Breadcrumb, Input, Button, Table, Checkbox, Tag, Card, Typography, Flex } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import {
-  Box, Breadcrumbs, Link, Typography, TextField, InputAdornment, Button,
-  Table, TableBody, TableCell, TableContainer, TableHead,
-  TableRow, Checkbox, IconButton, Chip, Card,
-} from '@mui/material';
-import {
-  Search, Plus, ChevronRight, LayoutGrid, List, MoreHorizontal, Pencil,
-  Layers, GitBranch, File, ChevronDown, ArrowUpDown, CornerDownRight,
-  Box as BoxIcon, User, Building2, MapPin, Calendar, FileText,
+  Box as BoxIcon, User, Building2, MapPin, Calendar, FileText, CornerDownRight,
+  Search, Plus, Boxes, List, Ellipsis, Pencil, Brain,
+  Ban, GitFork, File, ChevronDown, ArrowLeftRight,
 } from 'lucide-react';
 import Pagination from '../components/Pagination';
+import { useHeader } from '../contexts/HeaderContext';
 
 interface ClassData {
   id: string;
@@ -24,7 +22,7 @@ interface ClassData {
 }
 
 const classesData: ClassData[] = [
-  { id: '1', name: 'Entity', description: 'Base class for all entities in the knowledge graph', parent: null, properties: 8, instances: 1248, icon: BoxIcon, color: '#8B5CF6' },
+  { id: '1', name: 'Entity', description: 'Base class for all entities in the knowledge graph', parent: null, properties: 8, instances: 1248, icon: BoxIcon, color: 'var(--primary-color)' },
   { id: '2', name: 'Person', description: 'Represents a human individual with personal attributes', parent: 'Entity', properties: 12, instances: 524, icon: User, color: '#22D3EE' },
   { id: '3', name: 'Organization', description: 'A company, institution, or group with a formal structure', parent: 'Entity', properties: 15, instances: 312, icon: Building2, color: '#F472B6' },
   { id: '4', name: 'Location', description: 'Geographic place or address with coordinates', parent: 'Entity', properties: 9, instances: 412, icon: MapPin, color: '#4ADE80' },
@@ -33,281 +31,266 @@ const classesData: ClassData[] = [
 ];
 
 const filters = [
-  { key: 'all', label: 'All Classes', count: 48, icon: Layers },
-  { key: 'root', label: 'Root Classes', count: 12, icon: GitBranch },
+  { key: 'all', label: 'All Classes', count: 48, icon: Ban },
+  { key: 'root', label: 'Root Classes', count: 12, icon: GitFork },
   { key: 'leaf', label: 'Leaf Classes', count: 28, icon: File },
 ];
 
 export default function ClassesPage() {
   const navigate = useNavigate();
+  const { setBreadcrumbs, setActions } = useHeader();
   const [filter, setFilter] = useState('all');
   const [view, setView] = useState('list');
-  const [selected, setSelected] = useState<string[]>(['2']); // Person is selected by default
+  const [selected, setSelected] = useState<string[]>(['2']);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+  useEffect(() => {
+    setBreadcrumbs(
+      <Breadcrumb
+        items={[
+          { title: <a href="#">Ontologies</a> },
+          { title: <Typography.Text strong>Classes</Typography.Text> },
+        ]}
+      />
+    );
+    setActions(
+      <Flex gap={8}>
+        <Input
+          placeholder="Search classes..."
+          prefix={<Search size={16} />}
+          style={{ width: 240 }}
+        />
+        <Button
+          type="primary"
+          icon={<Plus size={16} />}
+          onClick={() => navigate('/classes/new/edit')}
+        >
+          New Class
+        </Button>
+      </Flex>
+    );
+  }, [setBreadcrumbs, setActions, navigate]);
+
+  const handleSelectAll = (e: { target: { checked: boolean } }) => {
     setSelected(e.target.checked ? classesData.map((c) => c.id) : []);
   };
 
-  const getInstancesColor = (instances: number): 'success' | 'info' | 'warning' => {
-    if (instances === 0) return 'info';
-    if (instances < 100) return 'warning';
-    return 'success';
+  const getInstancesColor = (instances: number): string => {
+    if (instances === 0) return 'blue';
+    if (instances < 100) return 'orange';
+    return 'green';
   };
+
+  const columns: ColumnsType<ClassData> = [
+    {
+      title: () => (
+        <Checkbox
+          indeterminate={selected.length > 0 && selected.length < classesData.length}
+          checked={selected.length === classesData.length}
+          onChange={handleSelectAll}
+        />
+      ),
+      dataIndex: 'checkbox',
+      key: 'checkbox',
+      width: 40,
+      render: (_: unknown, record: ClassData) => (
+        <Checkbox
+          checked={selected.includes(record.id)}
+          onChange={() =>
+            setSelected((p) =>
+              p.includes(record.id) ? p.filter((i) => i !== record.id) : [...p, record.id]
+            )
+          }
+        />
+      ),
+    },
+    {
+      title: (
+        <Flex align="center" gap={6}>
+          <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', letterSpacing: 0.5 }}>
+            Name
+          </Typography.Text>
+          <ArrowLeftRight size={14} color="gray" />
+        </Flex>
+      ),
+      dataIndex: 'name',
+      key: 'name',
+      width: 200,
+      render: (_: string, record: ClassData) => (
+        <Flex align="center" gap={10}>
+          <div
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 8,
+              background: `${record.color}20`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <record.icon size={16} color={record.color} />
+          </div>
+          <Typography.Text strong style={{ fontSize: 14 }}>
+            {record.name}
+          </Typography.Text>
+        </Flex>
+      ),
+    },
+    {
+      title: <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', letterSpacing: 0.5 }}>Description</Typography.Text>,
+      dataIndex: 'description',
+      key: 'description',
+      render: (text: string) => (
+        <Typography.Text style={{ fontSize: 14, color: '#a1a1aa' }}>{text}</Typography.Text>
+      ),
+    },
+    {
+      title: <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', letterSpacing: 0.5 }}>Parent Class</Typography.Text>,
+      dataIndex: 'parent',
+      key: 'parent',
+      width: 140,
+      render: (parent: string | null) =>
+        parent ? (
+          <Flex align="center" gap={6} style={{ color: 'var(--primary-color)' }}>
+            <CornerDownRight size={12} />
+            <Typography.Text strong style={{ fontSize: 14, color: 'var(--primary-color)' }}>
+              {parent}
+            </Typography.Text>
+          </Flex>
+        ) : (
+          <Typography.Text style={{ fontSize: 14, color: '#71717a' }}>—</Typography.Text>
+        ),
+    },
+    {
+      title: <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', letterSpacing: 0.5 }}>Properties</Typography.Text>,
+      dataIndex: 'properties',
+      key: 'properties',
+      width: 100,
+      align: 'center',
+      render: (val: number) => <Tag>{val}</Tag>,
+    },
+    {
+      title: <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', letterSpacing: 0.5 }}>Instances</Typography.Text>,
+      dataIndex: 'instances',
+      key: 'instances',
+      width: 100,
+      align: 'center',
+      render: (val: number, record: ClassData) => (
+        <Tag color={getInstancesColor(record.instances)}>{val.toLocaleString()}</Tag>
+      ),
+    },
+    {
+      title: <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', letterSpacing: 0.5 }}>Actions</Typography.Text>,
+      key: 'actions',
+      width: 80,
+      align: 'center',
+      render: (_: unknown, record: ClassData) => (
+        <Flex justify="center" gap={4}>
+          <Button
+            type="text"
+            size="small"
+            icon={<Brain size={16} />}
+            onClick={() => navigate(`/classes/${record.id}/logic`)}
+          />
+          <Button
+            type="text"
+            size="small"
+            icon={<Pencil size={16} />}
+            onClick={() => navigate(`/classes/${record.id}/edit`)}
+          />
+          <Button type="text" size="small" icon={<Ellipsis size={16} />} />
+        </Flex>
+      ),
+    },
+  ];
 
   return (
     <>
-      {/* Header */}
-      <Box height={64} display="flex" alignItems="center" justifyContent="space-between" px={3} borderBottom={1} borderColor="divider">
-        <Breadcrumbs separator={<ChevronRight size={14} />}>
-          <Link underline="hover" color="text.secondary" href="#">Ontologies</Link>
-          <Typography color="text.primary" fontWeight={500}>Classes</Typography>
-        </Breadcrumbs>
-        <Box display="flex" gap={1.5}>
-          <TextField
-            size="small"
-            placeholder="Search classes..."
-            sx={{ width: 240 }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Search size={16} />
-                </InputAdornment>
-              ),
-            }}
-          />
-          <Button
-            variant="contained"
-            startIcon={<Plus size={16} />}
-            onClick={() => navigate('/classes/new/edit')}
-            sx={{
-              boxShadow: '0 4px 12px rgba(139, 92, 246, 0.25)',
-            }}
-          >
-            New Class
-          </Button>
-        </Box>
-      </Box>
-
-      {/* Content */}
-      <Box flex={1} p={3} display="flex" flexDirection="column" gap={2.5}>
+      <div style={{ flex: 1, padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
         {/* Toolbar */}
-        <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Box display="flex" gap={1.5}>
+        <Flex justify="space-between" align="center">
+          <Flex gap={12}>
             {filters.map((f) => (
-              <Box
+              <div
                 key={f.key}
                 onClick={() => setFilter(f.key)}
-                sx={{
+                style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 1,
-                  px: 2,
-                  py: 1,
-                  borderRadius: 2,
+                  gap: 8,
+                  padding: '8px 16px',
+                  borderRadius: 8,
                   cursor: 'pointer',
-                  bgcolor: filter === f.key ? 'primary.main' : 'action.hover',
-                  color: filter === f.key ? 'primary.contrastText' : 'text.secondary',
-                  '&:hover': { bgcolor: filter === f.key ? 'primary.main' : 'action.selected' },
+                  background: filter === f.key ? 'var(--primary-color)' : 'rgba(255,255,255,0.06)',
+                  color: filter === f.key ? '#fff' : '#a1a1aa',
                 }}
               >
                 <f.icon size={16} />
-                <Typography variant="body2" fontWeight={filter === f.key ? 500 : 400}>
+                <Typography.Text style={{ fontSize: 14, fontWeight: filter === f.key ? 500 : 400, color: 'inherit' }}>
                   {f.label}
-                </Typography>
-                <Typography variant="caption" sx={{ opacity: filter === f.key ? 0.7 : 1 }}>
+                </Typography.Text>
+                <Typography.Text style={{ fontSize: 12, color: 'inherit', opacity: filter === f.key ? 0.7 : 1 }}>
                   {f.count}
-                </Typography>
-              </Box>
+                </Typography.Text>
+              </div>
             ))}
-          </Box>
+          </Flex>
 
-          <Box display="flex" gap={1.5} alignItems="center">
-            <Box
-              sx={{
+          <Flex gap={12} align="stretch">
+            <div
+              style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 1,
-                px: 1.5,
-                py: 1,
-                border: 1,
-                borderColor: 'divider',
-                borderRadius: 2,
+                gap: 8,
+                padding: '0 12px',
+                border: '1px solid #27273a',
+                borderRadius: 8,
                 cursor: 'pointer',
               }}
             >
-              <Box sx={{ width: 8, height: 8, borderRadius: 0.5, bgcolor: '#A855F7' }} />
-              <Typography variant="body2">Enterprise</Typography>
-              <ChevronDown size={16} />
-            </Box>
-            <Box sx={{ display: 'flex', border: 1, borderColor: 'divider', borderRadius: 2 }}>
+              <div style={{ width: 8, height: 8, borderRadius: 2, background: '#A855F7' }} />
+              <Typography.Text style={{ fontSize: 14 }}>Enterprise</Typography.Text>
+              <ChevronDown size={12} />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #27273a', borderRadius: 8 }}>
               {[
                 { key: 'list', Icon: List },
-                { key: 'grid', Icon: LayoutGrid },
+                { key: 'grid', Icon: Boxes },
               ].map(({ key, Icon }) => (
-                <Box
+                <div
                   key={key}
                   onClick={() => setView(key)}
-                  sx={{
-                    p: 1,
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: 8,
                     cursor: 'pointer',
-                    borderRadius: 1.5,
-                    bgcolor: view === key ? 'action.selected' : 'transparent',
+                    borderRadius: 6,
+                    background: view === key ? 'rgba(255,255,255,0.08)' : 'transparent',
                   }}
                 >
                   <Icon size={18} color={view === key ? undefined : 'gray'} />
-                </Box>
+                </div>
               ))}
-            </Box>
-          </Box>
-        </Box>
+            </div>
+          </Flex>
+        </Flex>
 
         {/* Table */}
-        <Card variant="outlined" sx={{ flex: 1, display: 'flex', flexDirection: 'column', borderRadius: 3 }}>
-          <TableContainer sx={{ flex: 1 }}>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ bgcolor: 'action.hover' }}>
-                  <TableCell padding="checkbox" sx={{ width: 40 }}>
-                    <Checkbox
-                      indeterminate={selected.length > 0 && selected.length < classesData.length}
-                      checked={selected.length === classesData.length}
-                      onChange={handleSelectAll}
-                    />
-                  </TableCell>
-                  <TableCell sx={{ width: 200 }}>
-                    <Box display="flex" alignItems="center" gap={0.75}>
-                      <Typography variant="caption" fontWeight={600} color="text.secondary" letterSpacing={0.5}>
-                        Name
-                      </Typography>
-                      <ArrowUpDown size={14} color="gray" />
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="caption" fontWeight={600} color="text.secondary" letterSpacing={0.5}>
-                      Description
-                    </Typography>
-                  </TableCell>
-                  <TableCell sx={{ width: 140 }}>
-                    <Typography variant="caption" fontWeight={600} color="text.secondary" letterSpacing={0.5}>
-                      Parent Class
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="center" sx={{ width: 100 }}>
-                    <Typography variant="caption" fontWeight={600} color="text.secondary" letterSpacing={0.5}>
-                      Properties
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="center" sx={{ width: 100 }}>
-                    <Typography variant="caption" fontWeight={600} color="text.secondary" letterSpacing={0.5}>
-                      Instances
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="center" sx={{ width: 80 }}>
-                    <Typography variant="caption" fontWeight={600} color="text.secondary" letterSpacing={0.5}>
-                      Actions
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {classesData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row, index) => (
-                  <TableRow
-                    key={row.id}
-                    selected={selected.includes(row.id)}
-                    hover
-                    sx={{
-                      bgcolor: selected.includes(row.id) ? 'action.selected' : index % 2 === 1 ? 'action.hover' : 'transparent',
-                    }}
-                  >
-                    <TableCell padding="checkbox">
-                      <Checkbox
-                        checked={selected.includes(row.id)}
-                        onChange={() =>
-                          setSelected((p) =>
-                            p.includes(row.id) ? p.filter((i) => i !== row.id) : [...p, row.id]
-                          )
-                        }
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Box display="flex" alignItems="center" gap={1.25}>
-                        <Box
-                          sx={{
-                            width: 32,
-                            height: 32,
-                            borderRadius: 2,
-                            bgcolor: `${row.color}20`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                        >
-                          <row.icon size={16} color={row.color} />
-                        </Box>
-                        <Typography variant="body2" fontWeight={600}>
-                          {row.name}
-                        </Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {row.description}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      {row.parent ? (
-                        <Box display="flex" alignItems="center" gap={0.75} color="primary.main">
-                          <CornerDownRight size={12} />
-                          <Typography variant="body2" fontWeight={500} color="primary.main">
-                            {row.parent}
-                          </Typography>
-                        </Box>
-                      ) : (
-                        <Typography variant="body2" color="text.disabled">
-                          —
-                        </Typography>
-                      )}
-                    </TableCell>
-                    <TableCell align="center">
-                      <Chip
-                        label={row.properties}
-                        size="small"
-                        sx={{
-                          bgcolor: 'action.hover',
-                          color: 'text.primary',
-                          fontWeight: 500,
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell align="center">
-                      <Chip
-                        label={row.instances.toLocaleString()}
-                        size="small"
-                        color={getInstancesColor(row.instances)}
-                        sx={{ fontWeight: 500 }}
-                      />
-                    </TableCell>
-                    <TableCell align="center">
-                      <Box display="flex" justifyContent="center" gap={0.5}>
-                        <IconButton
-                          size="small"
-                          onClick={() => navigate(`/classes/${row.id}/edit`)}
-                          sx={{ width: 28, height: 28 }}
-                        >
-                          <Pencil size={14} />
-                        </IconButton>
-                        <IconButton size="small" sx={{ width: 28, height: 28 }}>
-                          <MoreHorizontal size={14} />
-                        </IconButton>
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+        <Card style={{ flex: 1, display: 'flex', flexDirection: 'column' }} styles={{ body: { padding: 0, flex: 1, display: 'flex', flexDirection: 'column' } }}>
+          <Table<ClassData>
+            columns={columns}
+            dataSource={classesData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)}
+            rowKey="id"
+            pagination={false}
+            size="middle"
+            style={{ flex: 1 }}
+            rowClassName={(record, index) =>
+              selected.includes(record.id) ? 'ant-table-row-selected' : index % 2 === 1 ? 'ant-table-row-striped' : ''
+            }
+          />
           <Pagination
             count={48}
             page={page}
@@ -317,7 +300,7 @@ export default function ClassesPage() {
             label="classes"
           />
         </Card>
-      </Box>
+      </div>
     </>
   );
 }

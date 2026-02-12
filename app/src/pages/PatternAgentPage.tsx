@@ -1,7 +1,5 @@
 import { useState } from 'react';
-import {
-  Box, Typography, Button, TextField,
-} from '@mui/material';
+import { Button, Input } from 'antd';
 import {
   Share2, Check, Download, Square, Fingerprint,
 } from 'lucide-react';
@@ -74,14 +72,14 @@ const chainEdges: TopoEdge[] = [
    Helpers
    ══════════════════════════════════════════ */
 function SectionLabel({ children }: { children: string }) {
-  return <Typography fontSize={11} fontWeight={600} letterSpacing={1} sx={{ color: '#71717a' }}>{children}</Typography>;
+  return <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#71717a' }}>{children}</span>;
 }
 
 function Chip({ label, color, filled }: { label: string; color: string; filled?: boolean }) {
   return (
-    <Box sx={{ px: 1, py: 0.25, borderRadius: 1, bgcolor: filled ? color : `${color}20`, display: 'inline-flex', alignItems: 'center' }}>
-      <Typography fontSize={filled ? 9 : 10} fontWeight={600} sx={{ color: filled ? '#fff' : color }}>{label}</Typography>
-    </Box>
+    <div style={{ paddingLeft: 8, paddingRight: 8, paddingTop: 2, paddingBottom: 2, borderRadius: 4, backgroundColor: filled ? color : `${color}20`, display: 'inline-flex', alignItems: 'center' }}>
+      <span style={{ fontSize: filled ? 9 : 10, fontWeight: 600, color: filled ? '#fff' : color }}>{label}</span>
+    </div>
   );
 }
 
@@ -92,59 +90,57 @@ export default function PatternAgentPage() {
   const [input, setInput] = useState('');
 
   return (
-    <Box display="flex" height="100vh" overflow="hidden" bgcolor="#0a0a0f">
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', backgroundColor: '#0a0a0f' }}>
       {/* ── Left Sidebar ── */}
-      <Box width={260} flexShrink={0} display="flex" flexDirection="column" gap={2} p={2.5} sx={{ bgcolor: '#0d0d14', overflow: 'auto' }}>
-        <Box display="flex" alignItems="center" gap={1.25} height={40}>
-          <Box width={32} height={32} borderRadius={2} bgcolor="#8b5cf6" display="flex" alignItems="center" justifyContent="center">
+      <div style={{ width: 260, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 16, padding: 20, backgroundColor: '#0d0d14', overflow: 'auto' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, height: 40 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: 'var(--primary-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Share2 size={16} color="#fff" />
-          </Box>
-          <Typography fontSize={18} fontWeight={700} color="#f4f4f5">Ontology</Typography>
-        </Box>
-        <Box height="1px" bgcolor="#27273a" />
+          </div>
+          <span style={{ fontSize: 18, fontWeight: 700, color: '#f4f4f5' }}>Ontology</span>
+        </div>
+        <div style={{ height: 1, backgroundColor: '#27273a' }} />
 
         <SectionLabel>ACTIVE AGENT</SectionLabel>
-        <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: `${ACCENT}15`, border: 1, borderColor: ACCENT, display: 'flex', flexDirection: 'column', gap: 1 }}>
-          <Box display="flex" alignItems="center" gap={1}>
-            <Box width={28} height={28} borderRadius={1.5} bgcolor={ACCENT} display="flex" alignItems="center" justifyContent="center">
+        <div style={{ padding: 12, borderRadius: 8, backgroundColor: `${ACCENT}15`, border: `1px solid ${ACCENT}`, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 28, height: 28, borderRadius: 6, backgroundColor: ACCENT, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Fingerprint size={14} color="#fff" />
-            </Box>
-            <Typography fontSize={14} fontWeight={600} color="#f4f4f5">Pattern Agent</Typography>
-          </Box>
-          <Box display="flex" alignItems="center" gap={0.75}>
-            <Box width={8} height={8} borderRadius={1} bgcolor="#22c55e" />
-            <Typography fontSize={11} sx={{ color: '#22c55e' }}>Running</Typography>
-          </Box>
-        </Box>
-        <Box height="1px" bgcolor="#27273a" />
+            </div>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#f4f4f5' }}>Pattern Agent</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#22c55e' }} />
+            <span style={{ fontSize: 11, color: '#22c55e' }}>Running</span>
+          </div>
+        </div>
+        <div style={{ height: 1, backgroundColor: '#27273a' }} />
 
         <SectionLabel>EXECUTION STEPS</SectionLabel>
         {executionSteps.map((step) => (
-          <Box key={step.number} sx={{ px: 1.25, py: 1, borderRadius: 1.5, bgcolor: '#22c55e15', display: 'flex', alignItems: 'center', gap: 1.25, ...(step.active ? { border: 1, borderColor: '#22c55e' } : {}) }}>
-            <Typography fontSize={12} sx={{ color: '#22c55e' }}>✓</Typography>
-            <Typography fontSize={12} sx={{ color: '#22c55e' }}>{step.number}. {step.label}</Typography>
-          </Box>
+          <div key={step.number} style={{ paddingLeft: 10, paddingRight: 10, paddingTop: 8, paddingBottom: 8, borderRadius: 6, backgroundColor: '#22c55e15', display: 'flex', alignItems: 'center', gap: 10, ...(step.active ? { border: '1px solid #22c55e' } : {}) }}>
+            <span style={{ fontSize: 12, color: '#22c55e' }}>✓</span>
+            <span style={{ fontSize: 12, color: '#22c55e' }}>{step.number}. {step.label}</span>
+          </div>
         ))}
-      </Box>
+      </div>
 
       {/* ── Chat Panel ── */}
-      <Box flex={1} display="flex" flexDirection="column" minWidth={0}>
-        <Box display="flex" alignItems="center" justifyContent="space-between" height={76} px={3} sx={{ bgcolor: '#0d0d14', flexShrink: 0 }}>
-          <Typography fontSize={18} fontWeight={600} color="#f4f4f5">Pattern Recognition</Typography>
-          <Box display="flex" gap={1.5}>
-            <Button size="small" variant="outlined" startIcon={<Download size={14} />}
-              sx={{ borderColor: '#27273a', color: '#a1a1aa', bgcolor: '#1a1a24', textTransform: 'none', fontSize: 13, borderRadius: 1.5, '&:hover': { borderColor: '#71717a', bgcolor: '#1a1a24' } }}>Export Log</Button>
-            <Button size="small" variant="outlined" startIcon={<Square size={14} />}
-              sx={{ borderColor: '#ef4444', color: '#ef4444', bgcolor: '#ef444420', textTransform: 'none', fontSize: 13, borderRadius: 1.5, '&:hover': { borderColor: '#ef4444', bgcolor: '#ef444430' } }}>Stop Agent</Button>
-          </Box>
-        </Box>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 76, paddingLeft: 24, paddingRight: 24, backgroundColor: '#0d0d14', flexShrink: 0 }}>
+          <span style={{ fontSize: 18, fontWeight: 600, color: '#f4f4f5' }}>Pattern Recognition</span>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <Button icon={<Download size={14} />}>Export Log</Button>
+            <Button danger icon={<Square size={14} />}>Stop Agent</Button>
+          </div>
+        </div>
 
-        <Box flex={1} overflow="auto" px={3} py={3} display="flex" flexDirection="column" gap={2.5} sx={{ bgcolor: '#0a0a0f' }}>
+        <div style={{ flex: 1, overflow: 'auto', paddingLeft: 24, paddingRight: 24, paddingTop: 24, paddingBottom: 24, display: 'flex', flexDirection: 'column', gap: 20, backgroundColor: '#0a0a0f' }}>
           {/* ── Message 1: Configure scan ── */}
           <MessageBubble name="Pattern Agent" time="4 min ago" accent={ACCENT}>
-            <Typography fontSize={14} color="#f4f4f5" lineHeight={1.5}>
+            <span style={{ fontSize: 14, color: '#f4f4f5', lineHeight: 1.5 }}>
               I can scan for various pattern types across your topology. What should I look for?
-            </Typography>
+            </span>
             <ContentCard title="Pattern Categories">
               <OptionRow selected label="Structural Patterns" description="Recurring topology structures (star, chain, mesh, hub-spoke)" />
               <OptionRow selected label="Failure Patterns" description="Recurring failure sequences and cascading failure chains" />
@@ -154,59 +150,59 @@ export default function PatternAgentPage() {
           </MessageBubble>
 
           {/* ── User Message ── */}
-          <Box display="flex" gap={1.5} justifyContent="flex-end">
-            <Box sx={{ maxWidth: '70%', borderRadius: '12px 12px 0 12px', bgcolor: `${ACCENT}20`, border: 1, borderColor: ACCENT, px: 2, py: 1.5, display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-              <Box display="flex" alignItems="center" gap={1}>
-                <Typography fontSize={13} fontWeight={600} sx={{ color: ACCENT }}>You</Typography>
-                <Typography fontSize={11} sx={{ color: '#71717a' }}>3 min ago</Typography>
-              </Box>
-              <Typography fontSize={14} color="#f4f4f5" lineHeight={1.5} textAlign="right">
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+            <div style={{ maxWidth: '70%', borderRadius: '12px 12px 0 12px', backgroundColor: `${ACCENT}20`, border: `1px solid ${ACCENT}`, paddingLeft: 16, paddingRight: 16, paddingTop: 12, paddingBottom: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: ACCENT }}>You</span>
+                <span style={{ fontSize: 11, color: '#71717a' }}>3 min ago</span>
+              </div>
+              <span style={{ fontSize: 14, color: '#f4f4f5', lineHeight: 1.5, textAlign: 'right' }}>
                 Scan for all selected patterns over the last 7 days.
-              </Typography>
-            </Box>
-            <Box width={36} height={36} borderRadius="50%" bgcolor="#3b82f6" display="flex" alignItems="center" justifyContent="center" flexShrink={0}>
-              <Typography fontSize={14} fontWeight={700} color="#fff">U</Typography>
-            </Box>
-          </Box>
+              </span>
+            </div>
+            <div style={{ width: 36, height: 36, borderRadius: '50%', backgroundColor: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>U</span>
+            </div>
+          </div>
 
           {/* ── Message 2: Progress ── */}
           <MessageBubble name="Pattern Agent" accent={ACCENT} badge={{ label: 'SCANNING', color: ACCENT }}>
-            <Typography fontSize={14} color="#f4f4f5" lineHeight={1.5}>
+            <span style={{ fontSize: 14, color: '#f4f4f5', lineHeight: 1.5 }}>
               Scanning topology and historical data for recurring patterns...
-            </Typography>
+            </span>
             <ContentCard title="Scan Progress">
               {progressSteps.map((step) => (
-                <Box key={step.label} display="flex" alignItems="center" gap={1.25} width="100%">
-                  <Typography fontSize={12} sx={{ color: '#22c55e' }}>✓</Typography>
-                  <Typography fontSize={13} sx={{ color: '#22c55e', flex: 1 }}>{step.label}</Typography>
-                  <Typography fontSize={11} fontFamily="JetBrains Mono, monospace" sx={{ color: '#71717a' }}>{step.detail}</Typography>
-                </Box>
+                <div key={step.label} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%' }}>
+                  <span style={{ fontSize: 12, color: '#22c55e' }}>✓</span>
+                  <span style={{ fontSize: 13, color: '#22c55e', flex: 1 }}>{step.label}</span>
+                  <span style={{ fontSize: 11, fontFamily: 'JetBrains Mono, monospace', color: '#71717a' }}>{step.detail}</span>
+                </div>
               ))}
-              <Box display="flex" flexDirection="column" gap={0.75} width="100%">
-                <Box height={6} borderRadius={0.75} bgcolor="#1a1a24" overflow="hidden">
-                  <Box height="100%" width="100%" borderRadius={0.75} bgcolor="#22c55e" />
-                </Box>
-                <Typography fontSize={11} sx={{ color: '#22c55e' }}>Scan complete - 100%</Typography>
-              </Box>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, width: '100%' }}>
+                <div style={{ height: 6, borderRadius: 3, backgroundColor: '#1a1a24', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: '100%', borderRadius: 3, backgroundColor: '#22c55e' }} />
+                </div>
+                <span style={{ fontSize: 11, color: '#22c55e' }}>Scan complete - 100%</span>
+              </div>
             </ContentCard>
           </MessageBubble>
 
           {/* ── Message 3: Results ── */}
           <MessageBubble name="Pattern Agent" accent={ACCENT} badge={{ label: 'COMPLETED', color: '#22c55e' }}>
-            <Typography fontSize={14} color="#f4f4f5" lineHeight={1.5}>
+            <span style={{ fontSize: 14, color: '#f4f4f5', lineHeight: 1.5 }}>
               Pattern scan complete. Detected 4 significant patterns and 3 anomalies across the topology:
-            </Typography>
-            <Box sx={{ borderRadius: 3, bgcolor: '#111118', p: 2.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Box display="flex" justifyContent="space-between" alignItems="center">
-                <Typography fontSize={14} fontWeight={600} color="#f4f4f5">Pattern Recognition Report</Typography>
-                <Typography fontSize={11} sx={{ color: '#71717a' }}>Last 7 days · 31 nodes</Typography>
-              </Box>
+            </span>
+            <div style={{ borderRadius: 12, backgroundColor: '#111118', padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 14, fontWeight: 600, color: '#f4f4f5' }}>Pattern Recognition Report</span>
+                <span style={{ fontSize: 11, color: '#71717a' }}>Last 7 days · 31 nodes</span>
+              </div>
 
-              <Box display="flex" gap={1.5}>
+              <div style={{ display: 'flex', gap: 12 }}>
                 <SummaryCard value="2" label="Structural" color={ACCENT} />
                 <SummaryCard value="1" label="Failure" color="#ef4444" />
                 <SummaryCard value="1" label="Load" color="#f59e0b" />
-              </Box>
+              </div>
 
               {/* Pattern 1: Structural */}
               <SectionLabel>STRUCTURAL PATTERNS</SectionLabel>
@@ -254,19 +250,19 @@ export default function PatternAgentPage() {
                 occurrences="3× in 7 days"
                 color="#ef4444"
               >
-                <Box sx={{ borderRadius: 2, bgcolor: '#0a0a0f', p: 1.5, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <div style={{ borderRadius: 8, backgroundColor: '#0a0a0f', padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {[
                     { time: 'Mon 14:23', chain: 'cache-02 (OOM) → api-01 (timeout) → lb-01 (5xx)', dur: '12min' },
                     { time: 'Wed 14:45', chain: 'cache-02 (OOM) → api-01 (timeout) → lb-01 (5xx)', dur: '8min' },
                     { time: 'Fri 15:02', chain: 'cache-02 (OOM) → api-01 (timeout) → lb-01 (5xx)', dur: '15min' },
                   ].map((e, i) => (
-                    <Box key={i} display="flex" alignItems="center" gap={1}>
-                      <Typography fontSize={9} fontFamily="JetBrains Mono, monospace" sx={{ color: '#71717a', width: 64 }}>{e.time}</Typography>
-                      <Typography fontSize={9} fontFamily="JetBrains Mono, monospace" sx={{ color: '#ef4444', flex: 1 }}>{e.chain}</Typography>
-                      <Typography fontSize={9} fontFamily="JetBrains Mono, monospace" sx={{ color: '#fbbf24' }}>{e.dur}</Typography>
-                    </Box>
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 9, fontFamily: 'JetBrains Mono, monospace', color: '#71717a', width: 64 }}>{e.time}</span>
+                      <span style={{ fontSize: 9, fontFamily: 'JetBrains Mono, monospace', color: '#ef4444', flex: 1 }}>{e.chain}</span>
+                      <span style={{ fontSize: 9, fontFamily: 'JetBrains Mono, monospace', color: '#fbbf24' }}>{e.dur}</span>
+                    </div>
                   ))}
-                </Box>
+                </div>
               </PatternCard>
 
               {/* Pattern 3: Load */}
@@ -279,19 +275,19 @@ export default function PatternAgentPage() {
                 occurrences="5× in 7 days"
                 color="#f59e0b"
               >
-                <Box sx={{ borderRadius: 2, bgcolor: '#0a0a0f', p: 1.5, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 0.5, height: 60 }}>
+                <div style={{ borderRadius: 8, backgroundColor: '#0a0a0f', padding: 12, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 4, height: 60 }}>
                   {[20, 25, 30, 35, 82, 88, 75, 45, 35, 30, 28, 25].map((h, i) => (
-                    <Box key={i} sx={{
-                      width: 14, height: `${h}%`, borderRadius: 0.5,
-                      bgcolor: h > 70 ? '#f59e0b' : '#27273a',
+                    <div key={i} style={{
+                      width: 14, height: `${h}%`, borderRadius: 2,
+                      backgroundColor: h > 70 ? '#f59e0b' : '#27273a',
                     }} />
                   ))}
-                </Box>
-                <Box display="flex" justifyContent="space-between" px={1.5}>
-                  <Typography fontSize={8} sx={{ color: '#71717a' }}>06:00</Typography>
-                  <Typography fontSize={8} fontWeight={600} sx={{ color: '#f59e0b' }}>09:00</Typography>
-                  <Typography fontSize={8} sx={{ color: '#71717a' }}>12:00</Typography>
-                </Box>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', paddingLeft: 12, paddingRight: 12 }}>
+                  <span style={{ fontSize: 8, color: '#71717a' }}>06:00</span>
+                  <span style={{ fontSize: 8, fontWeight: 600, color: '#f59e0b' }}>09:00</span>
+                  <span style={{ fontSize: 8, color: '#71717a' }}>12:00</span>
+                </div>
               </PatternCard>
 
               {/* Recommendations */}
@@ -302,62 +298,60 @@ export default function PatternAgentPage() {
                 description="Recurring OOM at 14:00–16:00 suggests scheduled workload. Pre-scale memory or schedule eviction before peak." />
               <RecommendationRow number={3} title="Pre-scale servers before 09:00 UTC"
                 description="Predictable daily spike allows proactive scaling. Spin up srv-13/14 at 08:45 and drain after 10:00." />
-            </Box>
+            </div>
           </MessageBubble>
 
           {/* ── Message 4: Actions ── */}
           <MessageBubble name="Pattern Agent" time="just now" accent={ACCENT}>
-            <Typography fontSize={14} color="#f4f4f5" lineHeight={1.5}>
+            <span style={{ fontSize: 14, color: '#f4f4f5', lineHeight: 1.5 }}>
               What would you like to do next?
-            </Typography>
-            <Box display="flex" gap={1.25} flexWrap="wrap">
+            </span>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               <ActionButton label="Scan Longer Period" primary accent={ACCENT} />
               <ActionButton label="Export Report" />
               <ActionButton label="Set Up Alerts" />
               <ActionButton label="Auto-remediate" />
-            </Box>
+            </div>
           </MessageBubble>
-        </Box>
+        </div>
 
         {/* Input Area */}
-        <Box display="flex" alignItems="center" gap={1.5} px={3} py={2} sx={{ bgcolor: '#0d0d14', flexShrink: 0 }}>
-          <TextField fullWidth size="small" placeholder="Describe a pattern to search for..."
-            value={input} onChange={(e) => setInput(e.target.value)}
-            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#1a1a24', fontSize: 14, '& fieldset': { borderColor: '#27273a' }, '&:hover fieldset': { borderColor: '#71717a' } } }} />
-          <Button variant="contained"
-            sx={{ bgcolor: ACCENT, '&:hover': { bgcolor: '#db2777' }, textTransform: 'none', fontWeight: 600, fontSize: 14, borderRadius: 2, px: 2.5, py: 1.5, whiteSpace: 'nowrap', color: '#fff' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingLeft: 24, paddingRight: 24, paddingTop: 16, paddingBottom: 16, backgroundColor: '#0d0d14', flexShrink: 0 }}>
+          <Input style={{ flex: 1 }} placeholder="Describe a pattern to search for..."
+            value={input} onChange={(e) => setInput(e.target.value)} />
+          <Button type="primary">
             Scan Patterns
           </Button>
-        </Box>
-      </Box>
+        </div>
+      </div>
 
       {/* ── Right Context Panel ── */}
-      <Box width={340} flexShrink={0} display="flex" flexDirection="column" gap={2} p={2.5} sx={{ bgcolor: '#0d0d14', overflow: 'auto' }}>
-        <Typography fontSize={16} fontWeight={600} color="#f4f4f5">Pattern Context</Typography>
+      <div style={{ width: 340, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 16, padding: 20, backgroundColor: '#0d0d14', overflow: 'auto' }}>
+        <span style={{ fontSize: 16, fontWeight: 600, color: '#f4f4f5' }}>Pattern Context</span>
 
-        <Box sx={{ borderRadius: 2.5, bgcolor: '#111118', p: 1.75, display: 'flex', flexDirection: 'column', gap: 1 }}>
-          <Typography fontSize={11} sx={{ color: '#71717a' }}>Scan Window</Typography>
-          <Typography fontSize={14} fontWeight={600} sx={{ color: ACCENT }}>Last 7 Days</Typography>
-          <Typography fontSize={11} sx={{ color: '#a1a1aa' }}>Jan 28 – Feb 04, 2025</Typography>
-        </Box>
+        <div style={{ borderRadius: 10, backgroundColor: '#111118', padding: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <span style={{ fontSize: 11, color: '#71717a' }}>Scan Window</span>
+          <span style={{ fontSize: 14, fontWeight: 600, color: ACCENT }}>Last 7 Days</span>
+          <span style={{ fontSize: 11, color: '#a1a1aa' }}>Jan 28 – Feb 04, 2025</span>
+        </div>
 
-        <Box sx={{ borderRadius: 2.5, bgcolor: '#111118', p: 1.75, display: 'flex', flexDirection: 'column', gap: 1 }}>
-          <Typography fontSize={11} sx={{ color: '#71717a' }}>Data Points</Typography>
-          <Box display="flex" justifyContent="space-between">
-            <Typography fontSize={13} sx={{ color: '#a1a1aa' }}>Nodes scanned</Typography>
-            <Typography fontSize={13} fontWeight={600} fontFamily="JetBrains Mono, monospace" sx={{ color: ACCENT }}>31</Typography>
-          </Box>
-          <Box display="flex" justifyContent="space-between">
-            <Typography fontSize={13} sx={{ color: '#a1a1aa' }}>Events analyzed</Typography>
-            <Typography fontSize={13} fontWeight={600} fontFamily="JetBrains Mono, monospace" sx={{ color: ACCENT }}>48</Typography>
-          </Box>
-          <Box display="flex" justifyContent="space-between">
-            <Typography fontSize={13} sx={{ color: '#a1a1aa' }}>Metrics sampled</Typography>
-            <Typography fontSize={13} fontWeight={600} fontFamily="JetBrains Mono, monospace" sx={{ color: ACCENT }}>2,016</Typography>
-          </Box>
-        </Box>
+        <div style={{ borderRadius: 10, backgroundColor: '#111118', padding: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <span style={{ fontSize: 11, color: '#71717a' }}>Data Points</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 13, color: '#a1a1aa' }}>Nodes scanned</span>
+            <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'JetBrains Mono, monospace', color: ACCENT }}>31</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 13, color: '#a1a1aa' }}>Events analyzed</span>
+            <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'JetBrains Mono, monospace', color: ACCENT }}>48</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 13, color: '#a1a1aa' }}>Metrics sampled</span>
+            <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'JetBrains Mono, monospace', color: ACCENT }}>2,016</span>
+          </div>
+        </div>
 
-        <Box height="1px" bgcolor="#27273a" />
+        <div style={{ height: 1, backgroundColor: '#27273a' }} />
 
         <SectionLabel>DETECTED PATTERNS</SectionLabel>
         {[
@@ -366,29 +360,29 @@ export default function PatternAgentPage() {
           { name: 'Cascade Failure', confidence: '78%', type: 'Failure', color: '#ef4444' },
           { name: 'Daily Load Spike', confidence: '95%', type: 'Load', color: '#f59e0b' },
         ].map((p) => (
-          <Box key={p.name} sx={{ px: 1.5, py: 1, borderRadius: 1.5, bgcolor: `${p.color}10`, display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Box width={8} height={8} borderRadius={1} bgcolor={p.color} />
-            <Box flex={1}>
-              <Typography fontSize={11} sx={{ color: '#a1a1aa' }}>{p.name}</Typography>
-              <Typography fontSize={9} sx={{ color: '#71717a' }}>{p.type}</Typography>
-            </Box>
-            <Typography fontSize={10} fontFamily="JetBrains Mono, monospace" fontWeight={600} sx={{ color: p.color }}>{p.confidence}</Typography>
-          </Box>
+          <div key={p.name} style={{ paddingLeft: 12, paddingRight: 12, paddingTop: 8, paddingBottom: 8, borderRadius: 6, backgroundColor: `${p.color}10`, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: p.color }} />
+            <div style={{ flex: 1 }}>
+              <span style={{ fontSize: 11, color: '#a1a1aa', display: 'block' }}>{p.name}</span>
+              <span style={{ fontSize: 9, color: '#71717a', display: 'block' }}>{p.type}</span>
+            </div>
+            <span style={{ fontSize: 10, fontFamily: 'JetBrains Mono, monospace', fontWeight: 600, color: p.color }}>{p.confidence}</span>
+          </div>
         ))}
 
-        <Box height="1px" bgcolor="#27273a" />
+        <div style={{ height: 1, backgroundColor: '#27273a' }} />
 
-        <Box sx={{ borderRadius: 2.5, bgcolor: `${ACCENT}10`, border: 1, borderColor: ACCENT, p: 1.75, display: 'flex', flexDirection: 'column', gap: 1 }}>
-          <Typography fontSize={10} fontWeight={600} letterSpacing={1} sx={{ color: ACCENT }}>SCAN COMPLETE</Typography>
+        <div style={{ borderRadius: 10, backgroundColor: `${ACCENT}10`, border: `1px solid ${ACCENT}`, padding: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1, color: ACCENT }}>SCAN COMPLETE</span>
           {executionStats.map((s) => (
-            <Box key={s.label} display="flex" justifyContent="space-between">
-              <Typography fontSize={12} sx={{ color: '#a1a1aa' }}>{s.label}</Typography>
-              <Typography fontSize={12} fontWeight={600} fontFamily="JetBrains Mono, monospace" sx={{ color: s.valueColor ?? '#f4f4f5' }}>{s.value}</Typography>
-            </Box>
+            <div key={s.label} style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 12, color: '#a1a1aa' }}>{s.label}</span>
+              <span style={{ fontSize: 12, fontWeight: 600, fontFamily: 'JetBrains Mono, monospace', color: s.valueColor ?? '#f4f4f5' }}>{s.value}</span>
+            </div>
           ))}
-        </Box>
-      </Box>
-    </Box>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -397,55 +391,55 @@ export default function PatternAgentPage() {
    ══════════════════════════════════════════ */
 
 function MessageBubble({ name, time, badge, children, accent }: { name: string; time?: string; accent?: string; badge?: { label: string; color: string }; children: React.ReactNode }) {
-  const a = accent ?? '#8b5cf6';
+  const a = accent ?? 'var(--primary-color)';
   return (
-    <Box display="flex" gap={1.5}>
-      <Box width={36} height={36} borderRadius="50%" bgcolor={a} display="flex" alignItems="center" justifyContent="center" flexShrink={0}>
-        <Typography fontSize={12} fontWeight={700} color="#fff">AI</Typography>
-      </Box>
-      <Box flex={1} display="flex" flexDirection="column" gap={1}>
-        <Box display="flex" alignItems="center" gap={1}>
-          <Typography fontSize={14} fontWeight={600} sx={{ color: a }}>{name}</Typography>
+    <div style={{ display: 'flex', gap: 12 }}>
+      <div style={{ width: 36, height: 36, borderRadius: '50%', backgroundColor: a, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>AI</span>
+      </div>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: a }}>{name}</span>
           {badge && <Chip label={badge.label} color={badge.color} />}
-          {time && <Typography fontSize={11} sx={{ color: '#71717a' }}>{time}</Typography>}
-        </Box>
+          {time && <span style={{ fontSize: 11, color: '#71717a' }}>{time}</span>}
+        </div>
         {children}
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 }
 
 function ContentCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <Box sx={{ borderRadius: 3, bgcolor: '#111118', p: 2, display: 'flex', flexDirection: 'column', gap: 1.25 }}>
-      <Typography fontSize={12} fontWeight={600} sx={{ color: '#71717a' }}>{title}</Typography>
+    <div style={{ borderRadius: 12, backgroundColor: '#111118', padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <span style={{ fontSize: 12, fontWeight: 600, color: '#71717a' }}>{title}</span>
       {children}
-    </Box>
+    </div>
   );
 }
 
 function OptionRow({ label, description, selected }: { label: string; description: string; selected?: boolean }) {
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, px: 1.5, py: 1.25, borderRadius: 2, border: 1, borderColor: selected ? ACCENT : '#27273a', ...(selected ? { bgcolor: `${ACCENT}15` } : {}) }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingLeft: 12, paddingRight: 12, paddingTop: 10, paddingBottom: 10, borderRadius: 8, border: `1px solid ${selected ? ACCENT : '#27273a'}`, ...(selected ? { backgroundColor: `${ACCENT}15` } : {}) }}>
       {selected ? (
-        <Box width={18} height={18} borderRadius={1} bgcolor={ACCENT} display="flex" alignItems="center" justifyContent="center"><Check size={12} color="#fff" /></Box>
+        <div style={{ width: 18, height: 18, borderRadius: 4, backgroundColor: ACCENT, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Check size={12} color="#fff" /></div>
       ) : (
-        <Box width={18} height={18} borderRadius={1} sx={{ border: 1, borderColor: '#71717a' }} />
+        <div style={{ width: 18, height: 18, borderRadius: 4, border: '1px solid #71717a' }} />
       )}
-      <Box display="flex" flexDirection="column" gap={0.25}>
-        <Typography fontSize={13} fontWeight={selected ? 600 : 400} sx={{ color: selected ? '#f4f4f5' : '#a1a1aa' }}>{label}</Typography>
-        <Typography fontSize={11} sx={{ color: selected ? '#a1a1aa' : '#71717a' }}>{description}</Typography>
-      </Box>
-    </Box>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={{ fontSize: 13, fontWeight: selected ? 600 : 400, color: selected ? '#f4f4f5' : '#a1a1aa' }}>{label}</span>
+        <span style={{ fontSize: 11, color: selected ? '#a1a1aa' : '#71717a' }}>{description}</span>
+      </div>
+    </div>
   );
 }
 
 function SummaryCard({ value, label, color }: { value: string; label: string; color: string }) {
   return (
-    <Box sx={{ flex: 1, borderRadius: 2, bgcolor: `${color}15`, p: 1.5, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
-      <Typography fontSize={28} fontWeight={700} fontFamily="JetBrains Mono, monospace" sx={{ color }}>{value}</Typography>
-      <Typography fontSize={11} sx={{ color }}>{label}</Typography>
-    </Box>
+    <div style={{ flex: 1, borderRadius: 8, backgroundColor: `${color}15`, padding: 12, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+      <span style={{ fontSize: 28, fontWeight: 700, fontFamily: 'JetBrains Mono, monospace', color }}>{value}</span>
+      <span style={{ fontSize: 11, color }}>{label}</span>
+    </div>
   );
 }
 
@@ -453,45 +447,45 @@ function PatternCard({ number, title, confidence, description, occurrences, colo
   number: number; title: string; confidence: number; description: string; occurrences: string; color: string; children?: React.ReactNode;
 }) {
   return (
-    <Box sx={{ borderRadius: 2.5, bgcolor: `${color}10`, border: 1, borderColor: `${color}50`, p: 1.75, display: 'flex', flexDirection: 'column', gap: 1.25 }}>
-      <Box display="flex" justifyContent="space-between" alignItems="center">
-        <Box display="flex" alignItems="center" gap={1}>
-          <Box width={24} height={24} borderRadius="50%" bgcolor={color} display="flex" alignItems="center" justifyContent="center">
-            <Typography fontSize={12} fontWeight={600} color="#fff">{number}</Typography>
-          </Box>
-          <Typography fontSize={13} fontWeight={600} color="#f4f4f5">{title}</Typography>
-        </Box>
+    <div style={{ borderRadius: 10, backgroundColor: `${color}10`, border: `1px solid ${color}50`, padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ width: 24, height: 24, borderRadius: '50%', backgroundColor: color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>{number}</span>
+          </div>
+          <span style={{ fontSize: 13, fontWeight: 600, color: '#f4f4f5' }}>{title}</span>
+        </div>
         <Chip label={`${confidence}%`} color={color} />
-      </Box>
-      <Typography fontSize={12} color="#a1a1aa" lineHeight={1.5}>{description}</Typography>
+      </div>
+      <span style={{ fontSize: 12, color: '#a1a1aa', lineHeight: 1.5 }}>{description}</span>
       {children}
-      <Box display="flex" alignItems="center" gap={0.75}>
-        <Typography fontSize={10} sx={{ color: '#71717a' }}>Occurrences:</Typography>
-        <Typography fontSize={10} fontFamily="JetBrains Mono, monospace" fontWeight={600} sx={{ color }}>{occurrences}</Typography>
-      </Box>
-    </Box>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span style={{ fontSize: 10, color: '#71717a' }}>Occurrences:</span>
+        <span style={{ fontSize: 10, fontFamily: 'JetBrains Mono, monospace', fontWeight: 600, color }}>{occurrences}</span>
+      </div>
+    </div>
   );
 }
 
 function RecommendationRow({ number, title, description }: { number: number; title: string; description: string }) {
   return (
-    <Box sx={{ display: 'flex', gap: 1.25, p: 1.5, borderRadius: 2, bgcolor: `${ACCENT}10` }}>
-      <Box width={24} height={24} borderRadius="50%" bgcolor={ACCENT} display="flex" alignItems="center" justifyContent="center" flexShrink={0}>
-        <Typography fontSize={12} fontWeight={600} color="#fff">{number}</Typography>
-      </Box>
-      <Box display="flex" flexDirection="column" gap={0.5}>
-        <Typography fontSize={13} fontWeight={600} color="#f4f4f5">{title}</Typography>
-        <Typography fontSize={12} color="#a1a1aa" lineHeight={1.4}>{description}</Typography>
-      </Box>
-    </Box>
+    <div style={{ display: 'flex', gap: 10, padding: 12, borderRadius: 8, backgroundColor: `${ACCENT}10` }}>
+      <div style={{ width: 24, height: 24, borderRadius: '50%', backgroundColor: ACCENT, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <span style={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>{number}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: '#f4f4f5' }}>{title}</span>
+        <span style={{ fontSize: 12, color: '#a1a1aa', lineHeight: 1.4 }}>{description}</span>
+      </div>
+    </div>
   );
 }
 
 function ActionButton({ label, primary, accent }: { label: string; primary?: boolean; accent?: string }) {
-  const a = accent ?? '#8b5cf6';
+  const a = accent ?? 'var(--primary-color)';
   return (
-    <Box sx={{ px: 2, py: 1.25, borderRadius: 2, bgcolor: primary ? `${a}20` : '#1a1a24', border: 1, borderColor: primary ? a : '#27273a', cursor: 'pointer', '&:hover': { borderColor: primary ? a : '#71717a' } }}>
-      <Typography fontSize={13} sx={{ color: primary ? a : '#a1a1aa' }}>{label}</Typography>
-    </Box>
+    <div style={{ paddingLeft: 16, paddingRight: 16, paddingTop: 10, paddingBottom: 10, borderRadius: 8, backgroundColor: primary ? `${a}20` : '#1a1a24', border: `1px solid ${primary ? a : '#27273a'}`, cursor: 'pointer' }}>
+      <span style={{ fontSize: 13, color: primary ? a : '#a1a1aa' }}>{label}</span>
+    </div>
   );
 }

@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
+import { Breadcrumb, Typography, Button } from 'antd';
 import {
-  Box, Breadcrumbs, Link, Typography, Button,
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-} from '@mui/material';
-import {
-  ChevronRight, ChevronLeft, BarChart2, DollarSign, ShoppingCart, Users, Target,
-  TrendingUp, TrendingDown, Calendar, Timer, User, ChartLine,
-  Table as TableIcon, FileText, Globe, Edit, Download, Share2, Trash2,
+  ChevronRight, ChevronLeft, Activity, DollarSign,
+  ShoppingCart, Users, Target,
+  TrendingUp, TrendingDown, Calendar, Clock,
+  User, LineChart, Table, FileText,
+  Globe, Pencil, Download, Share2,
+  Trash2,
 } from 'lucide-react';
 
 /* ── Types ── */
@@ -45,7 +45,7 @@ const statusColors: Record<RowStatus, { color: string; bg: string }> = {
 
 /* ── Mock data ── */
 const metrics: MetricCard[] = [
-  { label: 'Total Revenue', value: '$1,284,500', change: '+12.5% from last month', positive: true, icon: DollarSign, iconColor: '#8b5cf6' },
+  { label: 'Total Revenue', value: '$1,284,500', change: '+12.5% from last month', positive: true, icon: DollarSign, iconColor: 'var(--primary-color)' },
   { label: 'Total Orders', value: '8,432', change: '+8.2% from last month', positive: true, icon: ShoppingCart, iconColor: '#22d3ee' },
   { label: 'Avg. Order Value', value: '$152.40', change: '-3.1% from last month', positive: false, icon: Users, iconColor: '#f472b6' },
   { label: 'Conversion Rate', value: '3.24%', change: '+1.8% from last month', positive: true, icon: Target, iconColor: '#4ade80' },
@@ -122,78 +122,79 @@ function TrendChart() {
   const gridYs = [0, 1, 2, 3, 4].map((i) => pad + (i / 4) * (chartH - pad));
 
   return (
-    <Box
-      sx={{
-        borderRadius: 3,
-        bgcolor: '#111118',
-        border: 1,
-        borderColor: 'divider',
+    <div
+      style={{
+        borderRadius: 12,
+        background: '#111118',
+        border: '1px solid rgba(255,255,255,0.12)',
         overflow: 'hidden',
         flexShrink: 0,
       }}
     >
       {/* Header */}
-      <Box
-        display="flex" alignItems="center" justifyContent="space-between"
-        sx={{ px: 2.5, py: 2, borderBottom: 1, borderColor: 'divider' }}
+      <div
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.12)',
+        }}
       >
-        <Box display="flex" alignItems="center" gap={1}>
-          <ChartLine size={18} color="#8b5cf6" />
-          <Typography fontSize={15} fontWeight={600}>Revenue Trend</Typography>
-        </Box>
-        <Box display="flex" gap={1}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <LineChart size={18} color="var(--primary-color)" />
+          <Typography.Text style={{ fontSize: 15, fontWeight: 600 }}>Revenue Trend</Typography.Text>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
           {['Week', 'Month', 'Year'].map((tab, i) => (
-            <Box
+            <div
               key={tab}
-              sx={{
-                px: 1.5, py: 0.75, borderRadius: 1.5, cursor: 'pointer',
+              style={{
+                padding: '6px 12px', borderRadius: 6, cursor: 'pointer',
                 ...(i === 0
-                  ? { bgcolor: 'rgba(139,92,246,0.12)', color: '#c4b5fd' }
+                  ? { background: 'rgba(139,92,246,0.12)', color: '#c4b5fd' }
                   : { color: '#71717a' }),
                 fontSize: 12, fontWeight: i === 0 ? 500 : 400,
               }}
             >
-              <Typography fontSize={12} fontWeight={i === 0 ? 500 : 400} color="inherit">
+              <Typography.Text style={{ fontSize: 12, fontWeight: i === 0 ? 500 : 400, color: 'inherit' }}>
                 {tab}
-              </Typography>
-            </Box>
+              </Typography.Text>
+            </div>
           ))}
-        </Box>
-      </Box>
+        </div>
+      </div>
 
       {/* Legend */}
-      <Box display="flex" gap={3} px={2.5} py={1} alignItems="center">
-        <Box display="flex" gap={1} alignItems="center">
-          <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#8b5cf6' }} />
-          <Typography fontSize={12} color="text.secondary">Revenue</Typography>
-        </Box>
-        <Box display="flex" gap={1} alignItems="center">
-          <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#22d3ee' }} />
-          <Typography fontSize={12} color="text.secondary">Profit</Typography>
-        </Box>
-      </Box>
+      <div style={{ display: 'flex', gap: 24, padding: '8px 20px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--primary-color)' }} />
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>Revenue</Typography.Text>
+        </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#22d3ee' }} />
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>Profit</Typography.Text>
+        </div>
+      </div>
 
       {/* Chart body */}
-      <Box display="flex">
+      <div style={{ display: 'flex' }}>
         {/* Y Axis */}
-        <Box
-          sx={{
+        <div
+          style={{
             width: 52, display: 'flex', flexDirection: 'column',
-            justifyContent: 'space-between', py: '10px', pl: 2, pr: 0,
+            justifyContent: 'space-between', padding: '10px 0 10px 16px',
             height: chartH + 28,
           }}
         >
           {yLabels.map((l) => (
-            <Typography key={l} fontSize={11} color="#52525b" textAlign="right">
+            <Typography.Text key={l} style={{ fontSize: 11, color: '#52525b', textAlign: 'right' }}>
               {l}
-            </Typography>
+            </Typography.Text>
           ))}
-        </Box>
+        </div>
 
         {/* Plot + X Axis */}
-        <Box flex={1} display="flex" flexDirection="column">
-          <Box
-            sx={{ position: 'relative', width: '100%', height: chartH, overflow: 'hidden' }}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <div
+            style={{ position: 'relative', width: '100%', height: chartH, overflow: 'hidden' }}
             onMouseLeave={() => setHoverIdx(null)}
           >
             <svg
@@ -204,8 +205,8 @@ function TrendChart() {
             >
               <defs>
                 <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.25} />
-                  <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0} />
+                  <stop offset="0%" stopColor="var(--primary-color)" stopOpacity={0.25} />
+                  <stop offset="100%" stopColor="var(--primary-color)" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="profGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.18} />
@@ -223,7 +224,7 @@ function TrendChart() {
               <path d={profArea} fill="url(#profGrad)" />
 
               {/* Lines */}
-              <path d={revPath} fill="none" stroke="#8b5cf6" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
+              <path d={revPath} fill="none" stroke="var(--primary-color)" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
               <path d={profPath} fill="none" stroke="#22d3ee" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
 
               {/* Hover hit areas */}
@@ -250,8 +251,8 @@ function TrendChart() {
                 const py = toY(profitData[hoverIdx], chartH, pad);
                 return (
                   <g>
-                    <line x1={cx} y1={0} x2={cx} y2={chartH} stroke="#8b5cf650" strokeWidth={1} />
-                    <circle cx={cx} cy={ry} r={6} fill="#8b5cf6" stroke="#111118" strokeWidth={2} />
+                    <line x1={cx} y1={0} x2={cx} y2={chartH} stroke="rgba(var(--primary-rgb), 0.31)" strokeWidth={1} />
+                    <circle cx={cx} cy={ry} r={6} fill="var(--primary-color)" stroke="#111118" strokeWidth={2} />
                     <circle cx={cx} cy={py} r={6} fill="#22d3ee" stroke="#111118" strokeWidth={2} />
                   </g>
                 );
@@ -264,60 +265,62 @@ function TrendChart() {
               const pctX = (cx / chartW) * 100;
               const flipLeft = pctX > 75;
               return (
-                <Box
-                  sx={{
+                <div
+                  style={{
                     position: 'absolute',
                     top: 16,
                     ...(flipLeft ? { right: `${100 - pctX + 2}%` } : { left: `${pctX + 2}%` }),
-                    bgcolor: '#1a1a28',
-                    border: 1,
-                    borderColor: 'divider',
-                    borderRadius: 2,
-                    p: 1.5,
+                    background: '#1a1a28',
+                    border: '1px solid rgba(255,255,255,0.12)',
+                    borderRadius: 8,
+                    padding: 12,
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: 0.75,
+                    gap: 6,
                     boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
                     pointerEvents: 'none',
                     zIndex: 10,
                     minWidth: 160,
                   }}
                 >
-                  <Typography fontSize={11} fontWeight={500} color="#71717a">
+                  <Typography.Text style={{ fontSize: 11, fontWeight: 500, color: '#71717a' }}>
                     {months[hoverIdx]} 2024
-                  </Typography>
-                  <Box display="flex" gap={1} alignItems="center">
-                    <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#8b5cf6' }} />
-                    <Typography fontSize={12} fontWeight={500}>
+                  </Typography.Text>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--primary-color)' }} />
+                    <Typography.Text style={{ fontSize: 12, fontWeight: 500 }}>
                       Revenue: ${(revenueData[hoverIdx] * 1000).toLocaleString()}
-                    </Typography>
-                  </Box>
-                  <Box display="flex" gap={1} alignItems="center">
-                    <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#22d3ee' }} />
-                    <Typography fontSize={12} fontWeight={500}>
+                    </Typography.Text>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#22d3ee' }} />
+                    <Typography.Text style={{ fontSize: 12, fontWeight: 500 }}>
                       Profit: ${(profitData[hoverIdx] * 1000).toLocaleString()}
-                    </Typography>
-                  </Box>
-                </Box>
+                    </Typography.Text>
+                  </div>
+                </div>
               );
             })()}
-          </Box>
+          </div>
 
           {/* X Axis */}
-          <Box display="flex" justifyContent="space-between" px="30px" py={0.5} height={28} alignItems="center">
+          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 30px', height: 28, alignItems: 'center' }}>
             {months.map((m, i) => (
-              <Typography
-                key={m} fontSize={11}
-                color={hoverIdx === i ? '#8b5cf6' : '#52525b'}
-                fontWeight={hoverIdx === i ? 500 : 400}
+              <Typography.Text
+                key={m}
+                style={{
+                  fontSize: 11,
+                  color: hoverIdx === i ? 'var(--primary-color)' : '#52525b',
+                  fontWeight: hoverIdx === i ? 500 : 400,
+                }}
               >
                 {m}
-              </Typography>
+              </Typography.Text>
             ))}
-          </Box>
-        </Box>
-      </Box>
-    </Box>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -332,267 +335,245 @@ export default function ReportDetailPage() {
   return (
     <>
       {/* ── Header ── */}
-      <Box
-        height={64}
-        display="flex"
-        alignItems="center"
-        justifyContent="space-between"
-        px={3}
-        borderBottom={1}
-        borderColor="divider"
+      <div
+        style={{
+          height: 64,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0 24px',
+          borderBottom: '1px solid rgba(255,255,255,0.12)',
+        }}
       >
-        <Breadcrumbs separator={<ChevronRight size={14} />}>
-          <Link underline="hover" color="text.secondary" href="#" onClick={(e) => { e.preventDefault(); navigate('/report-management'); }}>
-            Data
-          </Link>
-          <Link underline="hover" color="text.secondary" href="#" onClick={(e) => { e.preventDefault(); navigate('/report-management'); }}>
-            Report Management
-          </Link>
-          <Typography color="text.primary" fontWeight={500}>
-            Sales Overview
-          </Typography>
-        </Breadcrumbs>
+        <Breadcrumb
+          separator={<ChevronRight size={10} />}
+          items={[
+            { title: <a onClick={(e) => { e.preventDefault(); navigate('/report-management'); }}>Data</a> },
+            { title: <a onClick={(e) => { e.preventDefault(); navigate('/report-management'); }}>Report Management</a> },
+            { title: <Typography.Text strong>Sales Overview</Typography.Text> },
+          ]}
+        />
 
-        <Box display="flex" gap={1}>
-          <Button variant="outlined" size="small" startIcon={<Edit size={14} />}
-            sx={{ borderColor: 'divider', color: 'text.secondary', '&:hover': { borderColor: 'text.secondary' } }}
-          >
-            Edit
-          </Button>
-          <Button variant="outlined" size="small" startIcon={<Download size={14} />}
-            sx={{ borderColor: 'divider', color: 'text.secondary', '&:hover': { borderColor: 'text.secondary' } }}
-          >
-            Export
-          </Button>
-          <Button variant="outlined" size="small" startIcon={<Share2 size={14} />}
-            sx={{ borderColor: 'divider', color: 'text.secondary', '&:hover': { borderColor: 'text.secondary' } }}
-          >
-            Share
-          </Button>
-          <Button variant="outlined" size="small" startIcon={<Trash2 size={14} />}
-            onClick={() => setDeleteOpen(true)}
-            sx={{ borderColor: '#ef444440', color: '#ef4444', '&:hover': { borderColor: '#ef4444', bgcolor: '#ef444410' } }}
-          >
-            Delete
-          </Button>
-        </Box>
-      </Box>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Button icon={<Pencil size={16} />}>Edit</Button>
+          <Button icon={<Download size={16} />}>Export</Button>
+          <Button icon={<Share2 size={16} />}>Share</Button>
+          <Button danger icon={<Trash2 size={16} />} onClick={() => setDeleteOpen(true)}>Delete</Button>
+        </div>
+      </div>
 
       {/* ── Content ── */}
-      <Box flex={1} overflow="auto" p={3} display="flex" flexDirection="column" gap={3}>
+      <div style={{ flex: 1, overflow: 'auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 24 }}>
 
         {/* ── Title Section ── */}
-        <Box display="flex" flexDirection="column" gap={1.5}>
-          <Box display="flex" alignItems="center" gap={1.5}>
-            <Box
-              sx={{
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div
+              style={{
                 width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                borderRadius: 2.5, bgcolor: 'rgba(139,92,246,0.12)',
+                borderRadius: 10, background: 'rgba(139,92,246,0.12)',
               }}
             >
-              <BarChart2 size={22} color="#8b5cf6" />
-            </Box>
-            <Typography fontSize={22} fontWeight={600} fontFamily="JetBrains Mono, monospace">
+              <Activity size={22} color="var(--primary-color)" />
+            </div>
+            <Typography.Text style={{ fontSize: 22, fontWeight: 600, fontFamily: 'JetBrains Mono, monospace' }}>
               Sales Overview
-            </Typography>
-            <Box sx={{ px: 1.25, py: 0.5, borderRadius: 1, bgcolor: 'rgba(34,197,94,0.12)' }}>
-              <Typography fontSize={11} fontWeight={500} color="#22c55e">Active</Typography>
-            </Box>
-          </Box>
-          <Typography fontSize={14} color="text.secondary">
+            </Typography.Text>
+            <div style={{ padding: '4px 10px', borderRadius: 4, background: 'rgba(34,197,94,0.12)' }}>
+              <Typography.Text style={{ fontSize: 11, fontWeight: 500, color: '#22c55e' }}>Active</Typography.Text>
+            </div>
+          </div>
+          <Typography.Text type="secondary" style={{ fontSize: 14 }}>
             Monthly sales performance and trends analysis across all regions
-          </Typography>
-          <Box display="flex" gap={2.5}>
+          </Typography.Text>
+          <div style={{ display: 'flex', gap: 20 }}>
             {[
               { icon: <Calendar size={14} color="#71717a" />, text: 'Created: Jan 15, 2025' },
-              { icon: <Timer size={14} color="#71717a" />, text: 'Updated: 2 hours ago' },
+              { icon: <Clock size={14} color="#71717a" />, text: 'Updated: 2 hours ago' },
               { icon: <User size={14} color="#71717a" />, text: 'Author: Admin' },
             ].map((meta) => (
-              <Box key={meta.text} display="flex" alignItems="center" gap={0.75}>
+              <div key={meta.text} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 {meta.icon}
-                <Typography fontSize={12} color="#71717a">{meta.text}</Typography>
-              </Box>
+                <Typography.Text style={{ fontSize: 12, color: '#71717a' }}>{meta.text}</Typography.Text>
+              </div>
             ))}
-          </Box>
-        </Box>
+          </div>
+        </div>
 
         {/* ── Metrics Row ── */}
-        <Box display="flex" gap={2}>
+        <div style={{ display: 'flex', gap: 16 }}>
           {metrics.map((m) => {
             const Icon = m.icon;
             return (
-              <Box
+              <div
                 key={m.label}
-                sx={{
-                  flex: 1, p: 2.5, borderRadius: 3, bgcolor: '#111118',
-                  border: 1, borderColor: 'divider',
-                  display: 'flex', flexDirection: 'column', gap: 1,
+                style={{
+                  flex: 1, padding: 20, borderRadius: 12, background: '#111118',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  display: 'flex', flexDirection: 'column', gap: 8,
                 }}
               >
-                <Box display="flex" alignItems="center" gap={1}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Icon size={16} color={m.iconColor} />
-                  <Typography fontSize={13} color="text.secondary">{m.label}</Typography>
-                </Box>
-                <Typography fontSize={28} fontWeight={600} fontFamily="JetBrains Mono, monospace">
+                  <Typography.Text type="secondary" style={{ fontSize: 13 }}>{m.label}</Typography.Text>
+                </div>
+                <Typography.Text style={{ fontSize: 28, fontWeight: 600, fontFamily: 'JetBrains Mono, monospace' }}>
                   {m.value}
-                </Typography>
-                <Box display="flex" alignItems="center" gap={0.5}>
+                </Typography.Text>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                   {m.positive
                     ? <TrendingUp size={14} color="#22c55e" />
                     : <TrendingDown size={14} color="#ef4444" />}
-                  <Typography fontSize={12} color={m.positive ? '#22c55e' : '#ef4444'}>
+                  <Typography.Text style={{ fontSize: 12, color: m.positive ? '#22c55e' : '#ef4444' }}>
                     {m.change}
-                  </Typography>
-                </Box>
-              </Box>
+                  </Typography.Text>
+                </div>
+              </div>
             );
           })}
-        </Box>
+        </div>
 
         {/* ── Chart Section ── */}
         <TrendChart />
 
         {/* ── Table Section ── */}
-        <Box
-          sx={{
-            borderRadius: 3,
-            bgcolor: '#111118',
-            border: 1,
-            borderColor: 'divider',
+        <div
+          style={{
+            borderRadius: 12,
+            background: '#111118',
+            border: '1px solid rgba(255,255,255,0.12)',
             overflow: 'hidden',
             flexShrink: 0,
           }}
         >
           {/* Table header */}
-          <Box display="flex" alignItems="center" gap={1} px={2.5} py={2} borderBottom={1} borderColor="divider">
-            <TableIcon size={18} color="#8b5cf6" />
-            <Typography fontSize={15} fontWeight={600}>Recent Data</Typography>
-            <Box sx={{ px: 1, py: 0.375, borderRadius: 1, bgcolor: '#27273a' }}>
-              <Typography fontSize={11} color="text.secondary">128 entries</Typography>
-            </Box>
-          </Box>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.12)' }}>
+            <Table size={18} color="var(--primary-color)" />
+            <Typography.Text style={{ fontSize: 15, fontWeight: 600 }}>Recent Data</Typography.Text>
+            <div style={{ padding: '3px 8px', borderRadius: 4, background: '#27273a' }}>
+              <Typography.Text type="secondary" style={{ fontSize: 11 }}>128 entries</Typography.Text>
+            </div>
+          </div>
 
           {/* Table */}
-          <TableContainer>
-            <Table size="small">
-              <TableHead>
-                <TableRow sx={{ '& .MuiTableCell-head': { bgcolor: '#0d0d14', borderColor: 'divider', py: 1.25, px: 2.5 } }}>
-                  <TableCell><Typography fontSize={12} fontWeight={500} color="#71717a">Date</Typography></TableCell>
-                  <TableCell><Typography fontSize={12} fontWeight={500} color="#71717a">Region</Typography></TableCell>
-                  <TableCell><Typography fontSize={12} fontWeight={500} color="#71717a">Revenue</Typography></TableCell>
-                  <TableCell><Typography fontSize={12} fontWeight={500} color="#71717a">Orders</Typography></TableCell>
-                  <TableCell><Typography fontSize={12} fontWeight={500} color="#71717a">Status</Typography></TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {tableData.map((row, i) => {
-                  const st = statusColors[row.status];
-                  return (
-                    <TableRow
-                      key={i}
-                      sx={{
-                        '& .MuiTableCell-root': { borderColor: '#1e1e2a', py: 1.5, px: 2.5 },
-                        '&:nth-of-type(even)': { bgcolor: 'transparent' },
-                      }}
-                    >
-                      <TableCell><Typography fontSize={13}>{row.date}</Typography></TableCell>
-                      <TableCell><Typography fontSize={13}>{row.region}</Typography></TableCell>
-                      <TableCell>
-                        <Typography fontSize={13} fontFamily="JetBrains Mono, monospace">{row.revenue}</Typography>
-                      </TableCell>
-                      <TableCell><Typography fontSize={13}>{row.orders}</Typography></TableCell>
-                      <TableCell>
-                        <Box sx={{ display: 'inline-flex', px: 1, py: 0.375, borderRadius: 1, bgcolor: st.bg }}>
-                          <Typography fontSize={11} fontWeight={500} color={st.color}>{row.status}</Typography>
-                        </Box>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <div>
+            {/* Table Head */}
+            <div style={{ display: 'flex', padding: '8px 20px', borderBottom: '1px solid rgba(255,255,255,0.12)' }}>
+              {['Date', 'Region', 'Revenue', 'Orders', 'Status'].map((h) => (
+                <div key={h} style={{ flex: 1 }}>
+                  <Typography.Text style={{ fontSize: 12, fontWeight: 500, color: '#71717a' }}>{h}</Typography.Text>
+                </div>
+              ))}
+            </div>
+            {/* Table Body */}
+            {tableData.map((row, i) => {
+              const st = statusColors[row.status];
+              return (
+                <div
+                  key={i}
+                  style={{
+                    display: 'flex', padding: '8px 20px', alignItems: 'center',
+                    background: i % 2 === 1 ? 'rgba(255,255,255,0.02)' : 'transparent',
+                    borderBottom: '1px solid rgba(255,255,255,0.06)',
+                  }}
+                >
+                  <div style={{ flex: 1 }}><Typography.Text style={{ fontSize: 13 }}>{row.date}</Typography.Text></div>
+                  <div style={{ flex: 1 }}><Typography.Text style={{ fontSize: 13 }}>{row.region}</Typography.Text></div>
+                  <div style={{ flex: 1 }}><Typography.Text style={{ fontSize: 13, fontFamily: 'JetBrains Mono, monospace' }}>{row.revenue}</Typography.Text></div>
+                  <div style={{ flex: 1 }}><Typography.Text style={{ fontSize: 13 }}>{row.orders}</Typography.Text></div>
+                  <div style={{ flex: 1 }}>
+                    <span style={{ display: 'inline-flex', padding: '3px 8px', borderRadius: 4, background: st.bg }}>
+                      <Typography.Text style={{ fontSize: 11, fontWeight: 500, color: st.color }}>{row.status}</Typography.Text>
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
 
           {/* Table footer */}
-          <Box
-            display="flex" alignItems="center" justifyContent="space-between"
-            px={2.5} py={1.5} borderTop={1} borderColor="divider"
+          <div
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '12px 20px', borderTop: '1px solid rgba(255,255,255,0.12)',
+            }}
           >
-            <Typography fontSize={13} color="text.secondary">
+            <Typography.Text type="secondary" style={{ fontSize: 13 }}>
               Showing 1-7 of 128 entries
-            </Typography>
-            <Box display="flex" alignItems="center" gap={1}>
+            </Typography.Text>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <PaginationBtn onClick={() => setTablePage((p) => Math.max(1, p - 1))}>
                 <ChevronLeft size={16} color="#a1a1aa" />
               </PaginationBtn>
               {[1, 2, 3].map((p) => (
                 <PaginationBtn key={p} active={p === tablePage} onClick={() => setTablePage(p)}>
-                  <Typography fontSize={14} fontWeight={500} color={p === tablePage ? '#fff' : '#a1a1aa'}>
+                  <Typography.Text style={{ fontSize: 14, fontWeight: 500, color: p === tablePage ? '#fff' : '#a1a1aa' }}>
                     {p}
-                  </Typography>
+                  </Typography.Text>
                 </PaginationBtn>
               ))}
               <PaginationBtn onClick={() => setTablePage((p) => Math.min(totalPages, p + 1))}>
                 <ChevronRight size={16} color="#a1a1aa" />
               </PaginationBtn>
-            </Box>
-          </Box>
-        </Box>
+            </div>
+          </div>
+        </div>
 
         {/* ── Two Column Section ── */}
-        <Box display="flex" gap={2.5}>
+        <div style={{ display: 'flex', gap: 20 }}>
           {/* Report Summary */}
-          <Box
-            sx={{
-              flex: 1, borderRadius: 3, bgcolor: '#111118',
-              border: 1, borderColor: 'divider', overflow: 'hidden',
+          <div
+            style={{
+              flex: 1, borderRadius: 12, background: '#111118',
+              border: '1px solid rgba(255,255,255,0.12)', overflow: 'hidden',
             }}
           >
-            <Box display="flex" alignItems="center" gap={1} px={2.5} py={2} borderBottom={1} borderColor="divider">
-              <FileText size={18} color="#8b5cf6" />
-              <Typography fontSize={15} fontWeight={600}>Report Summary</Typography>
-            </Box>
-            <Box p={2.5} display="flex" flexDirection="column" gap={2}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.12)' }}>
+              <FileText size={18} color="var(--primary-color)" />
+              <Typography.Text style={{ fontSize: 15, fontWeight: 600 }}>Report Summary</Typography.Text>
+            </div>
+            <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
               {summaryParagraphs.map((text, i) => (
-                <Typography key={i} fontSize={13} color="text.secondary" lineHeight={1.7}>
+                <Typography.Text key={i} type="secondary" style={{ fontSize: 13, lineHeight: 1.7 }}>
                   {text}
-                </Typography>
+                </Typography.Text>
               ))}
-            </Box>
-          </Box>
+            </div>
+          </div>
 
           {/* Top Regions */}
-          <Box
-            sx={{
-              width: 360, flexShrink: 0, borderRadius: 3, bgcolor: '#111118',
-              border: 1, borderColor: 'divider', overflow: 'hidden',
+          <div
+            style={{
+              width: 360, flexShrink: 0, borderRadius: 12, background: '#111118',
+              border: '1px solid rgba(255,255,255,0.12)', overflow: 'hidden',
             }}
           >
-            <Box display="flex" alignItems="center" gap={1} px={2.5} py={2} borderBottom={1} borderColor="divider">
-              <Globe size={18} color="#8b5cf6" />
-              <Typography fontSize={15} fontWeight={600}>Top Regions</Typography>
-            </Box>
-            <Box p={2.5} display="flex" flexDirection="column" gap={2}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.12)' }}>
+              <Globe size={18} color="var(--primary-color)" />
+              <Typography.Text style={{ fontSize: 15, fontWeight: 600 }}>Top Regions</Typography.Text>
+            </div>
+            <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
               {regions.map((r, i) => (
-                <Box key={r.name}>
-                  <Box display="flex" alignItems="center" justifyContent="space-between">
-                    <Box>
-                      <Typography fontSize={13} fontWeight={500}>{r.name}</Typography>
-                      <Typography fontSize={11} color="#71717a">{r.share}</Typography>
-                    </Box>
-                    <Typography fontSize={14} fontWeight={600} fontFamily="JetBrains Mono, monospace">
+                <div key={r.name}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div>
+                      <Typography.Text style={{ fontSize: 13, fontWeight: 500 }}>{r.name}</Typography.Text>
+                      <br />
+                      <Typography.Text style={{ fontSize: 11, color: '#71717a' }}>{r.share}</Typography.Text>
+                    </div>
+                    <Typography.Text style={{ fontSize: 14, fontWeight: 600, fontFamily: 'JetBrains Mono, monospace' }}>
                       {r.revenue}
-                    </Typography>
-                  </Box>
+                    </Typography.Text>
+                  </div>
                   {i < regions.length - 1 && (
-                    <Box sx={{ mt: 2, height: 1, bgcolor: '#1e1e2a' }} />
+                    <div style={{ marginTop: 16, height: 1, background: '#1e1e2a' }} />
                   )}
-                </Box>
+                </div>
               ))}
-            </Box>
-          </Box>
-        </Box>
-      </Box>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <ConfirmDeleteModal
         open={deleteOpen}
@@ -618,22 +599,22 @@ function PaginationBtn({
   onClick: () => void;
 }) {
   return (
-    <Box
+    <div
       onClick={onClick}
-      sx={{
+      style={{
         width: 36,
         height: 36,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        borderRadius: 2,
+        borderRadius: 8,
         cursor: 'pointer',
         ...(active
-          ? { bgcolor: 'primary.main' }
-          : { bgcolor: '#1a1a24', border: 1, borderColor: 'divider', '&:hover': { borderColor: 'text.secondary' } }),
+          ? { background: 'var(--primary-color)' }
+          : { background: '#1a1a24', border: '1px solid rgba(255,255,255,0.12)' }),
       }}
     >
       {children}
-    </Box>
+    </div>
   );
 }

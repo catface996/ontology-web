@@ -1,4 +1,4 @@
-import { Box, Typography, TextField, IconButton, Button } from '@mui/material';
+import { Typography, Input, Button, Flex } from 'antd';
 import { Plus, X } from 'lucide-react';
 
 interface EnumConstraintsProps {
@@ -25,38 +25,37 @@ export default function EnumConstraints({
   };
 
   return (
-    <Box>
-      <Typography variant="body2" fontWeight={500} mb={1.5}>
+    <div>
+      <Typography.Text style={{ fontWeight: 500, fontSize: 14, display: 'block', marginBottom: 12 }}>
         Enum Values
-      </Typography>
-      <Box display="flex" flexDirection="column" gap={1}>
+      </Typography.Text>
+      <Flex vertical gap={8}>
         {enumValues.map((value, index) => (
-          <Box key={index} display="flex" gap={1} alignItems="center">
-            <TextField
-              fullWidth
-              size="small"
+          <Flex key={index} gap={8} align="center">
+            <Input
               placeholder={`Value ${index + 1}`}
               value={value}
               onChange={(e) => handleValueChange(index, e.target.value)}
+              style={{ flex: 1 }}
             />
-            <IconButton
+            <Button
+              type="text"
               size="small"
+              icon={<X size={14} />}
               onClick={() => handleRemoveValue(index)}
               disabled={enumValues.length <= 1}
-            >
-              <X size={16} />
-            </IconButton>
-          </Box>
+            />
+          </Flex>
         ))}
         <Button
-          variant="text"
-          startIcon={<Plus size={14} />}
+          type="link"
+          icon={<Plus size={14} />}
           onClick={handleAddValue}
-          sx={{ alignSelf: 'flex-start', mt: 0.5 }}
+          style={{ alignSelf: 'flex-start', marginTop: 4, paddingLeft: 0 }}
         >
           Add Value
         </Button>
-      </Box>
-    </Box>
+      </Flex>
+    </div>
   );
 }

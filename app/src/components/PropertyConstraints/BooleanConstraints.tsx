@@ -1,4 +1,4 @@
-import { Box, Typography, ToggleButtonGroup, ToggleButton } from '@mui/material';
+import { Typography, Radio, Flex } from 'antd';
 
 interface BooleanConstraintsProps {
   defaultValue: boolean;
@@ -10,27 +10,22 @@ export default function BooleanConstraints({
   onDefaultValueChange,
 }: BooleanConstraintsProps) {
   return (
-    <Box>
-      <Typography variant="body2" fontWeight={500} mb={1}>
+    <div>
+      <Typography.Text style={{ fontWeight: 500, fontSize: 14, display: 'block', marginBottom: 8 }}>
         Default Value
-      </Typography>
-      <ToggleButtonGroup
-        value={defaultValue ? 'true' : 'false'}
-        exclusive
-        onChange={(_, value) => {
-          if (value !== null) {
-            onDefaultValueChange(value === 'true');
-          }
-        }}
-        size="small"
-      >
-        <ToggleButton value="false" sx={{ px: 3 }}>
-          False
-        </ToggleButton>
-        <ToggleButton value="true" sx={{ px: 3 }}>
-          True
-        </ToggleButton>
-      </ToggleButtonGroup>
-    </Box>
+      </Typography.Text>
+      <Flex gap={0}>
+        <Radio.Group
+          value={defaultValue ? 'true' : 'false'}
+          onChange={(e) => onDefaultValueChange(e.target.value === 'true')}
+          optionType="button"
+          buttonStyle="solid"
+          options={[
+            { label: 'False', value: 'false' },
+            { label: 'True', value: 'true' },
+          ]}
+        />
+      </Flex>
+    </div>
   );
 }

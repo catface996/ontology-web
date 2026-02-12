@@ -1,4 +1,4 @@
-import { Box, TextField, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { Select, Input, Flex, Typography } from 'antd';
 
 interface DateConstraintsProps {
   dateFormat: string;
@@ -27,39 +27,42 @@ export default function DateConstraints({
   onMaxDateChange,
 }: DateConstraintsProps) {
   return (
-    <Box display="flex" flexDirection="column" gap={2}>
-      <FormControl fullWidth>
-        <InputLabel>Date Format</InputLabel>
+    <Flex vertical gap={16}>
+      <div>
+        <Typography.Text style={{ display: 'block', marginBottom: 4, fontSize: 14 }}>
+          Date Format
+        </Typography.Text>
         <Select
-          label="Date Format"
+          style={{ width: '100%' }}
           value={dateFormat}
-          onChange={(e) => onDateFormatChange(e.target.value)}
-        >
-          {dateFormats.map((format) => (
-            <MenuItem key={format} value={format}>
-              {format}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
-      <Box display="flex" gap={2}>
-        <TextField
-          fullWidth
-          label="Min Date"
-          type="date"
-          value={minDate}
-          onChange={(e) => onMinDateChange(e.target.value)}
-          InputLabelProps={{ shrink: true }}
+          onChange={(value) => onDateFormatChange(value)}
+          options={dateFormats.map((format) => ({ label: format, value: format }))}
         />
-        <TextField
-          fullWidth
-          label="Max Date"
-          type="date"
-          value={maxDate}
-          onChange={(e) => onMaxDateChange(e.target.value)}
-          InputLabelProps={{ shrink: true }}
-        />
-      </Box>
-    </Box>
+      </div>
+      <Flex gap={16}>
+        <div style={{ flex: 1 }}>
+          <Typography.Text style={{ display: 'block', marginBottom: 4, fontSize: 14 }}>
+            Min Date
+          </Typography.Text>
+          <Input
+            type="date"
+            value={minDate}
+            onChange={(e) => onMinDateChange(e.target.value)}
+            style={{ width: '100%' }}
+          />
+        </div>
+        <div style={{ flex: 1 }}>
+          <Typography.Text style={{ display: 'block', marginBottom: 4, fontSize: 14 }}>
+            Max Date
+          </Typography.Text>
+          <Input
+            type="date"
+            value={maxDate}
+            onChange={(e) => onMaxDateChange(e.target.value)}
+            style={{ width: '100%' }}
+          />
+        </div>
+      </Flex>
+    </Flex>
   );
 }

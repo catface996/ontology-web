@@ -1,7 +1,5 @@
 import { useState } from 'react';
-import {
-  Box, Typography, Button, TextField,
-} from '@mui/material';
+import { Button, Input } from 'antd';
 import {
   Share2, Check, Download, Square, ArrowLeftCircle,
 } from 'lucide-react';
@@ -67,14 +65,14 @@ const backwardTraceLegend: LegendEntry[] = [
    Helpers
    ══════════════════════════════════════════ */
 function SectionLabel({ children }: { children: string }) {
-  return <Typography fontSize={11} fontWeight={600} letterSpacing={1} sx={{ color: '#71717a' }}>{children}</Typography>;
+  return <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, color: '#71717a' }}>{children}</span>;
 }
 
 function Chip({ label, color, filled }: { label: string; color: string; filled?: boolean }) {
   return (
-    <Box sx={{ px: 1, py: 0.25, borderRadius: 1, bgcolor: filled ? color : `${color}20`, display: 'inline-flex', alignItems: 'center' }}>
-      <Typography fontSize={filled ? 9 : 10} fontWeight={600} sx={{ color: filled ? '#fff' : color }}>{label}</Typography>
-    </Box>
+    <div style={{ paddingLeft: 8, paddingRight: 8, paddingTop: 2, paddingBottom: 2, borderRadius: 4, backgroundColor: filled ? color : `${color}20`, display: 'inline-flex', alignItems: 'center' }}>
+      <span style={{ fontSize: filled ? 9 : 10, fontWeight: 600, color: filled ? '#fff' : color }}>{label}</span>
+    </div>
   );
 }
 
@@ -85,59 +83,57 @@ export default function BackwardAgentPage() {
   const [input, setInput] = useState('');
 
   return (
-    <Box display="flex" height="100vh" overflow="hidden" bgcolor="#0a0a0f">
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', backgroundColor: '#0a0a0f' }}>
       {/* ── Left Sidebar ── */}
-      <Box width={260} flexShrink={0} display="flex" flexDirection="column" gap={2} p={2.5} sx={{ bgcolor: '#0d0d14', overflow: 'auto' }}>
-        <Box display="flex" alignItems="center" gap={1.25} height={40}>
-          <Box width={32} height={32} borderRadius={2} bgcolor="#8b5cf6" display="flex" alignItems="center" justifyContent="center">
+      <div style={{ width: 260, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 16, padding: 20, backgroundColor: '#0d0d14', overflow: 'auto' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, height: 40 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: 'var(--primary-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Share2 size={16} color="#fff" />
-          </Box>
-          <Typography fontSize={18} fontWeight={700} color="#f4f4f5">Ontology</Typography>
-        </Box>
-        <Box height="1px" bgcolor="#27273a" />
+          </div>
+          <span style={{ fontSize: 18, fontWeight: 700, color: '#f4f4f5' }}>Ontology</span>
+        </div>
+        <div style={{ height: 1, backgroundColor: '#27273a' }} />
 
         <SectionLabel>ACTIVE AGENT</SectionLabel>
-        <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: `${ACCENT}15`, border: 1, borderColor: ACCENT, display: 'flex', flexDirection: 'column', gap: 1 }}>
-          <Box display="flex" alignItems="center" gap={1}>
-            <Box width={28} height={28} borderRadius={1.5} bgcolor={ACCENT} display="flex" alignItems="center" justifyContent="center">
+        <div style={{ padding: 12, borderRadius: 8, backgroundColor: `${ACCENT}15`, border: `1px solid ${ACCENT}`, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 28, height: 28, borderRadius: 6, backgroundColor: ACCENT, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <ArrowLeftCircle size={14} color="#fff" />
-            </Box>
-            <Typography fontSize={14} fontWeight={600} color="#f4f4f5">Backward Agent</Typography>
-          </Box>
-          <Box display="flex" alignItems="center" gap={0.75}>
-            <Box width={8} height={8} borderRadius={1} bgcolor="#22c55e" />
-            <Typography fontSize={11} sx={{ color: '#22c55e' }}>Running</Typography>
-          </Box>
-        </Box>
-        <Box height="1px" bgcolor="#27273a" />
+            </div>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#f4f4f5' }}>Backward Agent</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#22c55e' }} />
+            <span style={{ fontSize: 11, color: '#22c55e' }}>Running</span>
+          </div>
+        </div>
+        <div style={{ height: 1, backgroundColor: '#27273a' }} />
 
         <SectionLabel>EXECUTION STEPS</SectionLabel>
         {executionSteps.map((step) => (
-          <Box key={step.number} sx={{ px: 1.25, py: 1, borderRadius: 1.5, bgcolor: '#22c55e15', display: 'flex', alignItems: 'center', gap: 1.25, ...(step.active ? { border: 1, borderColor: '#22c55e' } : {}) }}>
-            <Typography fontSize={12} sx={{ color: '#22c55e' }}>✓</Typography>
-            <Typography fontSize={12} sx={{ color: '#22c55e' }}>{step.number}. {step.label}</Typography>
-          </Box>
+          <div key={step.number} style={{ paddingLeft: 10, paddingRight: 10, paddingTop: 8, paddingBottom: 8, borderRadius: 6, backgroundColor: '#22c55e15', display: 'flex', alignItems: 'center', gap: 10, ...(step.active ? { border: '1px solid #22c55e' } : {}) }}>
+            <span style={{ fontSize: 12, color: '#22c55e' }}>✓</span>
+            <span style={{ fontSize: 12, color: '#22c55e' }}>{step.number}. {step.label}</span>
+          </div>
         ))}
-      </Box>
+      </div>
 
       {/* ── Chat Panel ── */}
-      <Box flex={1} display="flex" flexDirection="column" minWidth={0}>
-        <Box display="flex" alignItems="center" justifyContent="space-between" height={76} px={3} sx={{ bgcolor: '#0d0d14', flexShrink: 0 }}>
-          <Typography fontSize={18} fontWeight={600} color="#f4f4f5">Backward Root Cause Analysis</Typography>
-          <Box display="flex" gap={1.5}>
-            <Button size="small" variant="outlined" startIcon={<Download size={14} />}
-              sx={{ borderColor: '#27273a', color: '#a1a1aa', bgcolor: '#1a1a24', textTransform: 'none', fontSize: 13, borderRadius: 1.5, '&:hover': { borderColor: '#71717a', bgcolor: '#1a1a24' } }}>Export Log</Button>
-            <Button size="small" variant="outlined" startIcon={<Square size={14} />}
-              sx={{ borderColor: '#ef4444', color: '#ef4444', bgcolor: '#ef444420', textTransform: 'none', fontSize: 13, borderRadius: 1.5, '&:hover': { borderColor: '#ef4444', bgcolor: '#ef444430' } }}>Stop Agent</Button>
-          </Box>
-        </Box>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 76, paddingLeft: 24, paddingRight: 24, backgroundColor: '#0d0d14', flexShrink: 0 }}>
+          <span style={{ fontSize: 18, fontWeight: 600, color: '#f4f4f5' }}>Backward Root Cause Analysis</span>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <Button icon={<Download size={14} />}>Export Log</Button>
+            <Button danger icon={<Square size={14} />}>Stop Agent</Button>
+          </div>
+        </div>
 
-        <Box flex={1} overflow="auto" px={3} py={3} display="flex" flexDirection="column" gap={2.5} sx={{ bgcolor: '#0a0a0f' }}>
+        <div style={{ flex: 1, overflow: 'auto', paddingLeft: 24, paddingRight: 24, paddingTop: 24, paddingBottom: 24, display: 'flex', flexDirection: 'column', gap: 20, backgroundColor: '#0a0a0f' }}>
           {/* ── Message 1: Symptom ── */}
           <MessageBubble name="Backward Agent" time="4 min ago" accent={ACCENT}>
-            <Typography fontSize={14} color="#f4f4f5" lineHeight={1.5}>
+            <span style={{ fontSize: 14, color: '#f4f4f5', lineHeight: 1.5 }}>
               Please describe the symptom you're observing, or select a node showing anomalous behavior:
-            </Typography>
+            </span>
             <ContentCard title="Detected Anomalies">
               <OptionRow selected label="api-01 — Response time > 2s" description="P99 latency spiked from 400ms to 2.1s in the last 15 minutes" />
               <OptionRow label="lb-01 — 5xx error rate 12%" description="Error rate increased from 0.1% to 12% in the last hour" />
@@ -146,59 +142,59 @@ export default function BackwardAgentPage() {
           </MessageBubble>
 
           {/* ── User Message ── */}
-          <Box display="flex" gap={1.5} justifyContent="flex-end">
-            <Box sx={{ maxWidth: '70%', borderRadius: '12px 12px 0 12px', bgcolor: `${ACCENT}20`, border: 1, borderColor: ACCENT, px: 2, py: 1.5, display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-              <Box display="flex" alignItems="center" gap={1}>
-                <Typography fontSize={13} fontWeight={600} sx={{ color: ACCENT }}>You</Typography>
-                <Typography fontSize={11} sx={{ color: '#71717a' }}>3 min ago</Typography>
-              </Box>
-              <Typography fontSize={14} color="#f4f4f5" lineHeight={1.5} textAlign="right">
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+            <div style={{ maxWidth: '70%', borderRadius: '12px 12px 0 12px', backgroundColor: `${ACCENT}20`, border: `1px solid ${ACCENT}`, paddingLeft: 16, paddingRight: 16, paddingTop: 12, paddingBottom: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: ACCENT }}>You</span>
+                <span style={{ fontSize: 11, color: '#71717a' }}>3 min ago</span>
+              </div>
+              <span style={{ fontSize: 14, color: '#f4f4f5', lineHeight: 1.5, textAlign: 'right' }}>
                 Investigate api-01 response time spike. Find the root cause.
-              </Typography>
-            </Box>
-            <Box width={36} height={36} borderRadius="50%" bgcolor="#3b82f6" display="flex" alignItems="center" justifyContent="center" flexShrink={0}>
-              <Typography fontSize={14} fontWeight={700} color="#fff">U</Typography>
-            </Box>
-          </Box>
+              </span>
+            </div>
+            <div style={{ width: 36, height: 36, borderRadius: '50%', backgroundColor: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>U</span>
+            </div>
+          </div>
 
           {/* ── Message 2: Progress ── */}
           <MessageBubble name="Backward Agent" accent={ACCENT} badge={{ label: 'TRACING', color: ACCENT }}>
-            <Typography fontSize={14} color="#f4f4f5" lineHeight={1.5}>
+            <span style={{ fontSize: 14, color: '#f4f4f5', lineHeight: 1.5 }}>
               Tracing backward from api-01 through the dependency chain...
-            </Typography>
+            </span>
             <ContentCard title="Backward Trace Progress">
               {progressSteps.map((step) => (
-                <Box key={step.label} display="flex" alignItems="center" gap={1.25} width="100%">
-                  <Typography fontSize={12} sx={{ color: '#22c55e' }}>✓</Typography>
-                  <Typography fontSize={13} sx={{ color: '#22c55e', flex: 1 }}>{step.label}</Typography>
-                  <Typography fontSize={11} fontFamily="JetBrains Mono, monospace" sx={{ color: '#71717a' }}>{step.detail}</Typography>
-                </Box>
+                <div key={step.label} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%' }}>
+                  <span style={{ fontSize: 12, color: '#22c55e' }}>✓</span>
+                  <span style={{ fontSize: 13, color: '#22c55e', flex: 1 }}>{step.label}</span>
+                  <span style={{ fontSize: 11, fontFamily: 'JetBrains Mono, monospace', color: '#71717a' }}>{step.detail}</span>
+                </div>
               ))}
-              <Box display="flex" flexDirection="column" gap={0.75} width="100%">
-                <Box height={6} borderRadius={0.75} bgcolor="#1a1a24" overflow="hidden">
-                  <Box height="100%" width="100%" borderRadius={0.75} bgcolor="#22c55e" />
-                </Box>
-                <Typography fontSize={11} sx={{ color: '#22c55e' }}>Trace complete - 100%</Typography>
-              </Box>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, width: '100%' }}>
+                <div style={{ height: 6, borderRadius: 3, backgroundColor: '#1a1a24', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: '100%', borderRadius: 3, backgroundColor: '#22c55e' }} />
+                </div>
+                <span style={{ fontSize: 11, color: '#22c55e' }}>Trace complete - 100%</span>
+              </div>
             </ContentCard>
           </MessageBubble>
 
           {/* ── Message 3: Results ── */}
           <MessageBubble name="Backward Agent" accent={ACCENT} badge={{ label: 'COMPLETED', color: '#22c55e' }}>
-            <Typography fontSize={14} color="#f4f4f5" lineHeight={1.5}>
+            <span style={{ fontSize: 14, color: '#f4f4f5', lineHeight: 1.5 }}>
               Root cause analysis complete. I traced 3 hops backward from api-01 and identified 2 root causes:
-            </Typography>
-            <Box sx={{ borderRadius: 3, bgcolor: '#111118', p: 2.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Box display="flex" justifyContent="space-between" alignItems="center">
-                <Typography fontSize={14} fontWeight={600} color="#f4f4f5">Root Cause Analysis Report</Typography>
-                <Typography fontSize={11} sx={{ color: '#71717a' }}>Symptom: api-01 latency</Typography>
-              </Box>
+            </span>
+            <div style={{ borderRadius: 12, backgroundColor: '#111118', padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 14, fontWeight: 600, color: '#f4f4f5' }}>Root Cause Analysis Report</span>
+                <span style={{ fontSize: 11, color: '#71717a' }}>Symptom: api-01 latency</span>
+              </div>
 
-              <Box display="flex" gap={1.5}>
+              <div style={{ display: 'flex', gap: 12 }}>
                 <SummaryCard value="2" label="Root Causes" color="#ef4444" />
                 <SummaryCard value="3" label="Hops Deep" color={ACCENT} />
                 <SummaryCard value="85%" label="Confidence" color="#22c55e" />
-              </Box>
+              </div>
 
               {/* Backward trace visualization */}
               <SectionLabel>BACKWARD TRACE</SectionLabel>
@@ -234,69 +230,67 @@ export default function BackwardAgentPage() {
                 description="Replace HDD volume with SSD to eliminate I/O bottleneck. Expected query time improvement: 450ms → ~50ms." />
               <RecommendationRow number={2} title="Increase memory allocation for db-02"
                 description="Allocate additional 4GB RAM to mem-pool-02 to eliminate swapping. Schedule bulk imports during off-peak hours." />
-            </Box>
+            </div>
           </MessageBubble>
 
           {/* ── Message 4: Actions ── */}
           <MessageBubble name="Backward Agent" time="just now" accent={ACCENT}>
-            <Typography fontSize={14} color="#f4f4f5" lineHeight={1.5}>
+            <span style={{ fontSize: 14, color: '#f4f4f5', lineHeight: 1.5 }}>
               What would you like to do next?
-            </Typography>
-            <Box display="flex" gap={1.25} flexWrap="wrap">
+            </span>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               <ActionButton label="Investigate Another Symptom" primary accent={ACCENT} />
               <ActionButton label="Export Report" />
               <ActionButton label="Forward from disk-vol-07" />
               <ActionButton label="Apply Fixes" />
-            </Box>
+            </div>
           </MessageBubble>
-        </Box>
+        </div>
 
         {/* Input Area */}
-        <Box display="flex" alignItems="center" gap={1.5} px={3} py={2} sx={{ bgcolor: '#0d0d14', flexShrink: 0 }}>
-          <TextField fullWidth size="small" placeholder="Describe a symptom to trace backward..."
-            value={input} onChange={(e) => setInput(e.target.value)}
-            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#1a1a24', fontSize: 14, '& fieldset': { borderColor: '#27273a' }, '&:hover fieldset': { borderColor: '#71717a' } } }} />
-          <Button variant="contained"
-            sx={{ bgcolor: ACCENT, '&:hover': { bgcolor: '#9333ea' }, textTransform: 'none', fontWeight: 600, fontSize: 14, borderRadius: 2, px: 2.5, py: 1.5, whiteSpace: 'nowrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingLeft: 24, paddingRight: 24, paddingTop: 16, paddingBottom: 16, backgroundColor: '#0d0d14', flexShrink: 0 }}>
+          <Input style={{ flex: 1 }} placeholder="Describe a symptom to trace backward..."
+            value={input} onChange={(e) => setInput(e.target.value)} />
+          <Button type="primary">
             Trace Back
           </Button>
-        </Box>
-      </Box>
+        </div>
+      </div>
 
       {/* ── Right Context Panel ── */}
-      <Box width={340} flexShrink={0} display="flex" flexDirection="column" gap={2} p={2.5} sx={{ bgcolor: '#0d0d14', overflow: 'auto' }}>
-        <Typography fontSize={16} fontWeight={600} color="#f4f4f5">Trace Context</Typography>
+      <div style={{ width: 340, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 16, padding: 20, backgroundColor: '#0d0d14', overflow: 'auto' }}>
+        <span style={{ fontSize: 16, fontWeight: 600, color: '#f4f4f5' }}>Trace Context</span>
 
-        <Box sx={{ borderRadius: 2.5, bgcolor: '#111118', p: 1.75, display: 'flex', flexDirection: 'column', gap: 1 }}>
-          <Typography fontSize={11} sx={{ color: '#71717a' }}>Symptom Node</Typography>
-          <Box display="flex" alignItems="center" gap={1}>
-            <Box width={20} height={20} borderRadius={1} bgcolor="#ef4444" />
-            <Typography fontSize={14} fontWeight={600} color="#f4f4f5">api-01 (APIGateway)</Typography>
-          </Box>
-        </Box>
+        <div style={{ borderRadius: 10, backgroundColor: '#111118', padding: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <span style={{ fontSize: 11, color: '#71717a' }}>Symptom Node</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 20, height: 20, borderRadius: 4, backgroundColor: '#ef4444' }} />
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#f4f4f5' }}>api-01 (APIGateway)</span>
+          </div>
+        </div>
 
-        <Box sx={{ borderRadius: 2.5, bgcolor: '#111118', p: 1.75, display: 'flex', flexDirection: 'column', gap: 1 }}>
-          <Typography fontSize={11} sx={{ color: '#71717a' }}>Analysis Type</Typography>
-          <Typography fontSize={14} fontWeight={600} sx={{ color: ACCENT }}>Root Cause Detection</Typography>
-        </Box>
+        <div style={{ borderRadius: 10, backgroundColor: '#111118', padding: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <span style={{ fontSize: 11, color: '#71717a' }}>Analysis Type</span>
+          <span style={{ fontSize: 14, fontWeight: 600, color: ACCENT }}>Root Cause Detection</span>
+        </div>
 
-        <Box sx={{ borderRadius: 2.5, bgcolor: '#111118', p: 1.75, display: 'flex', flexDirection: 'column', gap: 1 }}>
-          <Typography fontSize={11} sx={{ color: '#71717a' }}>Symptom Metrics</Typography>
-          <Box display="flex" justifyContent="space-between">
-            <Typography fontSize={13} sx={{ color: '#a1a1aa' }}>P99 Latency</Typography>
-            <Typography fontSize={13} fontWeight={600} fontFamily="JetBrains Mono, monospace" sx={{ color: '#ef4444' }}>2.1s</Typography>
-          </Box>
-          <Box display="flex" justifyContent="space-between">
-            <Typography fontSize={13} sx={{ color: '#a1a1aa' }}>Normal P99</Typography>
-            <Typography fontSize={13} fontWeight={600} fontFamily="JetBrains Mono, monospace" sx={{ color: '#22c55e' }}>400ms</Typography>
-          </Box>
-          <Box display="flex" justifyContent="space-between">
-            <Typography fontSize={13} sx={{ color: '#a1a1aa' }}>Degradation</Typography>
-            <Typography fontSize={13} fontWeight={600} fontFamily="JetBrains Mono, monospace" sx={{ color: '#ef4444' }}>5.25×</Typography>
-          </Box>
-        </Box>
+        <div style={{ borderRadius: 10, backgroundColor: '#111118', padding: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <span style={{ fontSize: 11, color: '#71717a' }}>Symptom Metrics</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 13, color: '#a1a1aa' }}>P99 Latency</span>
+            <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'JetBrains Mono, monospace', color: '#ef4444' }}>2.1s</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 13, color: '#a1a1aa' }}>Normal P99</span>
+            <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'JetBrains Mono, monospace', color: '#22c55e' }}>400ms</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 13, color: '#a1a1aa' }}>Degradation</span>
+            <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'JetBrains Mono, monospace', color: '#ef4444' }}>5.25×</span>
+          </div>
+        </div>
 
-        <Box height="1px" bgcolor="#27273a" />
+        <div style={{ height: 1, backgroundColor: '#27273a' }} />
 
         <SectionLabel>TRACE PATH</SectionLabel>
         {[
@@ -305,26 +299,26 @@ export default function BackwardAgentPage() {
           { hop: 'Hop 2', node: 'db-02', status: 'Query: 450ms', color: '#f59e0b' },
           { hop: 'Root', node: 'disk-vol-07', status: 'I/O: 82%', color: '#ef4444' },
         ].map((r) => (
-          <Box key={r.node} display="flex" alignItems="center" gap={1}>
-            <Typography fontSize={10} fontFamily="JetBrains Mono, monospace" sx={{ color: '#71717a', width: 52 }}>{r.hop}</Typography>
-            <Typography fontSize={11} fontFamily="JetBrains Mono, monospace" sx={{ color: '#a1a1aa', flex: 1 }}>{r.node}</Typography>
-            <Typography fontSize={11} fontFamily="JetBrains Mono, monospace" fontWeight={600} sx={{ color: r.color }}>{r.status}</Typography>
-          </Box>
+          <div key={r.node} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 10, fontFamily: 'JetBrains Mono, monospace', color: '#71717a', width: 52 }}>{r.hop}</span>
+            <span style={{ fontSize: 11, fontFamily: 'JetBrains Mono, monospace', color: '#a1a1aa', flex: 1 }}>{r.node}</span>
+            <span style={{ fontSize: 11, fontFamily: 'JetBrains Mono, monospace', fontWeight: 600, color: r.color }}>{r.status}</span>
+          </div>
         ))}
 
-        <Box height="1px" bgcolor="#27273a" />
+        <div style={{ height: 1, backgroundColor: '#27273a' }} />
 
-        <Box sx={{ borderRadius: 2.5, bgcolor: `${ACCENT}10`, border: 1, borderColor: ACCENT, p: 1.75, display: 'flex', flexDirection: 'column', gap: 1 }}>
-          <Typography fontSize={10} fontWeight={600} letterSpacing={1} sx={{ color: ACCENT }}>TRACE COMPLETE</Typography>
+        <div style={{ borderRadius: 10, backgroundColor: `${ACCENT}10`, border: `1px solid ${ACCENT}`, padding: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1, color: ACCENT }}>TRACE COMPLETE</span>
           {executionStats.map((s) => (
-            <Box key={s.label} display="flex" justifyContent="space-between">
-              <Typography fontSize={12} sx={{ color: '#a1a1aa' }}>{s.label}</Typography>
-              <Typography fontSize={12} fontWeight={600} fontFamily="JetBrains Mono, monospace" sx={{ color: s.valueColor ?? '#f4f4f5' }}>{s.value}</Typography>
-            </Box>
+            <div key={s.label} style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 12, color: '#a1a1aa' }}>{s.label}</span>
+              <span style={{ fontSize: 12, fontWeight: 600, fontFamily: 'JetBrains Mono, monospace', color: s.valueColor ?? '#f4f4f5' }}>{s.value}</span>
+            </div>
           ))}
-        </Box>
-      </Box>
-    </Box>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -333,98 +327,98 @@ export default function BackwardAgentPage() {
    ══════════════════════════════════════════ */
 
 function MessageBubble({ name, time, badge, children, accent }: { name: string; time?: string; accent?: string; badge?: { label: string; color: string }; children: React.ReactNode }) {
-  const a = accent ?? '#8b5cf6';
+  const a = accent ?? 'var(--primary-color)';
   return (
-    <Box display="flex" gap={1.5}>
-      <Box width={36} height={36} borderRadius="50%" bgcolor={a} display="flex" alignItems="center" justifyContent="center" flexShrink={0}>
-        <Typography fontSize={12} fontWeight={700} color="#fff">AI</Typography>
-      </Box>
-      <Box flex={1} display="flex" flexDirection="column" gap={1}>
-        <Box display="flex" alignItems="center" gap={1}>
-          <Typography fontSize={14} fontWeight={600} sx={{ color: a }}>{name}</Typography>
+    <div style={{ display: 'flex', gap: 12 }}>
+      <div style={{ width: 36, height: 36, borderRadius: '50%', backgroundColor: a, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>AI</span>
+      </div>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: a }}>{name}</span>
           {badge && <Chip label={badge.label} color={badge.color} />}
-          {time && <Typography fontSize={11} sx={{ color: '#71717a' }}>{time}</Typography>}
-        </Box>
+          {time && <span style={{ fontSize: 11, color: '#71717a' }}>{time}</span>}
+        </div>
         {children}
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 }
 
 function ContentCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <Box sx={{ borderRadius: 3, bgcolor: '#111118', p: 2, display: 'flex', flexDirection: 'column', gap: 1.25 }}>
-      <Typography fontSize={12} fontWeight={600} sx={{ color: '#71717a' }}>{title}</Typography>
+    <div style={{ borderRadius: 12, backgroundColor: '#111118', padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <span style={{ fontSize: 12, fontWeight: 600, color: '#71717a' }}>{title}</span>
       {children}
-    </Box>
+    </div>
   );
 }
 
 function OptionRow({ label, description, selected }: { label: string; description: string; selected?: boolean }) {
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, px: 1.5, py: 1.25, borderRadius: 2, border: 1, borderColor: selected ? ACCENT : '#27273a', ...(selected ? { bgcolor: `${ACCENT}15` } : {}) }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingLeft: 12, paddingRight: 12, paddingTop: 10, paddingBottom: 10, borderRadius: 8, border: `1px solid ${selected ? ACCENT : '#27273a'}`, ...(selected ? { backgroundColor: `${ACCENT}15` } : {}) }}>
       {selected ? (
-        <Box width={18} height={18} borderRadius={1} bgcolor={ACCENT} display="flex" alignItems="center" justifyContent="center"><Check size={12} color="#fff" /></Box>
+        <div style={{ width: 18, height: 18, borderRadius: 4, backgroundColor: ACCENT, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Check size={12} color="#fff" /></div>
       ) : (
-        <Box width={18} height={18} borderRadius={1} sx={{ border: 1, borderColor: '#71717a' }} />
+        <div style={{ width: 18, height: 18, borderRadius: 4, border: '1px solid #71717a' }} />
       )}
-      <Box display="flex" flexDirection="column" gap={0.25}>
-        <Typography fontSize={13} fontWeight={selected ? 600 : 400} sx={{ color: selected ? '#f4f4f5' : '#a1a1aa' }}>{label}</Typography>
-        <Typography fontSize={11} sx={{ color: selected ? '#a1a1aa' : '#71717a' }}>{description}</Typography>
-      </Box>
-    </Box>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={{ fontSize: 13, fontWeight: selected ? 600 : 400, color: selected ? '#f4f4f5' : '#a1a1aa' }}>{label}</span>
+        <span style={{ fontSize: 11, color: selected ? '#a1a1aa' : '#71717a' }}>{description}</span>
+      </div>
+    </div>
   );
 }
 
 function SummaryCard({ value, label, color }: { value: string; label: string; color: string }) {
   return (
-    <Box sx={{ flex: 1, borderRadius: 2, bgcolor: `${color}15`, p: 1.5, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
-      <Typography fontSize={28} fontWeight={700} fontFamily="JetBrains Mono, monospace" sx={{ color }}>{value}</Typography>
-      <Typography fontSize={11} sx={{ color }}>{label}</Typography>
-    </Box>
+    <div style={{ flex: 1, borderRadius: 8, backgroundColor: `${color}15`, padding: 12, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+      <span style={{ fontSize: 28, fontWeight: 700, fontFamily: 'JetBrains Mono, monospace', color }}>{value}</span>
+      <span style={{ fontSize: 11, color }}>{label}</span>
+    </div>
   );
 }
 
 function RootCauseCard({ number, title, confidence, description, path }: { number: number; title: string; confidence: string; description: string; path: string }) {
   return (
-    <Box sx={{ borderRadius: 2.5, bgcolor: '#ef444410', border: 1, borderColor: '#ef4444', p: 1.75, display: 'flex', flexDirection: 'column', gap: 1.25 }}>
-      <Box display="flex" justifyContent="space-between" alignItems="center">
-        <Box display="flex" alignItems="center" gap={1}>
-          <Box width={24} height={24} borderRadius="50%" bgcolor="#ef4444" display="flex" alignItems="center" justifyContent="center">
-            <Typography fontSize={12} fontWeight={600} color="#fff">{number}</Typography>
-          </Box>
-          <Typography fontSize={13} fontWeight={600} color="#f4f4f5">{title}</Typography>
-        </Box>
+    <div style={{ borderRadius: 10, backgroundColor: '#ef444410', border: '1px solid #ef4444', padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ width: 24, height: 24, borderRadius: '50%', backgroundColor: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>{number}</span>
+          </div>
+          <span style={{ fontSize: 13, fontWeight: 600, color: '#f4f4f5' }}>{title}</span>
+        </div>
         <Chip label={`${confidence} confidence`} color="#22c55e" />
-      </Box>
-      <Typography fontSize={12} color="#a1a1aa" lineHeight={1.5}>{description}</Typography>
-      <Box display="flex" alignItems="center" gap={0.75}>
-        <Typography fontSize={11} sx={{ color: '#71717a' }}>Path:</Typography>
-        <Typography fontSize={11} fontFamily="JetBrains Mono, monospace" sx={{ color: ACCENT }}>{path}</Typography>
-      </Box>
-    </Box>
+      </div>
+      <span style={{ fontSize: 12, color: '#a1a1aa', lineHeight: 1.5 }}>{description}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span style={{ fontSize: 11, color: '#71717a' }}>Path:</span>
+        <span style={{ fontSize: 11, fontFamily: 'JetBrains Mono, monospace', color: ACCENT }}>{path}</span>
+      </div>
+    </div>
   );
 }
 
 function RecommendationRow({ number, title, description }: { number: number; title: string; description: string }) {
   return (
-    <Box sx={{ display: 'flex', gap: 1.25, p: 1.5, borderRadius: 2, bgcolor: `${ACCENT}10` }}>
-      <Box width={24} height={24} borderRadius="50%" bgcolor={ACCENT} display="flex" alignItems="center" justifyContent="center" flexShrink={0}>
-        <Typography fontSize={12} fontWeight={600} color="#fff">{number}</Typography>
-      </Box>
-      <Box display="flex" flexDirection="column" gap={0.5}>
-        <Typography fontSize={13} fontWeight={600} color="#f4f4f5">{title}</Typography>
-        <Typography fontSize={12} color="#a1a1aa" lineHeight={1.4}>{description}</Typography>
-      </Box>
-    </Box>
+    <div style={{ display: 'flex', gap: 10, padding: 12, borderRadius: 8, backgroundColor: `${ACCENT}10` }}>
+      <div style={{ width: 24, height: 24, borderRadius: '50%', backgroundColor: ACCENT, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <span style={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>{number}</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: '#f4f4f5' }}>{title}</span>
+        <span style={{ fontSize: 12, color: '#a1a1aa', lineHeight: 1.4 }}>{description}</span>
+      </div>
+    </div>
   );
 }
 
 function ActionButton({ label, primary, accent }: { label: string; primary?: boolean; accent?: string }) {
-  const a = accent ?? '#8b5cf6';
+  const a = accent ?? 'var(--primary-color)';
   return (
-    <Box sx={{ px: 2, py: 1.25, borderRadius: 2, bgcolor: primary ? `${a}20` : '#1a1a24', border: 1, borderColor: primary ? a : '#27273a', cursor: 'pointer', '&:hover': { borderColor: primary ? a : '#71717a' } }}>
-      <Typography fontSize={13} sx={{ color: primary ? a : '#a1a1aa' }}>{label}</Typography>
-    </Box>
+    <div style={{ paddingLeft: 16, paddingRight: 16, paddingTop: 10, paddingBottom: 10, borderRadius: 8, backgroundColor: primary ? `${a}20` : '#1a1a24', border: `1px solid ${primary ? a : '#27273a'}`, cursor: 'pointer' }}>
+      <span style={{ fontSize: 13, color: primary ? a : '#a1a1aa' }}>{label}</span>
+    </div>
   );
 }

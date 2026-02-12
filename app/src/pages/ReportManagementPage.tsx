@@ -1,14 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Breadcrumb, Button, Input, Typography, Flex } from 'antd';
 import {
-  Box, Breadcrumbs, Link, Typography, Button, TextField, InputAdornment, IconButton,
-} from '@mui/material';
-import {
-  ChevronRight, ChevronLeft, Plus, Search, BarChart2, Users, PieChart,
-  TrendingUp, Database, TriangleAlert, Zap, Globe, Ellipsis,
+  BarChart2, Users, PieChart,
+  TrendingUp, Database, TriangleAlert, Zap, Globe,
+  Plus, Search, ChevronLeft, ChevronRight, Ellipsis,
 } from 'lucide-react';
+import { useHeader } from '../contexts/HeaderContext';
 
-/* ── Types ── */
+/* -- Types -- */
 type ReportStatus = 'Active' | 'Pending' | 'Draft';
 
 interface Report {
@@ -21,16 +21,16 @@ interface Report {
   updated: string;
 }
 
-/* ── Status config ── */
+/* -- Status config -- */
 const statusConfig: Record<ReportStatus, { color: string; bg: string }> = {
   Active:  { color: '#22c55e', bg: 'rgba(34,197,94,0.12)' },
   Pending: { color: '#fbbf24', bg: 'rgba(251,191,36,0.12)' },
   Draft:   { color: '#a1a1aa', bg: 'rgba(161,161,170,0.12)' },
 };
 
-/* ── Mock data ── */
+/* -- Mock data -- */
 const reports: Report[] = [
-  { id: 'sales-overview',      title: 'Sales Overview',     description: 'Monthly sales performance and trends analysis',      icon: BarChart2,       iconColor: '#8b5cf6', status: 'Active',  updated: 'Updated 2 hours ago' },
+  { id: 'sales-overview',      title: 'Sales Overview',     description: 'Monthly sales performance and trends analysis',      icon: BarChart2,       iconColor: 'var(--primary-color)', status: 'Active',  updated: 'Updated 2 hours ago' },
   { id: 'user-analytics',      title: 'User Analytics',     description: 'User behavior and engagement metrics',               icon: Users,           iconColor: '#22d3ee', status: 'Active',  updated: 'Updated 1 day ago' },
   { id: 'revenue-breakdown',   title: 'Revenue Breakdown',  description: 'Revenue distribution by category',                   icon: PieChart,        iconColor: '#f472b6', status: 'Pending', updated: 'Updated 3 days ago' },
   { id: 'growth-metrics',      title: 'Growth Metrics',     description: 'Key performance indicators and growth',              icon: TrendingUp,      iconColor: '#4ade80', status: 'Active',  updated: 'Updated 5 hours ago' },
@@ -42,71 +42,68 @@ const reports: Report[] = [
 
 const PAGE_SIZE = 8;
 
-/* ── Report Card ── */
+/* -- Report Card -- */
 function ReportCard({ report, onClick }: { report: Report; onClick: () => void }) {
   const Icon = report.icon;
   const st = statusConfig[report.status];
 
   return (
-    <Box
+    <div
       onClick={onClick}
-      sx={{
+      style={{
         flex: '1 1 0',
         minWidth: 220,
         height: 200,
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        p: 2.5,
-        borderRadius: 3,
-        bgcolor: '#111118',
-        border: 1,
-        borderColor: 'divider',
+        padding: 20,
+        borderRadius: 12,
+        background: '#111118',
+        border: '1px solid #27273a',
         cursor: 'pointer',
         transition: 'all 0.15s',
-        '&:hover': { borderColor: 'text.secondary' },
       }}
     >
       {/* Header */}
-      <Box display="flex" flexDirection="column" gap={1.5}>
-        <Box display="flex" alignItems="center" justifyContent="space-between">
-          <Box
-            sx={{
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <Flex align="center" justify="space-between">
+          <div
+            style={{
               width: 40,
               height: 40,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              borderRadius: 2,
-              bgcolor: `${report.iconColor}20`,
+              borderRadius: 8,
+              background: `${report.iconColor}20`,
             }}
           >
             <Icon size={20} color={report.iconColor} />
-          </Box>
-          <IconButton size="small" sx={{ color: 'text.secondary' }}>
-            <Ellipsis size={20} />
-          </IconButton>
-        </Box>
-        <Typography fontSize={16} fontWeight={600}>{report.title}</Typography>
-        <Typography fontSize={13} color="text.secondary">{report.description}</Typography>
-      </Box>
+          </div>
+          <Button type="text" size="small" icon={<Ellipsis size={20} />} />
+        </Flex>
+        <Typography.Text style={{ fontSize: 16, fontWeight: 600 }}>{report.title}</Typography.Text>
+        <Typography.Text style={{ fontSize: 13, color: '#a1a1aa' }}>{report.description}</Typography.Text>
+      </div>
 
       {/* Footer */}
-      <Box display="flex" alignItems="center" justifyContent="space-between">
-        <Typography fontSize={12} color="#71717a">{report.updated}</Typography>
-        <Box sx={{ px: 1, py: 0.5, borderRadius: 1, bgcolor: st.bg }}>
-          <Typography fontSize={11} fontWeight={500} sx={{ color: st.color }}>
+      <Flex align="center" justify="space-between">
+        <Typography.Text style={{ fontSize: 12, color: '#71717a' }}>{report.updated}</Typography.Text>
+        <div style={{ padding: '4px 8px', borderRadius: 4, background: st.bg }}>
+          <Typography.Text style={{ fontSize: 11, fontWeight: 500, color: st.color }}>
             {report.status}
-          </Typography>
-        </Box>
-      </Box>
-    </Box>
+          </Typography.Text>
+        </div>
+      </Flex>
+    </div>
   );
 }
 
-/* ── Page ── */
+/* -- Page -- */
 export default function ReportManagementPage() {
   const navigate = useNavigate();
+  const { setBreadcrumbs, setActions } = useHeader();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
 
@@ -122,161 +119,132 @@ export default function ReportManagementPage() {
   const row1 = paged.slice(0, 4);
   const row2 = paged.slice(4, 8);
 
+  useEffect(() => {
+    setBreadcrumbs(
+      <Breadcrumb
+        items={[
+          { title: <a href="#">Data</a> },
+          { title: <Typography.Text strong>Report Management</Typography.Text> },
+        ]}
+      />
+    );
+    setActions(
+      <Button type="primary" icon={<Plus size={16} />}>
+        New Report
+      </Button>
+    );
+  }, [setBreadcrumbs, setActions]);
+
   return (
     <>
-      {/* Header */}
-      <Box
-        height={64}
-        display="flex"
-        alignItems="center"
-        justifyContent="space-between"
-        px={3}
-        borderBottom={1}
-        borderColor="divider"
-      >
-        <Breadcrumbs separator={<ChevronRight size={14} />}>
-          <Link underline="hover" color="text.secondary" href="#">
-            Data
-          </Link>
-          <Typography color="text.primary" fontWeight={500}>
-            Report Management
-          </Typography>
-        </Breadcrumbs>
-
-        <Button variant="contained" size="small" startIcon={<Plus size={16} />}>
-          New Report
-        </Button>
-      </Box>
-
-      {/* Content */}
-      <Box flex={1} p={3} display="flex" flexDirection="column" gap={3} overflow="auto">
+      <div style={{ flex: 1, padding: 24, display: 'flex', flexDirection: 'column', gap: 24, overflow: 'auto' }}>
         {/* Title row */}
-        <Box display="flex" alignItems="center" justifyContent="space-between">
-          <Typography fontSize={20} fontWeight={600}>All Reports</Typography>
-          <TextField
-            size="small"
+        <Flex align="center" justify="space-between">
+          <Typography.Text style={{ fontSize: 20, fontWeight: 600 }}>All Reports</Typography.Text>
+          <Input
             placeholder="Search reports..."
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Search size={16} color="#a1a1aa" />
-                </InputAdornment>
-              ),
-            }}
-            sx={{
-              width: 240,
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 2,
-                bgcolor: '#1a1a24',
-                fontSize: 14,
-              },
-            }}
+            prefix={<Search size={16} color="#a1a1aa" />}
+            style={{ width: 240, borderRadius: 8, background: '#1a1a24', fontSize: 14 }}
           />
-        </Box>
+        </Flex>
 
         {/* Cards grid */}
-        <Box flex={1} display="flex" flexDirection="column" gap={2.5}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 20 }}>
           {row1.length > 0 && (
-            <Box display="flex" gap={2.5}>
+            <Flex gap={20}>
               {row1.map((r) => (
                 <ReportCard key={r.title} report={r} onClick={() => navigate(`/report-management/${r.id}`)} />
               ))}
               {/* Filler to keep 4-column layout */}
               {row1.length < 4 && Array.from({ length: 4 - row1.length }).map((_, i) => (
-                <Box key={`filler1-${i}`} sx={{ flex: '1 1 0', minWidth: 220 }} />
+                <div key={`filler1-${i}`} style={{ flex: '1 1 0', minWidth: 220 }} />
               ))}
-            </Box>
+            </Flex>
           )}
           {row2.length > 0 && (
-            <Box display="flex" gap={2.5}>
+            <Flex gap={20}>
               {row2.map((r) => (
                 <ReportCard key={r.title} report={r} onClick={() => navigate(`/report-management/${r.id}`)} />
               ))}
               {row2.length < 4 && Array.from({ length: 4 - row2.length }).map((_, i) => (
-                <Box key={`filler2-${i}`} sx={{ flex: '1 1 0', minWidth: 220 }} />
+                <div key={`filler2-${i}`} style={{ flex: '1 1 0', minWidth: 220 }} />
               ))}
-            </Box>
+            </Flex>
           )}
-        </Box>
+        </div>
 
         {/* Pagination */}
-        <Box display="flex" alignItems="center" justifyContent="space-between">
-          <Typography fontSize={13} color="text.secondary">
+        <Flex align="center" justify="space-between">
+          <Typography.Text style={{ fontSize: 13, color: '#a1a1aa' }}>
             Showing {Math.min((page - 1) * PAGE_SIZE + 1, filtered.length)}-{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length} reports
-          </Typography>
-          <Box display="flex" alignItems="center" gap={1}>
-            <Box
+          </Typography.Text>
+          <Flex align="center" gap={8}>
+            <div
               onClick={() => setPage((p) => Math.max(1, p - 1))}
-              sx={{
+              style={{
                 width: 36,
                 height: 36,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                borderRadius: 2,
-                bgcolor: '#1a1a24',
-                border: 1,
-                borderColor: 'divider',
+                borderRadius: 8,
+                background: '#1a1a24',
+                border: '1px solid #27273a',
                 cursor: 'pointer',
-                '&:hover': { borderColor: 'text.secondary' },
               }}
             >
-              <ChevronLeft size={16} color="#a1a1aa" />
-            </Box>
+              <ChevronLeft size={12} color="#a1a1aa" />
+            </div>
             {Array.from({ length: totalPages }).map((_, i) => {
               const p = i + 1;
               const active = p === page;
               return (
-                <Box
+                <div
                   key={p}
                   onClick={() => setPage(p)}
-                  sx={{
+                  style={{
                     width: 36,
                     height: 36,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    borderRadius: 2,
+                    borderRadius: 8,
                     cursor: 'pointer',
                     ...(active
-                      ? { bgcolor: 'primary.main' }
+                      ? { background: 'var(--primary-color)' }
                       : {
-                          bgcolor: '#1a1a24',
-                          border: 1,
-                          borderColor: 'divider',
-                          '&:hover': { borderColor: 'text.secondary' },
+                          background: '#1a1a24',
+                          border: '1px solid #27273a',
                         }),
                   }}
                 >
-                  <Typography fontSize={14} fontWeight={500} color={active ? '#fff' : 'text.secondary'}>
+                  <Typography.Text style={{ fontSize: 14, fontWeight: 500, color: active ? '#fff' : '#a1a1aa' }}>
                     {p}
-                  </Typography>
-                </Box>
+                  </Typography.Text>
+                </div>
               );
             })}
-            <Box
+            <div
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              sx={{
+              style={{
                 width: 36,
                 height: 36,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                borderRadius: 2,
-                bgcolor: '#1a1a24',
-                border: 1,
-                borderColor: 'divider',
+                borderRadius: 8,
+                background: '#1a1a24',
+                border: '1px solid #27273a',
                 cursor: 'pointer',
-                '&:hover': { borderColor: 'text.secondary' },
               }}
             >
-              <ChevronRight size={16} color="#a1a1aa" />
-            </Box>
-          </Box>
-        </Box>
-      </Box>
+              <ChevronRight size={12} color="#a1a1aa" />
+            </div>
+          </Flex>
+        </Flex>
+      </div>
     </>
   );
 }

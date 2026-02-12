@@ -1,13 +1,13 @@
+import { Breadcrumb, Typography, Button, Select } from 'antd';
 import {
-  Box, Breadcrumbs, Link, Typography, Button, Select, MenuItem,
-  type SelectChangeEvent,
-} from '@mui/material';
-import {
-  ChevronRight, ChevronDown, Database, GitMerge, Share2, Key,
-  ArrowRight, Sparkles, Plus, Save, Link as LinkIcon, Trash2, TriangleAlert,
+  ChevronRight, ChevronDown, Database,
+  ArrowRight, Zap, Plus, Save,
+  ArrowLeftRight, Trash2, Check, AlertTriangle,
+  KeyRound, Share2, GitMerge,
 } from 'lucide-react';
 import SuccessModal from '../components/SuccessModal';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useHeader } from '../contexts/HeaderContext';
 
 /* ── Types ── */
 interface SourceField {
@@ -54,15 +54,15 @@ const transformOptions = ['Direct mapping', 'Uppercase', 'Lowercase', 'Trim', 'C
 /* ── Connector dot ── */
 function ConnectorDot({ filled }: { filled: boolean }) {
   return (
-    <Box
-      sx={{
+    <div
+      style={{
         width: 12,
         height: 12,
         borderRadius: '50%',
         flexShrink: 0,
         ...(filled
-          ? { bgcolor: 'primary.main' }
-          : { border: 2, borderColor: 'divider' }),
+          ? { background: 'var(--primary-color)' }
+          : { border: '2px solid rgba(255,255,255,0.12)' }),
       }}
     />
   );
@@ -73,123 +73,59 @@ function FieldRow({
   name,
   type,
   mapped,
+  active,
   isPrimary,
   connectorSide,
 }: {
   name: string;
   type: string;
   mapped: boolean;
+  active?: boolean;
   isPrimary?: boolean;
   connectorSide: 'left' | 'right';
 }) {
+  const baseStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '10px 12px',
+    borderRadius: 8,
+  };
+
+  const stateStyle: React.CSSProperties = active
+    ? { background: 'rgba(139,92,246,0.08)', border: '1.5px solid var(--primary-color)' }
+    : mapped
+      ? { background: 'rgba(139,92,246,0.12)' }
+      : { border: '1px solid rgba(255,255,255,0.12)' };
+
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        px: 1.5,
-        py: 1.25,
-        borderRadius: 2,
-        ...(mapped
-          ? { bgcolor: 'rgba(139,92,246,0.12)' }
-          : { border: 1, borderColor: 'divider' }),
-      }}
-    >
+    <div style={{ ...baseStyle, ...stateStyle }}>
       {connectorSide === 'right' && (
         <>
-          <Box display="flex" alignItems="center" gap={1}>
-            {isPrimary && <Key size={14} />}
-            <Typography fontSize={13} fontWeight={500}>{name}</Typography>
-          </Box>
-          <Typography fontSize={11} color="text.secondary">{type}</Typography>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {isPrimary && <KeyRound size={14} />}
+            <Typography.Text style={{ fontSize: 13, fontWeight: 500 }}>{name}</Typography.Text>
+          </div>
+          <Typography.Text type="secondary" style={{ fontSize: 11 }}>{type}</Typography.Text>
           <ConnectorDot filled={mapped} />
         </>
       )}
       {connectorSide === 'left' && (
         <>
           <ConnectorDot filled={mapped} />
-          <Box display="flex" alignItems="center" gap={1}>
-            <Typography fontSize={13} fontWeight={500}>{name}</Typography>
-          </Box>
-          <Typography fontSize={11} color="text.secondary">{type}</Typography>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Typography.Text style={{ fontSize: 13, fontWeight: 500 }}>{name}</Typography.Text>
+          </div>
+          <Typography.Text type="secondary" style={{ fontSize: 11 }}>{type}</Typography.Text>
         </>
       )}
-    </Box>
-  );
-}
-
-/* ── Selector ── */
-function PanelSelector({
-  value,
-  options,
-  onChange,
-}: {
-  value: string;
-  options: string[];
-  onChange: (v: string) => void;
-}) {
-  return (
-    <Select
-      size="small"
-      value={value}
-      onChange={(e: SelectChangeEvent) => onChange(e.target.value)}
-      IconComponent={ChevronDown}
-      sx={{
-        width: '100%',
-        borderRadius: 2,
-        bgcolor: 'action.hover',
-        fontSize: 13,
-        fontWeight: 500,
-        '& .MuiSelect-select': { py: 1.25, px: 1.5 },
-        '& .MuiSelect-icon': { width: 16, height: 16, right: 12, top: 'calc(50% - 8px)' },
-      }}
-    >
-      {options.map((opt) => (
-        <MenuItem key={opt} value={opt} sx={{ fontSize: 13 }}>{opt}</MenuItem>
-      ))}
-    </Select>
-  );
-}
-
-/* ── Inline dropdown for add‑mapping form ── */
-function InlineSelect({
-  value,
-  options,
-  placeholder,
-  onChange,
-}: {
-  value: string;
-  options: string[];
-  placeholder: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <Select
-      size="small"
-      displayEmpty
-      value={value}
-      onChange={(e: SelectChangeEvent) => onChange(e.target.value)}
-      IconComponent={ChevronDown}
-      renderValue={(v) => v || <span style={{ color: '#71717a' }}>{placeholder}</span>}
-      sx={{
-        width: '100%',
-        borderRadius: 2,
-        bgcolor: 'action.hover',
-        fontSize: 12,
-        '& .MuiSelect-select': { py: 1, px: 1.5 },
-        '& .MuiSelect-icon': { width: 14, height: 14, right: 10, top: 'calc(50% - 7px)' },
-      }}
-    >
-      {options.map((opt) => (
-        <MenuItem key={opt} value={opt} sx={{ fontSize: 12 }}>{opt}</MenuItem>
-      ))}
-    </Select>
+    </div>
   );
 }
 
 /* ── Page ── */
 export default function FieldMappingPage() {
+  const { setBreadcrumbs, setActions } = useHeader();
   const [source, setSource] = useState('PostgreSQL / users');
   const [target, setTarget] = useState('Person (Class)');
 
@@ -240,329 +176,249 @@ export default function FieldMappingPage() {
     setDeletingSource(null);
   };
 
+  useEffect(() => {
+    setBreadcrumbs(
+      <Breadcrumb
+        separator={<Typography.Text type="secondary" style={{ fontSize: 14 }}>/</Typography.Text>}
+        items={[
+          { title: <a>Integrations</a> },
+          { title: <Typography.Text strong>Field Mapping</Typography.Text> },
+        ]}
+      />
+    );
+    setActions(
+      <div style={{ display: 'flex', gap: 12 }}>
+        <Button icon={<Zap size={16} />}>Auto Mapping</Button>
+        <Button type="primary" icon={<Save size={16} />} onClick={() => setSaveOpen(true)}>
+          Save Mapping
+        </Button>
+      </div>
+    );
+  }, [setBreadcrumbs, setActions]);
+
   return (
     <>
-      {/* Header */}
-      <Box
-        height={64}
-        display="flex"
-        alignItems="center"
-        justifyContent="space-between"
-        px={3}
-        borderBottom={1}
-        borderColor="divider"
-      >
-        <Breadcrumbs separator={<ChevronRight size={14} />}>
-          <Link underline="hover" color="text.secondary" href="#">
-            Integrations
-          </Link>
-          <Typography color="text.primary" fontWeight={500}>
-            Field Mapping
-          </Typography>
-        </Breadcrumbs>
-
-        <Box display="flex" gap={1.5}>
-          <Button variant="outlined" size="small" startIcon={<Sparkles size={16} />}>
-            Auto Mapping
-          </Button>
-          <Button variant="contained" size="small" startIcon={<Save size={16} />} onClick={() => setSaveOpen(true)}>
-            Save Mapping
-          </Button>
-        </Box>
-      </Box>
-
-      {/* Content — three‑panel layout */}
-      <Box flex={1} p={3} display="flex" gap={3} overflow="hidden">
+      {/* Content — three-panel layout */}
+      <div style={{ flex: 1, padding: 24, display: 'flex', gap: 24, overflow: 'hidden' }}>
         {/* ── Source Fields ── */}
-        <Box
-          sx={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            borderRadius: 3,
-            border: 1,
-            borderColor: 'divider',
-            overflow: 'hidden',
-          }}
-        >
-          <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider', display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-            <Box display="flex" alignItems="center" gap={1}>
+        <div style={{
+          flex: 1, display: 'flex', flexDirection: 'column',
+          borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', overflow: 'hidden',
+        }}>
+          <div style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.12)', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <Database size={20} color="#336791" />
-              <Typography fontSize={16} fontWeight={600}>Source Fields</Typography>
-            </Box>
-            <PanelSelector
+              <Typography.Text style={{ fontSize: 16, fontWeight: 600 }}>Source Fields</Typography.Text>
+            </div>
+            <Select
+              style={{ width: '100%' }}
               value={source}
-              options={['PostgreSQL / users', 'PostgreSQL / orders', 'MySQL / products']}
               onChange={setSource}
+              suffixIcon={<ChevronDown size={16} />}
+              options={[
+                { value: 'PostgreSQL / users', label: 'PostgreSQL / users' },
+                { value: 'PostgreSQL / orders', label: 'PostgreSQL / orders' },
+                { value: 'MySQL / products', label: 'MySQL / products' },
+              ]}
             />
-          </Box>
-          <Box sx={{ flex: 1, p: 1.5, display: 'flex', flexDirection: 'column', gap: 1, overflow: 'auto' }}>
+          </div>
+          <div style={{ flex: 1, padding: 12, display: 'flex', flexDirection: 'column', gap: 8, overflow: 'auto' }}>
             {allSourceFields.map((f) => (
               <FieldRow
                 key={f.name}
                 name={f.name}
                 type={f.type}
                 mapped={mappedSourceNames.has(f.name)}
+                active={adding && newSource === f.name}
                 isPrimary={f.isPrimary}
                 connectorSide="right"
               />
             ))}
-          </Box>
-        </Box>
+          </div>
+        </div>
 
         {/* ── Field Mappings ── */}
-        <Box
-          sx={{
-            width: 320,
-            flexShrink: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            borderRadius: 3,
-            border: 1,
-            borderColor: 'divider',
-            overflow: 'hidden',
-          }}
-        >
-          <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider', display: 'flex', flexDirection: 'column', gap: 1 }}>
-            <Box display="flex" alignItems="center" gap={1}>
+        <div style={{
+          width: 320, flexShrink: 0, display: 'flex', flexDirection: 'column',
+          borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', overflow: 'hidden',
+        }}>
+          <div style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.12)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <GitMerge size={20} />
-              <Typography fontSize={16} fontWeight={600}>Field Mappings</Typography>
-            </Box>
-            <Typography fontSize={12} color="text.secondary">
+              <Typography.Text style={{ fontSize: 16, fontWeight: 600 }}>Field Mappings</Typography.Text>
+            </div>
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
               {mappedCount} of {totalCount} fields mapped
-            </Typography>
-          </Box>
-          <Box sx={{ flex: 1, p: 1.5, display: 'flex', flexDirection: 'column', gap: 1, overflow: 'auto' }}>
+            </Typography.Text>
+          </div>
+          <div style={{ flex: 1, padding: 12, display: 'flex', flexDirection: 'column', gap: 8, overflow: 'auto' }}>
             {mappingList.map((m) =>
               deletingSource === m.source ? (
                 /* ── Delete confirmation ── */
-                <Box
+                <div
                   key={m.source}
-                  sx={{
-                    p: 1.5,
-                    borderRadius: 2,
-                    border: 1,
-                    borderColor: 'error.main',
-                    bgcolor: 'rgba(239,68,68,0.08)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 1.25,
+                  style={{
+                    padding: 12, borderRadius: 8, border: '1px solid #ef4444',
+                    background: 'rgba(239,68,68,0.08)', display: 'flex', flexDirection: 'column', gap: 10,
                   }}
                 >
-                  <Box display="flex" alignItems="center" justifyContent="space-between">
-                    <Typography fontSize={13} fontWeight={500}>{m.source}</Typography>
-                    <ArrowRight size={14} />
-                    <Typography fontSize={13} fontWeight={500}>{m.target}</Typography>
-                  </Box>
-                  <Box display="flex" alignItems="center" gap={0.5}>
-                    <Sparkles size={12} color="#a1a1aa" />
-                    <Typography fontSize={11} color="text.secondary">{m.transform}</Typography>
-                  </Box>
-                  <Box display="flex" alignItems="center" gap={0.5} mt={0.25}>
-                    <TriangleAlert size={13} color="#ef4444" />
-                    <Typography fontSize={12} color="error.main" fontWeight={500}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Typography.Text style={{ fontSize: 13, fontWeight: 500 }}>{m.source}</Typography.Text>
+                    <ArrowRight size={14} color="#ef4444" />
+                    <Typography.Text style={{ fontSize: 13, fontWeight: 500 }}>{m.target}</Typography.Text>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Zap size={12} color="#a1a1aa" />
+                    <Typography.Text type="secondary" style={{ fontSize: 11 }}>{m.transform}</Typography.Text>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                    <AlertTriangle size={12} color="#ef4444" />
+                    <Typography.Text style={{ fontSize: 12, color: '#ef4444', fontWeight: 500 }}>
                       Remove this mapping?
-                    </Typography>
-                  </Box>
-                  <Box display="flex" gap={1}>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      fullWidth
-                      onClick={() => setDeletingSource(null)}
-                      sx={{ fontSize: 12, py: 0.5 }}
-                    >
-                      Keep
-                    </Button>
-                    <Button
-                      variant="contained"
-                      size="small"
-                      fullWidth
-                      color="error"
-                      startIcon={<Trash2 size={13} />}
-                      onClick={() => handleConfirmDelete(m.source)}
-                      sx={{ fontSize: 12, py: 0.5 }}
-                    >
+                    </Typography.Text>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <Button block onClick={() => setDeletingSource(null)}>Keep</Button>
+                    <Button block danger type="primary" icon={<Trash2 size={16} />} onClick={() => handleConfirmDelete(m.source)}>
                       Remove
                     </Button>
-                  </Box>
-                </Box>
+                  </div>
+                </div>
               ) : (
                 /* ── Normal mapping row with hover trash ── */
-                <Box
+                <div
                   key={m.source}
-                  sx={{
-                    p: 1.5,
-                    borderRadius: 2,
-                    border: 1,
-                    borderColor: 'primary.main',
-                    bgcolor: 'rgba(139,92,246,0.06)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 1,
-                    position: 'relative',
-                    '&:hover .delete-btn': { opacity: 1 },
+                  className="mapping-row"
+                  style={{
+                    padding: 12, borderRadius: 8, border: '1px solid var(--primary-color)',
+                    background: 'rgba(139,92,246,0.06)', display: 'flex', flexDirection: 'column',
+                    gap: 8, position: 'relative',
                   }}
                 >
-                  <Box display="flex" alignItems="center" justifyContent="space-between">
-                    <Typography fontSize={13} fontWeight={500}>{m.source}</Typography>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Typography.Text style={{ fontSize: 13, fontWeight: 500 }}>{m.source}</Typography.Text>
                     <ArrowRight size={14} />
-                    <Typography fontSize={13} fontWeight={500}>{m.target}</Typography>
-                    <Box
-                      className="delete-btn"
+                    <Typography.Text style={{ fontSize: 13, fontWeight: 500 }}>{m.target}</Typography.Text>
+                    <div
                       onClick={() => setDeletingSource(m.source)}
-                      sx={{
-                        opacity: 0,
-                        transition: 'opacity 0.15s',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        ml: 0.5,
-                        color: 'error.main',
-                        '&:hover': { color: 'error.light' },
-                      }}
+                      style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', marginLeft: 4, color: '#ef4444' }}
                     >
                       <Trash2 size={14} />
-                    </Box>
-                  </Box>
-                  <Box display="flex" alignItems="center" gap={0.5}>
-                    <Sparkles size={12} color="#a1a1aa" />
-                    <Typography fontSize={11} color="text.secondary">{m.transform}</Typography>
-                  </Box>
-                </Box>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Zap size={12} color="#a1a1aa" />
+                    <Typography.Text type="secondary" style={{ fontSize: 11 }}>{m.transform}</Typography.Text>
+                  </div>
+                </div>
               ),
             )}
 
             {/* Add Mapping — form or button */}
             {adding ? (
-              <Box
-                sx={{
-                  p: 1.5,
-                  borderRadius: 2,
-                  border: 1,
-                  borderColor: 'primary.main',
-                  bgcolor: 'rgba(139,92,246,0.06)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 1.25,
-                }}
-              >
-                <Box display="flex" alignItems="center" gap={0.75}>
-                  <LinkIcon size={14} />
-                  <Typography fontSize={13} fontWeight={600}>New Mapping</Typography>
-                </Box>
+              <div style={{
+                padding: 12, borderRadius: 8, border: '1px solid var(--primary-color)',
+                background: 'rgba(139,92,246,0.06)', display: 'flex', flexDirection: 'column', gap: 10,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <ArrowLeftRight size={14} />
+                  <Typography.Text style={{ fontSize: 13, fontWeight: 600 }}>New Mapping</Typography.Text>
+                </div>
 
-                <Box display="flex" flexDirection="column" gap={1}>
-                  <Box>
-                    <Typography fontSize={11} color="text.secondary" mb={0.5}>Source Field</Typography>
-                    <InlineSelect
-                      value={newSource}
-                      options={unmappedSources}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div>
+                    <Typography.Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 4 }}>Source Field</Typography.Text>
+                    <Select
+                      style={{ width: '100%' }}
+                      value={newSource || undefined}
                       placeholder="Select source field"
                       onChange={setNewSource}
+                      suffixIcon={<ChevronDown size={16} />}
+                      options={unmappedSources.map((s) => ({ value: s, label: s }))}
                     />
-                  </Box>
-                  <Box>
-                    <Typography fontSize={11} color="text.secondary" mb={0.5}>Target Property</Typography>
-                    <InlineSelect
-                      value={newTarget}
-                      options={unmappedTargets}
+                  </div>
+                  <div>
+                    <Typography.Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 4 }}>Target Property</Typography.Text>
+                    <Select
+                      style={{ width: '100%' }}
+                      value={newTarget || undefined}
                       placeholder="Select target property"
                       onChange={setNewTarget}
+                      suffixIcon={<ChevronDown size={16} />}
+                      options={unmappedTargets.map((t) => ({ value: t, label: t }))}
                     />
-                  </Box>
-                  <Box>
-                    <Typography fontSize={11} color="text.secondary" mb={0.5}>Transform</Typography>
-                    <InlineSelect
+                  </div>
+                  <div>
+                    <Typography.Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 4 }}>Transform</Typography.Text>
+                    <Select
+                      style={{ width: '100%' }}
                       value={newTransform}
-                      options={transformOptions}
-                      placeholder="Select transform"
                       onChange={setNewTransform}
+                      suffixIcon={<ChevronDown size={16} />}
+                      options={transformOptions.map((t) => ({ value: t, label: t }))}
                     />
-                  </Box>
-                </Box>
+                  </div>
+                </div>
 
-                <Box display="flex" gap={1}>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    fullWidth
-                    onClick={handleCancelAdd}
-                    sx={{ fontSize: 12, py: 0.5 }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    variant="contained"
-                    size="small"
-                    fullWidth
-                    disabled={!newSource || !newTarget}
-                    onClick={handleConfirmAdd}
-                    sx={{ fontSize: 12, py: 0.5 }}
-                  >
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <Button block onClick={handleCancelAdd}>Cancel</Button>
+                  <Button block type="primary" disabled={!newSource || !newTarget} icon={<Check size={16} />} onClick={handleConfirmAdd}>
                     Confirm
                   </Button>
-                </Box>
-              </Box>
+                </div>
+              </div>
             ) : (
-              <Box
+              <div
                 onClick={() => setAdding(true)}
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 0.75,
-                  py: 1.25,
-                  borderRadius: 2,
-                  border: 1,
-                  borderColor: 'divider',
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                  padding: '10px 0', borderRadius: 8, border: '1px solid rgba(255,255,255,0.12)',
                   cursor: 'pointer',
-                  '&:hover': { borderColor: 'text.secondary' },
                 }}
               >
                 <Plus size={14} color="#a1a1aa" />
-                <Typography fontSize={13} color="text.secondary">Add Mapping</Typography>
-              </Box>
+                <Typography.Text type="secondary" style={{ fontSize: 13 }}>Add Mapping</Typography.Text>
+              </div>
             )}
-          </Box>
-        </Box>
+          </div>
+        </div>
 
         {/* ── Target Properties ── */}
-        <Box
-          sx={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            borderRadius: 3,
-            border: 1,
-            borderColor: 'divider',
-            overflow: 'hidden',
-          }}
-        >
-          <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider', display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-            <Box display="flex" alignItems="center" gap={1}>
+        <div style={{
+          flex: 1, display: 'flex', flexDirection: 'column',
+          borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', overflow: 'hidden',
+        }}>
+          <div style={{ padding: 16, borderBottom: '1px solid rgba(255,255,255,0.12)', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <Share2 size={20} />
-              <Typography fontSize={16} fontWeight={600}>Target Properties</Typography>
-            </Box>
-            <PanelSelector
+              <Typography.Text style={{ fontSize: 16, fontWeight: 600 }}>Target Properties</Typography.Text>
+            </div>
+            <Select
+              style={{ width: '100%' }}
               value={target}
-              options={['Person (Class)', 'Organization (Class)', 'Event (Class)']}
               onChange={setTarget}
+              suffixIcon={<ChevronDown size={16} />}
+              options={[
+                { value: 'Person (Class)', label: 'Person (Class)' },
+                { value: 'Organization (Class)', label: 'Organization (Class)' },
+                { value: 'Event (Class)', label: 'Event (Class)' },
+              ]}
             />
-          </Box>
-          <Box sx={{ flex: 1, p: 1.5, display: 'flex', flexDirection: 'column', gap: 1, overflow: 'auto' }}>
+          </div>
+          <div style={{ flex: 1, padding: 12, display: 'flex', flexDirection: 'column', gap: 8, overflow: 'auto' }}>
             {allTargetFields.map((f) => (
               <FieldRow
                 key={f.name}
                 name={f.name}
                 type={f.type}
                 mapped={mappedTargetNames.has(f.name)}
+                active={adding && newTarget === f.name}
                 connectorSide="left"
               />
             ))}
-          </Box>
-        </Box>
-      </Box>
+          </div>
+        </div>
+      </div>
 
       <SuccessModal
         open={saveOpen}

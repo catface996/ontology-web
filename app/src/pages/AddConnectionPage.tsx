@@ -1,12 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Box, Breadcrumbs, Link, Typography, TextField, Button,
-} from '@mui/material';
-import {
-  ChevronRight, Database, Leaf, Zap, Cloud, Boxes,
-  Users, Hash, Plug, Save,
-} from 'lucide-react';
+import { Breadcrumb, Typography, Input, Button } from 'antd';
+import { ChevronRight, Database, Save, Plug } from 'lucide-react';
+import { useHeader } from '../contexts/HeaderContext';
 
 /* ── Types ── */
 interface SourceType {
@@ -21,17 +17,18 @@ interface SourceType {
 const sourceTypes: SourceType[] = [
   { key: 'postgresql', name: 'PostgreSQL',  icon: Database, brandColor: '#336791', defaultPort: '5432' },
   { key: 'mysql',      name: 'MySQL',       icon: Database, brandColor: '#4479A1', defaultPort: '3306' },
-  { key: 'mongodb',    name: 'MongoDB',     icon: Leaf,     brandColor: '#47A248', defaultPort: '27017' },
-  { key: 'redis',      name: 'Redis',       icon: Zap,      brandColor: '#DC382D', defaultPort: '6379' },
-  { key: 'salesforce', name: 'Salesforce',  icon: Cloud,    brandColor: '#00A1E0', defaultPort: '' },
-  { key: 'sap',        name: 'SAP',         icon: Boxes,    brandColor: '#0070F2', defaultPort: '' },
-  { key: 'workday',    name: 'Workday',     icon: Users,    brandColor: '#F68D2E', defaultPort: '' },
-  { key: 'slack',      name: 'Slack',       icon: Hash,     brandColor: '#4A154B', defaultPort: '' },
+  { key: 'mongodb',    name: 'MongoDB',     icon: Database, brandColor: '#47A248', defaultPort: '27017' },
+  { key: 'redis',      name: 'Redis',       icon: Database, brandColor: '#DC382D', defaultPort: '6379' },
+  { key: 'salesforce', name: 'Salesforce',  icon: Database, brandColor: '#00A1E0', defaultPort: '' },
+  { key: 'sap',        name: 'SAP',         icon: Database, brandColor: '#0070F2', defaultPort: '' },
+  { key: 'workday',    name: 'Workday',     icon: Database, brandColor: '#F68D2E', defaultPort: '' },
+  { key: 'slack',      name: 'Slack',       icon: Database, brandColor: '#4A154B', defaultPort: '' },
 ];
 
 /* ── Page ── */
 export default function AddConnectionPage() {
   const navigate = useNavigate();
+  const { setBreadcrumbs } = useHeader();
   const [selected, setSelected] = useState('postgresql');
   const [form, setForm] = useState({
     name: '',
@@ -54,215 +51,177 @@ export default function AddConnectionPage() {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
   };
 
+  useEffect(() => {
+    setBreadcrumbs(
+      <Breadcrumb
+        separator={<ChevronRight size={10} />}
+        items={[
+          { title: <a>Integrations</a> },
+          { title: <a onClick={(e) => { e.preventDefault(); navigate('/data-sources'); }}>Data Sources</a> },
+          { title: <Typography.Text strong>Add Connection</Typography.Text> },
+        ]}
+      />
+    );
+  }, [setBreadcrumbs, navigate]);
+
   return (
     <>
-      {/* Header */}
-      <Box
-        height={64}
-        display="flex"
-        alignItems="center"
-        px={3}
-        borderBottom={1}
-        borderColor="divider"
-      >
-        <Breadcrumbs separator={<ChevronRight size={14} />}>
-          <Link underline="hover" color="text.secondary" href="#">
-            Integrations
-          </Link>
-          <Link
-            underline="hover"
-            color="text.secondary"
-            href="#"
-            onClick={(e) => { e.preventDefault(); navigate('/data-sources'); }}
-          >
-            Data Sources
-          </Link>
-          <Typography color="text.primary" fontWeight={500}>
-            Add Connection
-          </Typography>
-        </Breadcrumbs>
-      </Box>
-
       {/* Content */}
-      <Box flex={1} p={3} display="flex" flexDirection="column" gap={3} overflow="auto">
+      <div style={{ flex: 1, padding: 24, display: 'flex', flexDirection: 'column', gap: 24, overflow: 'auto' }}>
         {/* Choose Connection Type */}
-        <Box display="flex" flexDirection="column" gap={2}>
-          <Box display="flex" alignItems="center" gap={1.25}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <Database size={20} />
-            <Typography fontSize={16} fontWeight={600}>
+            <Typography.Text style={{ fontSize: 16, fontWeight: 600 }}>
               Choose Connection Type
-            </Typography>
-          </Box>
-          <Typography fontSize={13} color="text.secondary">
+            </Typography.Text>
+          </div>
+          <Typography.Text type="secondary" style={{ fontSize: 13 }}>
             Select the type of data source you want to connect
-          </Typography>
-          <Box display="flex" flexWrap="wrap" gap={1.5}>
+          </Typography.Text>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
             {sourceTypes.map((src) => {
               const Icon = src.icon;
               const active = selected === src.key;
               return (
-                <Box
+                <div
                   key={src.key}
                   onClick={() => handleSelect(src.key)}
-                  sx={{
+                  style={{
                     width: 130,
                     height: 88,
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: 0.75,
-                    borderRadius: 2.5,
-                    bgcolor: 'background.paper',
-                    border: active ? 2 : 1,
-                    borderColor: active ? 'primary.main' : 'divider',
+                    gap: 6,
+                    borderRadius: 10,
+                    border: active ? '2px solid var(--primary-color)' : '1px solid rgba(255,255,255,0.12)',
                     cursor: 'pointer',
                     transition: 'all 0.15s',
-                    '&:hover': { borderColor: active ? 'primary.main' : 'text.secondary' },
                   }}
                 >
-                  <Box
-                    sx={{
+                  <div
+                    style={{
                       width: 32,
                       height: 32,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      borderRadius: 1.5,
-                      bgcolor: `${src.brandColor}20`,
+                      borderRadius: 6,
+                      background: `${src.brandColor}20`,
                     }}
                   >
                     <Icon size={18} color={src.brandColor} />
-                  </Box>
-                  <Typography fontSize={12} fontWeight={500}>
+                  </div>
+                  <Typography.Text style={{ fontSize: 12, fontWeight: 500 }}>
                     {src.name}
-                  </Typography>
-                </Box>
+                  </Typography.Text>
+                </div>
               );
             })}
-          </Box>
-        </Box>
+          </div>
+        </div>
 
         {/* Connection Details */}
-        <Box
-          sx={{
-            borderRadius: 3,
-            border: 1,
-            borderColor: 'divider',
-            bgcolor: 'background.paper',
+        <div
+          style={{
+            borderRadius: 12,
+            border: '1px solid rgba(255,255,255,0.12)',
             overflow: 'hidden',
           }}
         >
           {/* Card header */}
-          <Box
-            sx={{
-              px: 3,
-              py: 2.5,
-              borderBottom: 1,
-              borderColor: 'divider',
-            }}
-          >
-            <Typography fontSize={15} fontWeight={600}>
+          <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.12)' }}>
+            <Typography.Text style={{ fontSize: 15, fontWeight: 600 }}>
               Connection Details
-            </Typography>
-            <Typography fontSize={13} color="text.secondary" mt={0.5}>
+            </Typography.Text>
+            <br />
+            <Typography.Text type="secondary" style={{ fontSize: 13 }}>
               Configure the connection settings for {current.name}
-            </Typography>
-          </Box>
+            </Typography.Text>
+          </div>
 
           {/* Form body */}
-          <Box sx={{ px: 3, py: 3, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+          <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
             {/* Connection Name */}
-            <TextField
-              label="Connection Name"
-              size="small"
-              fullWidth
-              placeholder={`My ${current.name} Database`}
-              value={form.name}
-              onChange={handleChange('name')}
-            />
+            <div>
+              <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>Connection Name</label>
+              <Input
+                placeholder={`My ${current.name} Database`}
+                value={form.name}
+                onChange={handleChange('name')}
+              />
+            </div>
 
             {/* Host + Port */}
-            <Box display="flex" gap={2}>
-              <TextField
-                label="Host"
-                size="small"
-                fullWidth
-                placeholder="localhost"
-                value={form.host}
-                onChange={handleChange('host')}
-              />
-              <TextField
-                label="Port"
-                size="small"
-                sx={{ width: 160, flexShrink: 0 }}
-                value={form.port}
-                onChange={handleChange('port')}
-              />
-            </Box>
+            <div style={{ display: 'flex', gap: 16 }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>Host</label>
+                <Input
+                  placeholder="localhost"
+                  value={form.host}
+                  onChange={handleChange('host')}
+                />
+              </div>
+              <div style={{ width: 160, flexShrink: 0 }}>
+                <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>Port</label>
+                <Input
+                  value={form.port}
+                  onChange={handleChange('port')}
+                />
+              </div>
+            </div>
 
             {/* Database Name */}
-            <TextField
-              label="Database Name"
-              size="small"
-              fullWidth
-              placeholder="ontology_db"
-              value={form.database}
-              onChange={handleChange('database')}
-            />
+            <div>
+              <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>Database Name</label>
+              <Input
+                placeholder="ontology_db"
+                value={form.database}
+                onChange={handleChange('database')}
+              />
+            </div>
 
             {/* Username + Password */}
-            <Box display="flex" gap={2}>
-              <TextField
-                label="Username"
-                size="small"
-                fullWidth
-                placeholder="admin"
-                value={form.username}
-                onChange={handleChange('username')}
-              />
-              <TextField
-                label="Password"
-                size="small"
-                fullWidth
-                type="password"
-                placeholder="••••••••"
-                value={form.password}
-                onChange={handleChange('password')}
-              />
-            </Box>
-          </Box>
+            <div style={{ display: 'flex', gap: 16 }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>Username</label>
+                <Input
+                  placeholder="admin"
+                  value={form.username}
+                  onChange={handleChange('username')}
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>Password</label>
+                <Input.Password
+                  placeholder="••••••••"
+                  value={form.password}
+                  onChange={handleChange('password')}
+                />
+              </div>
+            </div>
+          </div>
 
           {/* Card footer */}
-          <Box
-            sx={{
-              px: 3,
-              py: 2,
-              borderTop: 1,
-              borderColor: 'divider',
+          <div
+            style={{
+              padding: '16px 24px',
+              borderTop: '1px solid rgba(255,255,255,0.12)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
             }}
           >
-            <Button variant="outlined" size="small" startIcon={<Plug size={16} />}>
-              Test Connection
-            </Button>
-            <Box display="flex" gap={1.5}>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={() => navigate('/data-sources')}
-              >
-                Cancel
-              </Button>
-              <Button variant="contained" size="small" startIcon={<Save size={16} />}>
-                Save Connection
-              </Button>
-            </Box>
-          </Box>
-        </Box>
-      </Box>
+            <Button icon={<Plug size={16} />}>Test Connection</Button>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <Button onClick={() => navigate('/data-sources')}>Cancel</Button>
+              <Button type="primary" icon={<Save size={16} />}>Save Connection</Button>
+            </div>
+          </div>
+        </div>
+      </div>
     </>
   );
 }

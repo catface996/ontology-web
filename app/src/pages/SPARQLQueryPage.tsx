@@ -1,12 +1,12 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import { Breadcrumb, Typography, Input, Button, Card } from 'antd';
 import {
-  Box, Breadcrumbs, Link, Typography, TextField, InputAdornment, Button,
-  Card,
-} from '@mui/material';
-import {
-  Search, ChevronRight, Play, Code, Bookmark, Sparkles, Trash2,
-  Table as TableIcon, Download, Braces, Network, Share2, Image, FileCode,
+  Search, ChevronRight, CirclePlay, Code,
+  BookOpen, Zap, Trash2,
+  Table, Download, File, Image,
+  Share2,
 } from 'lucide-react';
+import { useHeader } from '../contexts/HeaderContext';
 import * as d3 from 'd3';
 import CodeMirror from '@uiw/react-codemirror';
 import { sql, StandardSQL } from '@codemirror/lang-sql';
@@ -21,9 +21,9 @@ const sparqlTheme = createTheme({
   settings: {
     background: '#111118',
     foreground: '#f4f4f5',
-    caret: '#8b5cf6',
-    selection: '#8b5cf630',
-    selectionMatch: '#8b5cf620',
+    caret: 'var(--primary-color)',
+    selection: 'rgba(var(--primary-rgb), 0.19)',
+    selectionMatch: 'rgba(var(--primary-rgb), 0.13)',
     lineHighlight: '#1a1a2440',
     gutterBackground: '#111118',
     gutterForeground: '#a1a1aa',
@@ -31,7 +31,7 @@ const sparqlTheme = createTheme({
     fontFamily: '"JetBrains Mono", monospace',
   },
   styles: [
-    { tag: [t.keyword, t.operatorKeyword], color: '#8b5cf6' },
+    { tag: [t.keyword, t.operatorKeyword], color: 'var(--primary-color)' },
     { tag: [t.string], color: '#4ade80' },
     { tag: [t.number], color: '#fbbf24' },
     { tag: [t.comment], color: '#a1a1aa', fontStyle: 'italic' },
@@ -249,29 +249,26 @@ function ToolButton({
   label,
   onClick,
 }: {
-  icon: React.ComponentType<{ size?: number }>;
+  icon: React.ComponentType<{ size?: number; color?: string }>;
   label: string;
   onClick?: () => void;
 }) {
   return (
-    <Box
+    <div
       onClick={onClick}
-      sx={{
+      style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 0.75,
-        px: 1.5,
-        py: 0.75,
-        borderRadius: '6px',
-        border: 1,
-        borderColor: 'divider',
+        gap: 6,
+        padding: '6px 12px',
+        borderRadius: 6,
+        border: '1px solid rgba(255,255,255,0.12)',
         cursor: 'pointer',
-        '&:hover': { bgcolor: 'action.hover' },
       }}
     >
       <Icon size={14} />
-      <Typography variant="body2" fontSize={13}>{label}</Typography>
-    </Box>
+      <Typography.Text style={{ fontSize: 13 }}>{label}</Typography.Text>
+    </div>
   );
 }
 
@@ -433,16 +430,41 @@ function GraphCanvas() {
   }, []);
 
   return (
-    <Box ref={containerRef} sx={{ flex: 1, bgcolor: '#1a1a24', minHeight: 0, overflow: 'hidden' }}>
+    <div ref={containerRef} style={{ flex: 1, background: '#1a1a24', minHeight: 0, overflow: 'hidden' }}>
       <svg ref={svgRef} style={{ width: '100%', height: '100%', display: 'block' }} />
-    </Box>
+    </div>
   );
 }
 
 /* ── Main component ── */
 export default function SparqlQueryPage() {
+  const { setBreadcrumbs, setActions } = useHeader();
   const [query, setQuery] = useState(defaultQuery);
   const [resultView, setResultView] = useState<'table' | 'chart'>('table');
+
+  useEffect(() => {
+    setBreadcrumbs(
+      <Breadcrumb
+        separator={<ChevronRight size={10} />}
+        items={[
+          { title: <a>Tools</a> },
+          { title: <Typography.Text strong>SPARQL Query</Typography.Text> },
+        ]}
+      />
+    );
+    setActions(
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+        <Input
+          placeholder="Search queries..."
+          prefix={<Search size={16} />}
+          style={{ width: 200 }}
+        />
+        <Button type="primary" icon={<CirclePlay size={16} />}>
+          Run Query
+        </Button>
+      </div>
+    );
+  }, [setBreadcrumbs, setActions]);
 
   const extensions = useMemo(
     () => [
@@ -468,86 +490,34 @@ export default function SparqlQueryPage() {
 
   return (
     <>
-      {/* Header */}
-      <Box
-        height={64}
-        display="flex"
-        alignItems="center"
-        justifyContent="space-between"
-        px={3}
-        borderBottom={1}
-        borderColor="divider"
-      >
-        <Breadcrumbs separator={<ChevronRight size={14} />}>
-          <Link underline="hover" color="text.secondary" href="#">
-            Tools
-          </Link>
-          <Typography color="text.primary" fontWeight={500}>
-            SPARQL Query
-          </Typography>
-        </Breadcrumbs>
-        <Box display="flex" gap={1.5} alignItems="center">
-          <TextField
-            size="small"
-            placeholder="Search queries..."
-            sx={{ width: 200 }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Search size={16} />
-                </InputAdornment>
-              ),
-            }}
-          />
-          <Button
-            variant="contained"
-            startIcon={<Play size={16} />}
-            sx={{ boxShadow: '0 4px 12px rgba(139, 92, 246, 0.25)' }}
-          >
-            Run Query
-          </Button>
-        </Box>
-      </Box>
-
       {/* Main Content */}
-      <Box flex={1} p={3} display="flex" flexDirection="column" gap={2.5} overflow="hidden">
+      <div style={{ height: '100%', padding: 24, display: 'flex', flexDirection: 'column', gap: 20, overflow: 'hidden', boxSizing: 'border-box' }}>
         {/* Editor Section */}
         <Card
-          variant="outlined"
-          sx={{
-            height: 320,
-            minHeight: 320,
-            display: 'flex',
-            flexDirection: 'column',
-            borderRadius: 3,
-            overflow: 'hidden',
-          }}
+          style={{ height: 320, minHeight: 320, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+          styles={{ body: { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: 0 } }}
         >
           {/* Editor Header */}
-          <Box
-            display="flex"
-            alignItems="center"
-            justifyContent="space-between"
-            height={48}
-            flexShrink={0}
-            px={2}
-            sx={{ bgcolor: 'background.default', borderBottom: 1, borderColor: 'divider' }}
+          <div
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              height: 48, flexShrink: 0, padding: '0 16px',
+              borderBottom: '1px solid rgba(255,255,255,0.12)',
+            }}
           >
-            <Box display="flex" alignItems="center" gap={1.5}>
-              <Code size={18} color="#8b5cf6" />
-              <Typography variant="body2" fontWeight={600}>
-                Query Editor
-              </Typography>
-            </Box>
-            <Box display="flex" alignItems="center" gap={1}>
-              <ToolButton icon={Bookmark} label="Templates" />
-              <ToolButton icon={Sparkles} label="Format" onClick={handleFormat} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <Code size={18} color="var(--primary-color)" />
+              <Typography.Text strong style={{ fontSize: 13 }}>Query Editor</Typography.Text>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <ToolButton icon={BookOpen} label="Templates" />
+              <ToolButton icon={Zap} label="Format" onClick={handleFormat} />
               <ToolButton icon={Trash2} label="Clear" onClick={handleClear} />
-            </Box>
-          </Box>
+            </div>
+          </div>
 
           {/* CodeMirror Editor */}
-          <Box flex={1} overflow="hidden">
+          <div style={{ flex: 1, overflow: 'hidden' }}>
             <CodeMirror
               value={query}
               onChange={setQuery}
@@ -566,207 +536,152 @@ export default function SparqlQueryPage() {
               }}
               style={{ height: '100%', overflow: 'auto' }}
             />
-          </Box>
+          </div>
         </Card>
 
         {/* Result Section */}
         <Card
-          variant="outlined"
-          sx={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            borderRadius: 3,
-            overflow: 'hidden',
-            minHeight: 0,
-          }}
+          style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}
+          styles={{ body: { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: 0 } }}
         >
           {/* Result Header */}
-          <Box
-            display="flex"
-            alignItems="center"
-            justifyContent="space-between"
-            height={48}
-            flexShrink={0}
-            px={2}
-            sx={{ borderBottom: 1, borderColor: 'divider' }}
+          <div
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              height: 48, flexShrink: 0, padding: '0 16px',
+              borderBottom: '1px solid rgba(255,255,255,0.12)',
+            }}
           >
-            <Box display="flex" alignItems="center" gap={1.5}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               {resultView === 'table' ? (
-                <TableIcon size={18} color="#8b5cf6" />
+                <Table size={18} color="var(--primary-color)" />
               ) : (
-                <Share2 size={18} color="#8b5cf6" />
+                <Share2 size={18} color="var(--primary-color)" />
               )}
-              <Typography variant="body2" fontWeight={600}>
+              <Typography.Text strong style={{ fontSize: 13 }}>
                 {resultView === 'table' ? 'Query Results' : 'Graph Results'}
-              </Typography>
-              <Box
-                sx={{
-                  bgcolor: '#22c55e20',
+              </Typography.Text>
+              <span
+                style={{
+                  background: '#22c55e20',
                   color: '#4ade80',
                   borderRadius: 100,
-                  px: 1.25,
-                  py: 0.5,
+                  padding: '4px 10px',
                   fontSize: 12,
                   fontWeight: 500,
                   lineHeight: 1,
                 }}
               >
                 {resultView === 'table' ? '12 rows' : '8 nodes'}
-              </Box>
-              <Typography variant="caption" color="text.secondary">
+              </span>
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                 Executed in 0.042s
-              </Typography>
-            </Box>
-            <Box display="flex" alignItems="stretch" gap={1}>
-              <Box
-                sx={{
+              </Typography.Text>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'stretch', gap: 8 }}>
+              <div
+                style={{
                   display: 'flex',
-                  border: 1,
-                  borderColor: 'divider',
-                  borderRadius: '6px',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  borderRadius: 6,
                   overflow: 'hidden',
                 }}
               >
                 {([
-                  { key: 'table' as const, Icon: TableIcon },
-                  { key: 'chart' as const, Icon: Network },
+                  { key: 'table' as const, Icon: Table },
+                  { key: 'chart' as const, Icon: Share2 },
                 ] as const).map(({ key, Icon }) => (
-                  <Box
+                  <div
                     key={key}
                     onClick={() => setResultView(key)}
-                    sx={{
+                    style={{
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       width: 34,
                       cursor: 'pointer',
-                      bgcolor: resultView === key ? 'action.selected' : 'transparent',
-                      '&:hover': { bgcolor: resultView === key ? 'action.selected' : 'action.hover' },
+                      background: resultView === key ? 'rgba(255,255,255,0.08)' : 'transparent',
                     }}
                   >
                     <Icon size={14} color={resultView === key ? '#f4f4f5' : '#a1a1aa'} />
-                  </Box>
+                  </div>
                 ))}
-              </Box>
+              </div>
               {resultView === 'table' ? (
                 <>
                   <ToolButton icon={Download} label="Export CSV" />
-                  <ToolButton icon={Braces} label="JSON" />
+                  <ToolButton icon={Code} label="JSON" />
                 </>
               ) : (
                 <>
                   <ToolButton icon={Image} label="Export PNG" />
-                  <ToolButton icon={FileCode} label="SVG" />
+                  <ToolButton icon={File} label="SVG" />
                 </>
               )}
-            </Box>
-          </Box>
+            </div>
+          </div>
 
           {/* Result Content */}
           {resultView === 'table' ? (
-            <Box flex={1} overflow="auto" minHeight={0}>
+            <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
               {/* Table Header */}
-              <Box
-                display="flex"
-                alignItems="center"
-                height={40}
-                px={2}
-                sx={{ bgcolor: 'background.default' }}
+              <div
+                style={{
+                  display: 'flex', alignItems: 'center',
+                  padding: '12px 16px', background: 'rgba(255,255,255,0.02)',
+                  borderBottom: '1px solid rgba(255,255,255,0.06)',
+                }}
               >
-                <Box flex={1}>
-                  <Typography
-                    sx={{
-                      fontFamily: '"JetBrains Mono", monospace',
-                      fontSize: 12,
-                      fontWeight: 600,
-                      color: '#8b5cf6',
-                    }}
-                  >
-                    ?person
-                  </Typography>
-                </Box>
-                <Box flex={1}>
-                  <Typography
-                    sx={{
-                      fontFamily: '"JetBrains Mono", monospace',
-                      fontSize: 12,
-                      fontWeight: 600,
-                      color: '#8b5cf6',
-                    }}
-                  >
-                    ?name
-                  </Typography>
-                </Box>
-                <Box flex={1}>
-                  <Typography
-                    sx={{
-                      fontFamily: '"JetBrains Mono", monospace',
-                      fontSize: 12,
-                      fontWeight: 600,
-                      color: '#8b5cf6',
-                    }}
-                  >
-                    ?org
-                  </Typography>
-                </Box>
-              </Box>
+                {['?person', '?name', '?org'].map((col) => (
+                  <div key={col} style={{ flex: 1 }}>
+                    <Typography.Text
+                      style={{
+                        fontFamily: '"JetBrains Mono", monospace',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: 'var(--primary-color)',
+                      }}
+                    >
+                      {col}
+                    </Typography.Text>
+                  </div>
+                ))}
+              </div>
 
               {/* Table Rows */}
               {mockResults.map((row, i) => (
-                <Box
+                <div
                   key={i}
-                  display="flex"
-                  alignItems="center"
-                  height={40}
-                  px={2}
-                  sx={{
-                    bgcolor: i % 2 === 1 ? 'background.default' : 'transparent',
-                    borderBottom: 1,
-                    borderColor: 'divider',
+                  style={{
+                    display: 'flex', alignItems: 'center', padding: '12px 16px',
+                    background: i % 2 === 1 ? 'rgba(255,255,255,0.02)' : 'transparent',
+                    borderBottom: '1px solid rgba(255,255,255,0.06)',
                   }}
                 >
-                  <Box flex={1}>
-                    <Typography
-                      sx={{
-                        fontFamily: '"JetBrains Mono", monospace',
-                        fontSize: 12,
-                        color: '#c4b5fd',
-                      }}
-                    >
+                  <div style={{ flex: 1 }}>
+                    <Typography.Text style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 12, color: '#c4b5fd' }}>
                       {row.person}
-                    </Typography>
-                  </Box>
-                  <Box flex={1}>
-                    <Typography
-                      sx={{
-                        fontFamily: '"JetBrains Mono", monospace',
-                        fontSize: 12,
-                        color: '#4ade80',
-                      }}
-                    >
+                    </Typography.Text>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <Typography.Text style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 12, color: '#4ade80' }}>
                       {row.name}
-                    </Typography>
-                  </Box>
-                  <Box flex={1}>
-                    <Typography
-                      sx={{
-                        fontFamily: '"JetBrains Mono", monospace',
-                        fontSize: 12,
-                        color: '#c4b5fd',
-                      }}
-                    >
+                    </Typography.Text>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <Typography.Text style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 12, color: '#c4b5fd' }}>
                       {row.org}
-                    </Typography>
-                  </Box>
-                </Box>
+                    </Typography.Text>
+                  </div>
+                </div>
               ))}
-            </Box>
+            </div>
           ) : (
             <GraphCanvas />
           )}
         </Card>
-      </Box>
+      </div>
     </>
   );
 }
+

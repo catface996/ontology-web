@@ -1,4 +1,4 @@
-import { Box, TextField } from '@mui/material';
+import { InputNumber, Flex, Typography } from 'antd';
 
 interface StringConstraintsProps {
   minLength: number;
@@ -14,23 +14,29 @@ export default function StringConstraints({
   onMaxLengthChange,
 }: StringConstraintsProps) {
   return (
-    <Box display="flex" gap={2}>
-      <TextField
-        fullWidth
-        label="Min Length"
-        type="number"
-        value={minLength}
-        onChange={(e) => onMinLengthChange(Number(e.target.value))}
-        inputProps={{ min: 0 }}
-      />
-      <TextField
-        fullWidth
-        label="Max Length"
-        type="number"
-        value={maxLength}
-        onChange={(e) => onMaxLengthChange(Number(e.target.value))}
-        inputProps={{ min: 0 }}
-      />
-    </Box>
+    <Flex gap={16}>
+      <div style={{ flex: 1 }}>
+        <Typography.Text style={{ display: 'block', marginBottom: 4, fontSize: 14 }}>
+          Min Length
+        </Typography.Text>
+        <InputNumber
+          style={{ width: '100%' }}
+          value={minLength}
+          min={0}
+          onChange={(val) => onMinLengthChange(val ?? 0)}
+        />
+      </div>
+      <div style={{ flex: 1 }}>
+        <Typography.Text style={{ display: 'block', marginBottom: 4, fontSize: 14 }}>
+          Max Length
+        </Typography.Text>
+        <InputNumber
+          style={{ width: '100%' }}
+          value={maxLength}
+          min={0}
+          onChange={(val) => onMaxLengthChange(val ?? 0)}
+        />
+      </div>
+    </Flex>
   );
 }

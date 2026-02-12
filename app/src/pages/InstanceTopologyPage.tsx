@@ -1,12 +1,16 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Breadcrumb, Typography, Button } from 'antd';
 import {
-  Box, Breadcrumbs, Link, Typography, Button, Card,
-} from '@mui/material';
-import {
-  ChevronRight, Minus, Plus, Maximize2, Download, Info,
-  User, Building2, MapPin, Folder, Briefcase, GraduationCap, FileText, Box as BoxIcon,
+  User, Building2, MapPin, Folder, Briefcase, GraduationCap, FileText,
+  Box as BoxIcon, Download, Info, Minus, Plus, Maximize2,
 } from 'lucide-react';
+import * as d3 from 'd3';
+import { useHeader } from '../contexts/HeaderContext';
+
+/* ------------------------------------------------------------------ */
+/*  Types                                                              */
+/* ------------------------------------------------------------------ */
 
 interface RelationNode {
   id: string;
@@ -27,13 +31,17 @@ interface InstanceDetail {
   relations: RelationNode[];
 }
 
+/* ------------------------------------------------------------------ */
+/*  Mock data                                                          */
+/* ------------------------------------------------------------------ */
+
 const instancesMap: Record<string, InstanceDetail> = {
   '1': {
     id: '1',
     name: 'John Smith',
     className: 'Person',
     classIcon: User,
-    color: '#8B5CF6',
+    color: 'var(--primary-color)',
     properties: [
       { label: 'email', value: 'john@acme.com' },
       { label: 'birthDate', value: '1985-03-15' },
@@ -60,7 +68,7 @@ const instancesMap: Record<string, InstanceDetail> = {
       { label: 'employees', value: '5,200' },
     ],
     relations: [
-      { id: 'r1', name: 'John Smith', type: 'Person', relation: 'employs', icon: User, color: '#8B5CF6' },
+      { id: 'r1', name: 'John Smith', type: 'Person', relation: 'employs', icon: User, color: 'var(--primary-color)' },
       { id: 'r2', name: 'Jane Doe', type: 'Person', relation: 'employs', icon: User, color: '#4ADE80' },
       { id: 'r3', name: 'New York', type: 'Location', relation: 'locatedIn', icon: MapPin, color: '#F472B6' },
     ],
@@ -72,123 +80,72 @@ const getInstanceDetail = (id: string): InstanceDetail => {
   return instancesMap['1'];
 };
 
+/* ------------------------------------------------------------------ */
+/*  Lucide icon SVG paths (for D3 foreignObject rendering)             */
+/* ------------------------------------------------------------------ */
+
+const iconSvgPaths: Record<string, string> = {
+  user: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  'building-2': '<path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/>',
+  'map-pin': '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+  folder: '<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>',
+  briefcase: '<path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><rect width="20" height="14" x="2" y="6" rx="2"/>',
+  'graduation-cap': '<path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/>',
+  'file-text': '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>',
+};
+
+const iconComponentToName = new Map<React.ComponentType<unknown>, string>([
+  [User, 'user'],
+  [Building2, 'building-2'],
+  [MapPin, 'map-pin'],
+  [Folder, 'folder'],
+  [Briefcase, 'briefcase'],
+  [GraduationCap, 'graduation-cap'],
+  [FileText, 'file-text'],
+]);
+
+function makeSvgIcon(name: string, size: number, color: string): string {
+  const paths = iconSvgPaths[name] || '';
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
+}
+
+/* ------------------------------------------------------------------ */
+/*  D3 topology data types                                             */
+/* ------------------------------------------------------------------ */
+
+const OUTER_R = 60;
+const CENTER_R = 80;
+
 const defaultNodePositions = [
-  { x: -120, y: -140 },
-  { x: 120, y: -140 },
-  { x: -180, y: 0 },
-  { x: 180, y: 0 },
-  { x: -120, y: 140 },
-  { x: 120, y: 140 },
+  { x: -160, y: -155 },  // top-left
+  { x: 160, y: -155 },   // top-right
+  { x: -195, y: 0 },     // center-left
+  { x: 195, y: 0 },      // center-right
+  { x: -160, y: 155 },   // bottom-left
+  { x: 160, y: 155 },    // bottom-right
 ];
 
-const OUTER_SIZE = 90;
-const CENTER_SIZE = 120;
-
-function TopologyNode({
-  x, y, name, type, icon: Icon, color,
-  onDragStart,
-}: {
-  x: number; y: number; name: string; type: string;
-  icon: React.ComponentType<{ size?: number; color?: string }>; color: string;
-  onDragStart: (e: React.PointerEvent) => void;
-}) {
-  const r = OUTER_SIZE / 2;
-  return (
-    <g
-      transform={`translate(${x}, ${y})`}
-      onPointerDown={onDragStart}
-      style={{ cursor: 'grab' }}
-    >
-      <circle cx={0} cy={0} r={r} fill="#1e1e2a" stroke={color} strokeWidth={2.5} />
-      <foreignObject x={-r} y={-r} width={OUTER_SIZE} height={OUTER_SIZE} style={{ pointerEvents: 'none' }}>
-        <Box sx={{
-          width: '100%', height: '100%', display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center', gap: '2px', userSelect: 'none',
-        }}>
-          <Icon size={22} color={color} />
-          <Typography sx={{ color: '#f4f4f5', fontSize: 10, fontWeight: 500, textAlign: 'center', lineHeight: 1.2, px: 0.25 }}>
-            {name}
-          </Typography>
-          <Typography sx={{ color: '#a1a1aa', fontSize: 8, textAlign: 'center' }}>
-            {type}
-          </Typography>
-        </Box>
-      </foreignObject>
-    </g>
-  );
+interface D3NodeData {
+  index: number;
+  name: string;
+  typeName: string;
+  relation: string;
+  color: string;
+  iconName: string;
+  isCenter: boolean;
+  x: number;
+  y: number;
 }
 
-function EdgeLabel({
-  x1, y1, x2, y2, label, color, r1, r2,
-}: {
-  x1: number; y1: number; x2: number; y2: number; label: string; color: string;
-  r1: number; r2: number;
-}) {
-  // Calculate midpoint of the visible line segment (between circle edges)
-  const dx = x2 - x1;
-  const dy = y2 - y1;
-  const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-  const t1 = r1 / dist;
-  const t2 = 1 - r2 / dist;
-  const tMid = (t1 + t2) / 2;
-  const mx = x1 + dx * tMid;
-  const my = y1 + dy * tMid;
-  // Visible segment length between circle edges, with gap on each side
-  const GAP = 12;
-  const visibleLen = dist * (t2 - t1);
-  const labelW = Math.max(visibleLen * 0.5, 20);
-  // Angle in degrees, keep text readable (flip if upside down)
-  let angle = Math.atan2(dy, dx) * (180 / Math.PI);
-  if (angle > 90) angle -= 180;
-  if (angle < -90) angle += 180;
-  return (
-    <g transform={`translate(${mx}, ${my}) rotate(${angle})`}>
-      <foreignObject x={-labelW / 2} y={-8} width={labelW} height={16} style={{ pointerEvents: 'none', overflow: 'visible' }}>
-        <Box sx={{ display: 'flex', justifyContent: 'center', userSelect: 'none', width: '100%' }}>
-          <Typography sx={{
-            color, fontSize: 7, border: `1px dashed ${color}`, borderRadius: '2px',
-            px: '4px', py: '1px', whiteSpace: 'nowrap', bgcolor: '#0a0a0f', lineHeight: 1.3,
-          }}>
-            {label}
-          </Typography>
-        </Box>
-      </foreignObject>
-    </g>
-  );
+interface D3LinkData {
+  sourceIndex: number;
+  targetIndex: number;
+  color: string;
 }
 
-function CenterNode({
-  x, y, name, type, icon: Icon, color, onDragStart,
-}: {
-  x: number; y: number; name: string; type: string;
-  icon: React.ComponentType<{ size?: number; color?: string }>; color: string;
-  onDragStart: (e: React.PointerEvent) => void;
-}) {
-  const r = CENTER_SIZE / 2;
-  return (
-    <g
-      transform={`translate(${x}, ${y})`}
-      onPointerDown={onDragStart}
-      style={{ cursor: 'grab' }}
-    >
-      <circle cx={0} cy={0} r={r} fill={color} />
-      <foreignObject x={-r} y={-r} width={CENTER_SIZE} height={CENTER_SIZE} style={{ pointerEvents: 'none' }}>
-        <Box sx={{
-          width: '100%', height: '100%', display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center', gap: '6px', userSelect: 'none',
-        }}>
-          <Icon size={36} color="#fff" />
-          <Typography sx={{ color: '#fff', fontSize: 14, fontWeight: 600, textAlign: 'center' }}>
-            {name}
-          </Typography>
-          <Typography sx={{ color: '#fff', fontSize: 11, opacity: 0.8, textAlign: 'center' }}>
-            {type}
-          </Typography>
-        </Box>
-      </foreignObject>
-    </g>
-  );
-}
+/* ------------------------------------------------------------------ */
+/*  Page component                                                     */
+/* ------------------------------------------------------------------ */
 
 export default function InstanceTopologyPage() {
   const { instanceId } = useParams();
@@ -196,273 +153,297 @@ export default function InstanceTopologyPage() {
   const instance = getInstanceDetail(instanceId || '1');
   const [zoom, setZoom] = useState(100);
 
-  // Draggable node positions: index 0 = center, 1..N = relation nodes
-  const [positions, setPositions] = useState<{ x: number; y: number }[]>(() => [
-    { x: 0, y: 0 },
-    ...defaultNodePositions.slice(0, instance.relations.length),
-  ]);
+  const svgRef = useRef<SVGSVGElement>(null);
+  const nodesDataRef = useRef<D3NodeData[]>([]);
+  const zoomBehaviorRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
 
-  // Reset positions when instance changes
+  /* ---------- D3 render ---------- */
   useEffect(() => {
-    setPositions([
-      { x: 0, y: 0 },
-      ...defaultNodePositions.slice(0, instance.relations.length),
-    ]);
+    if (!svgRef.current) return;
+    const svg = d3.select(svgRef.current);
+    svg.selectAll('*').remove();
+
+    // Glow filter
+    const defs = svg.append('defs');
+    const filter = defs.append('filter')
+      .attr('id', 'glow').attr('x', '-50%').attr('y', '-50%')
+      .attr('width', '200%').attr('height', '200%');
+    filter.append('feGaussianBlur').attr('stdDeviation', '6').attr('result', 'coloredBlur');
+    const feMerge = filter.append('feMerge');
+    feMerge.append('feMergeNode').attr('in', 'coloredBlur');
+    feMerge.append('feMergeNode').attr('in', 'SourceGraphic');
+
+    // Build node data
+    const centerIconName = iconComponentToName.get(instance.classIcon as React.ComponentType<unknown>) || 'user';
+    const nodesData: D3NodeData[] = [
+      {
+        index: 0, name: instance.name, typeName: instance.className,
+        relation: '', color: 'var(--primary-color)', iconName: centerIconName,
+        isCenter: true, x: 0, y: 0,
+      },
+      ...instance.relations.slice(0, 6).map((rel, i) => ({
+        index: i + 1, name: rel.name, typeName: rel.type,
+        relation: rel.relation, color: rel.color,
+        iconName: iconComponentToName.get(rel.icon as React.ComponentType<unknown>) || 'user',
+        isCenter: false,
+        x: defaultNodePositions[i]?.x || 0,
+        y: defaultNodePositions[i]?.y || 0,
+      })),
+    ];
+    nodesDataRef.current = nodesData;
+
+    // Links: each outer → center
+    const linksData: D3LinkData[] = nodesData.slice(1).map((n) => ({
+      sourceIndex: 0,
+      targetIndex: n.index,
+      color: n.color,
+    }));
+
+    const g = svg.append('g');
+
+    // Zoom
+    const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.3, 3])
+      .on('zoom', (e) => {
+        g.attr('transform', e.transform);
+        setZoom(Math.round(e.transform.k * 100));
+      });
+    zoomBehaviorRef.current = zoomBehavior;
+    svg.call(zoomBehavior);
+
+    // Center initial view
+    const rect = svgRef.current.getBoundingClientRect();
+    svg.call(zoomBehavior.transform, d3.zoomIdentity.translate(rect.width / 2, rect.height / 2));
+
+    // Helper
+    const getNode = (idx: number) => nodesDataRef.current.find((n) => n.index === idx)!;
+
+    const updateLinks = () => {
+      links
+        .attr('x1', (d) => getNode(d.sourceIndex).x)
+        .attr('y1', (d) => getNode(d.sourceIndex).y)
+        .attr('x2', (d) => getNode(d.targetIndex).x)
+        .attr('y2', (d) => getNode(d.targetIndex).y);
+    };
+
+    // Draw links
+    const links = g.selectAll<SVGLineElement, D3LinkData>('.link')
+      .data(linksData).enter().append('line')
+      .attr('class', 'link')
+      .attr('stroke', (d) => d.color)
+      .attr('stroke-width', 2)
+      .attr('stroke-opacity', 0.3);
+
+    // Draw nodes
+    const nodeGroups = g.selectAll<SVGGElement, D3NodeData>('.node')
+      .data(nodesData).enter().append('g')
+      .attr('class', 'node')
+      .attr('transform', (d) => `translate(${d.x}, ${d.y})`)
+      .style('cursor', 'grab')
+      .call(d3.drag<SVGGElement, D3NodeData>()
+        .on('start', function () { d3.select(this).style('cursor', 'grabbing'); })
+        .on('drag', function (e, d) {
+          d.x = e.x; d.y = e.y;
+          d3.select(this).attr('transform', `translate(${d.x}, ${d.y})`);
+          updateLinks();
+        })
+        .on('end', function () { d3.select(this).style('cursor', 'grab'); })
+      );
+
+    // Node circle backgrounds
+    nodeGroups.append('circle')
+      .attr('r', (d) => d.isCenter ? CENTER_R : OUTER_R)
+      .attr('fill', (d) => d.isCenter ? 'var(--primary-color)' : '#1a1a24')
+      .attr('stroke', (d) => d.isCenter ? 'none' : d.color)
+      .attr('stroke-width', (d) => d.isCenter ? 0 : 3);
+
+    // Node content via foreignObject
+    nodeGroups.append('foreignObject')
+      .attr('x', (d) => d.isCenter ? -CENTER_R : -OUTER_R)
+      .attr('y', (d) => d.isCenter ? -CENTER_R : -OUTER_R)
+      .attr('width', (d) => d.isCenter ? CENTER_R * 2 : OUTER_R * 2)
+      .attr('height', (d) => d.isCenter ? CENTER_R * 2 : OUTER_R * 2)
+      .style('pointer-events', 'none')
+      .append('xhtml:div')
+      .style('width', '100%')
+      .style('height', '100%')
+      .style('display', 'flex')
+      .style('flex-direction', 'column')
+      .style('align-items', 'center')
+      .style('justify-content', 'center')
+      .style('user-select', 'none')
+      .html((d) => {
+        if (d.isCenter) {
+          return `
+            <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+              ${makeSvgIcon(d.iconName, 44, '#fff')}
+              <span style="color:#fff;font-size:16px;font-weight:600;text-align:center;line-height:1.2;">${d.name}</span>
+              <span style="color:#fff;font-size:12px;opacity:0.8;text-align:center;">${d.typeName}</span>
+            </div>`;
+        }
+        return `
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+            ${makeSvgIcon(d.iconName, 28, d.color)}
+            <span style="color:#f4f4f5;font-size:11px;font-weight:500;text-align:center;line-height:1.2;">${d.name}</span>
+            <span style="color:#a1a1aa;font-size:9px;text-align:center;">${d.typeName}</span>
+            <div style="padding:4px 8px;border-radius:4px;border:1px solid ${d.color};">
+              <span style="color:${d.color};font-size:10px;">${d.relation}</span>
+            </div>
+          </div>`;
+      });
+
+    updateLinks();
   }, [instance]);
 
-  const svgRef = useRef<SVGSVGElement>(null);
-  const dragRef = useRef<{ index: number; startMouse: { x: number; y: number }; startPos: { x: number; y: number } } | null>(null);
-
-  const screenToSvg = useCallback((clientX: number, clientY: number) => {
-    const svg = svgRef.current;
-    if (!svg) return { x: 0, y: 0 };
-    const pt = svg.createSVGPoint();
-    pt.x = clientX;
-    pt.y = clientY;
-    const ctm = svg.getScreenCTM();
-    if (!ctm) return { x: 0, y: 0 };
-    const svgPt = pt.matrixTransform(ctm.inverse());
-    return { x: svgPt.x, y: svgPt.y };
+  /* ---------- Zoom controls ---------- */
+  const handleZoomIn = useCallback(() => {
+    if (!svgRef.current || !zoomBehaviorRef.current) return;
+    d3.select(svgRef.current).transition().duration(300)
+      .call(zoomBehaviorRef.current.scaleBy, 1.2);
   }, []);
 
-  const handleDragStart = useCallback((index: number, e: React.PointerEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const svgPos = screenToSvg(e.clientX, e.clientY);
-    dragRef.current = {
-      index,
-      startMouse: svgPos,
-      startPos: { ...positions[index] },
-    };
-    (e.target as Element).setPointerCapture(e.pointerId);
-  }, [positions, screenToSvg]);
-
-  const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    if (!dragRef.current) return;
-    const svgPos = screenToSvg(e.clientX, e.clientY);
-    const { index, startMouse, startPos } = dragRef.current;
-    const dx = svgPos.x - startMouse.x;
-    const dy = svgPos.y - startMouse.y;
-    setPositions((prev) => {
-      const next = [...prev];
-      next[index] = { x: startPos.x + dx, y: startPos.y + dy };
-      return next;
-    });
-  }, [screenToSvg]);
-
-  const handlePointerUp = useCallback(() => {
-    dragRef.current = null;
+  const handleZoomOut = useCallback(() => {
+    if (!svgRef.current || !zoomBehaviorRef.current) return;
+    d3.select(svgRef.current).transition().duration(300)
+      .call(zoomBehaviorRef.current.scaleBy, 1 / 1.2);
   }, []);
 
-  const handleZoomIn = () => setZoom((z) => Math.min(z + 10, 200));
-  const handleZoomOut = () => setZoom((z) => Math.max(z - 10, 50));
+  const handleFit = useCallback(() => {
+    if (!svgRef.current || !zoomBehaviorRef.current) return;
+    const rect = svgRef.current.getBoundingClientRect();
+    d3.select(svgRef.current).transition().duration(500)
+      .call(zoomBehaviorRef.current.transform, d3.zoomIdentity.translate(rect.width / 2, rect.height / 2));
+  }, []);
 
-  const centerPos = positions[0];
+  /* ---------- Header ---------- */
+  const { setBreadcrumbs, setActions } = useHeader();
 
-  return (
-    <>
-      {/* Header */}
-      <Box height={64} display="flex" alignItems="center" justifyContent="space-between" px={3} borderBottom={1} borderColor="divider">
-        <Breadcrumbs separator={<ChevronRight size={14} />}>
-          <Link underline="hover" color="text.secondary" href="#" onClick={(e) => { e.preventDefault(); navigate('/instances'); }}>
-            Instances
-          </Link>
-          <Typography color="text.primary" fontWeight={500}>{instance.name}</Typography>
-          <Typography color="text.primary" fontWeight={500}>Topology</Typography>
-        </Breadcrumbs>
-        <Box display="flex" gap={1.5} alignItems="center">
-          <Box display="flex" gap={0.5} alignItems="center">
-            <Box
-              onClick={handleZoomOut}
-              sx={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                p: 1, borderRadius: 1.5, border: 1, borderColor: 'divider', cursor: 'pointer',
-                '&:hover': { bgcolor: 'action.hover' },
-              }}
-            >
-              <Minus size={16} />
-            </Box>
-            <Box sx={{
-              display: 'flex', alignItems: 'center', px: 1.5, py: 1,
-              borderRadius: 1.5, bgcolor: 'action.hover',
-            }}>
-              <Typography variant="body2" fontSize={12}>{zoom}%</Typography>
-            </Box>
-            <Box
-              onClick={handleZoomIn}
-              sx={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                p: 1, borderRadius: 1.5, border: 1, borderColor: 'divider', cursor: 'pointer',
-                '&:hover': { bgcolor: 'action.hover' },
-              }}
-            >
-              <Plus size={16} />
-            </Box>
-          </Box>
-          <Box
-            onClick={() => setZoom(100)}
-            sx={{
-              display: 'flex', alignItems: 'center', gap: 0.75,
-              px: 1.5, py: 1, borderRadius: 1.5, border: 1, borderColor: 'divider',
-              cursor: 'pointer', '&:hover': { bgcolor: 'action.hover' },
+  useEffect(() => {
+    setBreadcrumbs(
+      <Breadcrumb items={[
+        { title: <a onClick={(e: React.MouseEvent) => { e.preventDefault(); navigate('/instances'); }}>Instances</a> },
+        { title: instance.name },
+        { title: 'Topology' },
+      ]} />
+    );
+    setActions(
+      <>
+        <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+          <div
+            onClick={handleZoomOut}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: 8, borderRadius: 6, border: '1px solid #27273a', cursor: 'pointer',
             }}
           >
-            <Maximize2 size={16} />
-            <Typography variant="body2" fontSize={13}>Fit</Typography>
-          </Box>
-          <Button
-            variant="contained"
-            startIcon={<Download size={16} />}
-            sx={{ boxShadow: '0 4px 12px rgba(139, 92, 246, 0.25)' }}
+            <Minus size={16} />
+          </div>
+          <div style={{
+            display: 'flex', alignItems: 'center', padding: '8px 12px',
+            borderRadius: 6, backgroundColor: '#1a1a24',
+          }}>
+            <Typography.Text style={{ fontSize: 12 }}>{zoom}%</Typography.Text>
+          </div>
+          <div
+            onClick={handleZoomIn}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: 8, borderRadius: 6, border: '1px solid #27273a', cursor: 'pointer',
+            }}
           >
-            Export
-          </Button>
-        </Box>
-      </Box>
-
-      {/* Content */}
-      <Box flex={1} p={3} display="flex" gap={3} overflow="hidden">
-        {/* Topology Canvas */}
-        <Card
-          variant="outlined"
-          sx={{
-            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            borderRadius: 3, overflow: 'hidden', position: 'relative',
+            <Plus size={16} />
+          </div>
+        </div>
+        <div
+          onClick={handleFit}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '8px 12px', borderRadius: 6, border: '1px solid #27273a', cursor: 'pointer',
           }}
         >
-          <svg
-            ref={svgRef}
-            width="100%"
-            height="100%"
-            viewBox="-300 -240 600 480"
-            style={{ transform: `scale(${zoom / 100})`, transformOrigin: 'center' }}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-            onPointerLeave={handlePointerUp}
-          >
-            {/* Connection Lines + Edge Labels */}
-            {instance.relations.slice(0, 6).map((rel, i) => {
-              const nodePos = positions[i + 1];
-              if (!nodePos) return null;
-              return (
-                <g key={`edge-${rel.id}`}>
-                  <line
-                    x1={centerPos.x} y1={centerPos.y}
-                    x2={nodePos.x} y2={nodePos.y}
-                    stroke={rel.color}
-                    strokeWidth={2}
-                    strokeOpacity={0.3}
-                  />
-                  <EdgeLabel
-                    x1={centerPos.x} y1={centerPos.y}
-                    x2={nodePos.x} y2={nodePos.y}
-                    r1={CENTER_SIZE / 2} r2={OUTER_SIZE / 2}
-                    label={rel.relation}
-                    color={rel.color}
-                  />
-                </g>
-              );
-            })}
+          <Maximize2 size={16} />
+          <Typography.Text style={{ fontSize: 13 }}>Fit</Typography.Text>
+        </div>
+        <Button type="primary" icon={<Download size={16} />}>Export</Button>
+      </>
+    );
+  }, [setBreadcrumbs, setActions, instance.name, navigate, zoom, handleZoomIn, handleZoomOut, handleFit]);
 
-            {/* Surrounding Nodes */}
-            {instance.relations.slice(0, 6).map((rel, i) => {
-              const nodePos = positions[i + 1];
-              if (!nodePos) return null;
-              return (
-                <TopologyNode
+  /* ---------- Render ---------- */
+  return (
+    <div style={{ flex: 1, padding: 24, display: 'flex', gap: 24, overflow: 'hidden' }}>
+      {/* Topology Canvas */}
+      <div style={{
+        flex: 1, borderRadius: 12, border: '1px solid #27273a',
+        overflow: 'hidden', display: 'flex',
+      }}>
+        <svg ref={svgRef} width="100%" height="100%" />
+      </div>
+
+      {/* Detail Panel */}
+      <div style={{
+        width: 300, borderRadius: 12, border: '1px solid #27273a',
+        display: 'flex', flexDirection: 'column', overflow: 'auto', flexShrink: 0,
+      }}>
+        {/* Panel Header */}
+        <div style={{ padding: 20, borderBottom: '1px solid #27273a' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <Info size={18} color="var(--primary-color)" />
+            <span style={{ color: '#f4f4f5', fontSize: 16, fontWeight: 600 }}>Instance Details</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <span style={{ color: '#f4f4f5', fontSize: 20, fontWeight: 600 }}>{instance.name}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <BoxIcon size={14} color="var(--primary-color)" />
+              <span style={{ color: '#a1a1aa', fontSize: 14 }}>{instance.className}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Panel Content */}
+        <div style={{ padding: 20, flex: 1, display: 'flex', flexDirection: 'column' }}>
+          {/* Properties */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <span style={{ color: '#a1a1aa', fontSize: 12, fontWeight: 600 }}>Properties</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {instance.properties.map((prop) => (
+                <div key={prop.label} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#a1a1aa', fontSize: 13 }}>{prop.label}</span>
+                  <span style={{ color: '#f4f4f5', fontSize: 13 }}>{prop.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Relations */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, paddingTop: 20, marginTop: 20, borderTop: '1px solid #27273a' }}>
+            <span style={{ color: '#a1a1aa', fontSize: 12, fontWeight: 600 }}>
+              Relations ({instance.relations.length})
+            </span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {instance.relations.map((rel) => (
+                <div
                   key={rel.id}
-                  x={nodePos.x}
-                  y={nodePos.y}
-                  name={rel.name}
-                  type={rel.type}
-                  icon={rel.icon}
-                  color={rel.color}
-                  onDragStart={(e) => handleDragStart(i + 1, e)}
-                />
-              );
-            })}
-
-            {/* Center Node */}
-            <CenterNode
-              x={centerPos.x}
-              y={centerPos.y}
-              name={instance.name}
-              type={instance.className}
-              icon={instance.classIcon}
-              color={instance.color}
-              onDragStart={(e) => handleDragStart(0, e)}
-            />
-          </svg>
-        </Card>
-
-        {/* Detail Panel */}
-        <Card variant="outlined" sx={{ width: 300, display: 'flex', flexDirection: 'column', borderRadius: 3, overflow: 'auto' }}>
-          <Box px={2.5} py={2.5} borderBottom={1} borderColor="divider">
-            <Box display="flex" alignItems="center" gap={1} mb={1.5}>
-              <Info size={18} color="#8b5cf6" />
-              <Typography fontWeight={600}>Instance Details</Typography>
-            </Box>
-            <Typography fontSize={20} fontWeight={600} mb={1}>
-              {instance.name}
-            </Typography>
-            <Box display="flex" alignItems="center" gap={0.75}>
-              <BoxIcon size={14} color="#8b5cf6" />
-              <Typography variant="body2" color="text.secondary">
-                {instance.className}
-              </Typography>
-            </Box>
-          </Box>
-
-          <Box px={2.5} py={2.5} flex={1} display="flex" flexDirection="column" gap={2.5}>
-            <Box>
-              <Typography variant="caption" fontWeight={600} color="text.secondary" display="block" mb={1.5}>
-                Properties
-              </Typography>
-              <Box display="flex" flexDirection="column" gap={1}>
-                {instance.properties.map((prop) => (
-                  <Box key={prop.label} display="flex" justifyContent="space-between" alignItems="center">
-                    <Typography variant="body2" color="text.secondary" fontSize={13}>
-                      {prop.label}
-                    </Typography>
-                    <Typography variant="body2" fontSize={13}>
-                      {prop.value}
-                    </Typography>
-                  </Box>
-                ))}
-              </Box>
-            </Box>
-
-            <Box pt={2.5} borderTop={1} borderColor="divider">
-              <Typography variant="caption" fontWeight={600} color="text.secondary" display="block" mb={1.5}>
-                Relations ({instance.relations.length})
-              </Typography>
-              <Box display="flex" flexDirection="column" gap={1}>
-                {instance.relations.map((rel) => (
-                  <Box
-                    key={rel.id}
-                    display="flex"
-                    alignItems="center"
-                    gap={1.25}
-                    p={1.25}
-                    bgcolor="action.hover"
-                    borderRadius={2}
-                  >
-                    <rel.icon size={16} color={rel.color} />
-                    <Box flex={1} minWidth={0}>
-                      <Typography variant="body2" fontWeight={500} fontSize={13}>
-                        {rel.name}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary" fontSize={11}>
-                        {rel.relation} → {rel.type}
-                      </Typography>
-                    </Box>
-                  </Box>
-                ))}
-              </Box>
-            </Box>
-          </Box>
-        </Card>
-      </Box>
-    </>
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: 10, backgroundColor: '#1a1a24', borderRadius: 8,
+                  }}
+                >
+                  <rel.icon size={16} color={rel.color} />
+                  <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <span style={{ color: '#f4f4f5', fontSize: 13, fontWeight: 500 }}>
+                      {rel.name}
+                    </span>
+                    <span style={{ color: '#a1a1aa', fontSize: 11 }}>
+                      {rel.relation} &rarr; {rel.type}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

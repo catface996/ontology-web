@@ -1,12 +1,11 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { Breadcrumb, Typography, Button, Card, Checkbox, Select } from 'antd';
 import {
-  Box, Breadcrumbs, Link, Typography, Button, Card, Checkbox, FormControlLabel,
-  Select, MenuItem, FormControl,
-} from '@mui/material';
-import {
-  ChevronRight, Upload, Download, CloudUpload, FolderOpen, History,
-  Braces, FileCode, FileText, Table as TableIcon,
+  ChevronRight, Upload, Download, CloudUpload,
+  FolderOpen, Clock, FileText, Code,
+  Table,
 } from 'lucide-react';
+import { useHeader } from '../contexts/HeaderContext';
 
 /* ── Types ── */
 type ExportScope = 'all' | 'schema' | 'instances';
@@ -25,14 +24,15 @@ const formatOptions: {
   label: string;
   icon: React.ComponentType<{ size?: number; color?: string }>;
 }[] = [
-  { value: 'json-ld', label: 'JSON-LD', icon: Braces },
-  { value: 'rdf-xml', label: 'RDF/XML', icon: FileCode },
+  { value: 'json-ld', label: 'JSON-LD', icon: Code },
+  { value: 'rdf-xml', label: 'RDF/XML', icon: Code },
   { value: 'turtle', label: 'Turtle', icon: FileText },
-  { value: 'csv', label: 'CSV', icon: TableIcon },
+  { value: 'csv', label: 'CSV', icon: Table },
 ];
 
 /* ── Main component ── */
 export default function ImportExportPage() {
+  const { setBreadcrumbs, setActions } = useHeader();
   const [importFormat, setImportFormat] = useState('auto');
   const [targetDomain, setTargetDomain] = useState('enterprise');
   const [validateData, setValidateData] = useState(true);
@@ -44,6 +44,21 @@ export default function ImportExportPage() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    setBreadcrumbs(
+      <Breadcrumb
+        separator={<ChevronRight size={10} />}
+        items={[
+          { title: <a>Tools</a> },
+          { title: <Typography.Text strong>Import / Export</Typography.Text> },
+        ]}
+      />
+    );
+    setActions(
+      <Button icon={<Clock size={16} />}>History</Button>
+    );
+  }, [setBreadcrumbs, setActions]);
+
   const handleFileSelect = (files: FileList | null) => {
     if (files && files.length > 0) {
       setSelectedFiles(Array.from(files));
@@ -52,81 +67,27 @@ export default function ImportExportPage() {
 
   return (
     <>
-      {/* Header */}
-      <Box
-        height={64}
-        display="flex"
-        alignItems="center"
-        justifyContent="space-between"
-        px={3}
-        borderBottom={1}
-        borderColor="divider"
-      >
-        <Breadcrumbs separator={<ChevronRight size={14} />}>
-          <Link underline="hover" color="text.secondary" href="#">
-            Tools
-          </Link>
-          <Typography color="text.primary" fontWeight={500}>
-            Import / Export
-          </Typography>
-        </Breadcrumbs>
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 0.75,
-            px: 2,
-            py: 1.25,
-            borderRadius: 2,
-            bgcolor: 'action.hover',
-            cursor: 'pointer',
-            '&:hover': { bgcolor: 'action.selected' },
-          }}
-        >
-          <History size={16} />
-          <Typography variant="body2" fontWeight={500} fontSize={14}>
-            History
-          </Typography>
-        </Box>
-      </Box>
-
       {/* Main Content */}
-      <Box flex={1} p={3} display="flex" gap={3} overflow="hidden">
+      <div style={{ flex: 1, padding: 24, display: 'flex', gap: 24, overflow: 'hidden' }}>
         {/* ── Import Card ── */}
         <Card
-          variant="outlined"
-          sx={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            borderRadius: 3,
-            overflow: 'hidden',
-          }}
+          style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+          styles={{ body: { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: 0 } }}
         >
           {/* Import Header */}
-          <Box
-            display="flex"
-            alignItems="center"
-            gap={1}
-            height={56}
-            px={2.5}
-            sx={{ borderBottom: 1, borderColor: 'divider' }}
+          <div
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              height: 56, padding: '0 20px',
+              borderBottom: '1px solid rgba(255,255,255,0.12)',
+            }}
           >
-            <Upload size={20} color="#8b5cf6" />
-            <Typography fontSize={16} fontWeight={600}>
-              Import Data
-            </Typography>
-          </Box>
+            <Upload size={20} color="var(--primary-color)" />
+            <Typography.Text style={{ fontSize: 16, fontWeight: 600 }}>Import Data</Typography.Text>
+          </div>
 
           {/* Import Content */}
-          <Box
-            flex={1}
-            p={2.5}
-            display="flex"
-            flexDirection="column"
-            gap={2.5}
-            overflow="auto"
-          >
+          <div style={{ flex: 1, padding: 20, display: 'flex', flexDirection: 'column', gap: 20, overflow: 'auto' }}>
             {/* Hidden file input */}
             <input
               ref={fileInputRef}
@@ -138,7 +99,7 @@ export default function ImportExportPage() {
             />
 
             {/* Upload Zone */}
-            <Box
+            <div
               onClick={() => fileInputRef.current?.click()}
               onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
               onDragLeave={() => setIsDragOver(false)}
@@ -147,273 +108,176 @@ export default function ImportExportPage() {
                 setIsDragOver(false);
                 handleFileSelect(e.dataTransfer.files);
               }}
-              sx={{
+              style={{
                 height: 250,
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: 3,
-                borderRadius: 3,
-                border: 2,
-                borderStyle: 'dashed',
-                borderColor: isDragOver ? 'primary.main' : 'divider',
-                bgcolor: isDragOver ? 'rgba(139, 92, 246, 0.05)' : 'action.hover',
+                gap: 24,
+                borderRadius: 12,
+                border: `2px dashed ${isDragOver ? 'var(--primary-color)' : 'rgba(255,255,255,0.12)'}`,
+                background: isDragOver ? 'rgba(var(--primary-rgb), 0.05)' : 'rgba(255,255,255,0.04)',
                 transition: 'all 0.2s',
                 cursor: 'pointer',
               }}
             >
               {selectedFiles.length > 0 ? (
                 <>
-                  <Box
-                    sx={{
-                      width: 56,
-                      height: 56,
-                      borderRadius: '50%',
-                      bgcolor: 'rgba(139, 92, 246, 0.1)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                  <div
+                    style={{
+                      width: 56, height: 56, borderRadius: '50%',
+                      background: 'rgba(var(--primary-rgb), 0.1)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}
                   >
-                    <FileText size={28} color="#8b5cf6" />
-                  </Box>
+                    <FileText size={28} color="var(--primary-color)" />
+                  </div>
                   {selectedFiles.map((f, i) => (
-                    <Typography key={i} color="text.primary" fontSize={14}>
+                    <Typography.Text key={i}>
                       {f.name}
-                      <Typography component="span" color="text.secondary" fontSize={13} ml={1}>
+                      <Typography.Text type="secondary" style={{ fontSize: 13, marginLeft: 8 }}>
                         ({(f.size / 1024).toFixed(1)} KB)
-                      </Typography>
-                    </Typography>
+                      </Typography.Text>
+                    </Typography.Text>
                   ))}
-                  <Typography color="text.secondary" fontSize={13}>
+                  <Typography.Text type="secondary" style={{ fontSize: 13 }}>
                     Click to change files
-                  </Typography>
+                  </Typography.Text>
                 </>
               ) : (
                 <>
-                  <Box
-                    sx={{
-                      width: 56,
-                      height: 56,
-                      borderRadius: '50%',
-                      bgcolor: 'rgba(139, 92, 246, 0.1)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                  <div
+                    style={{
+                      width: 56, height: 56, borderRadius: '50%',
+                      background: 'rgba(var(--primary-rgb), 0.1)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}
                   >
-                    <CloudUpload size={28} color="#8b5cf6" />
-                  </Box>
-                  <Typography color="text.secondary" fontSize={15}>
+                    <CloudUpload size={28} color="var(--primary-color)" />
+                  </div>
+                  <Typography.Text type="secondary" style={{ fontSize: 15 }}>
                     Drag and drop files here, or click to browse
-                  </Typography>
-                  <Typography color="text.secondary" fontSize={13}>
+                  </Typography.Text>
+                  <Typography.Text type="secondary" style={{ fontSize: 13 }}>
                     Supports RDF, OWL, TTL, JSON-LD (max 50MB)
-                  </Typography>
-                  <Button
-                    variant="contained"
-                    component="span"
-                    startIcon={<FolderOpen size={16} />}
-                    size="small"
-                    sx={{ px: 2.5, py: 1.25, borderRadius: 2 }}
-                  >
+                  </Typography.Text>
+                  <Button type="primary" icon={<FolderOpen size={16} />}>
                     Browse Files
                   </Button>
                 </>
               )}
-            </Box>
+            </div>
 
             {/* Options Row */}
-            <Box display="flex" gap={2}>
+            <div style={{ display: 'flex', gap: 16 }}>
               {/* Import Format */}
-              <Box flex={1} display="flex" flexDirection="column" gap={1}>
-                <Typography fontSize={13} fontWeight={500}>
-                  Import Format
-                </Typography>
-                <FormControl fullWidth size="small">
-                  <Select
-                    value={importFormat}
-                    onChange={(e) => setImportFormat(e.target.value)}
-                    sx={{ borderRadius: 2 }}
-                  >
-                    <MenuItem value="auto">Auto-detect</MenuItem>
-                    <MenuItem value="rdf">RDF/XML</MenuItem>
-                    <MenuItem value="ttl">Turtle</MenuItem>
-                    <MenuItem value="jsonld">JSON-LD</MenuItem>
-                    <MenuItem value="owl">OWL</MenuItem>
-                    <MenuItem value="csv">CSV</MenuItem>
-                  </Select>
-                </FormControl>
-              </Box>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <Typography.Text style={{ fontSize: 13, fontWeight: 500 }}>Import Format</Typography.Text>
+                <Select
+                  style={{ width: '100%' }}
+                  value={importFormat}
+                  onChange={(val) => setImportFormat(val)}
+                  options={[
+                    { value: 'auto', label: 'Auto-detect' },
+                    { value: 'rdf', label: 'RDF/XML' },
+                    { value: 'ttl', label: 'Turtle' },
+                    { value: 'jsonld', label: 'JSON-LD' },
+                    { value: 'owl', label: 'OWL' },
+                    { value: 'csv', label: 'CSV' },
+                  ]}
+                />
+              </div>
 
               {/* Target Domain */}
-              <Box flex={1} display="flex" flexDirection="column" gap={1}>
-                <Typography fontSize={13} fontWeight={500}>
-                  Target Domain
-                </Typography>
-                <FormControl fullWidth size="small">
-                  <Select
-                    value={targetDomain}
-                    onChange={(e) => setTargetDomain(e.target.value)}
-                    sx={{ borderRadius: 2 }}
-                    renderValue={(val) => (
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <Box
-                          sx={{
-                            width: 8,
-                            height: 8,
-                            borderRadius: 1,
-                            bgcolor: '#A855F7',
-                          }}
-                        />
-                        {val === 'enterprise' ? 'Enterprise' : val}
-                      </Box>
-                    )}
-                  >
-                    <MenuItem value="enterprise">Enterprise</MenuItem>
-                    <MenuItem value="research">Research</MenuItem>
-                    <MenuItem value="healthcare">Healthcare</MenuItem>
-                  </Select>
-                </FormControl>
-              </Box>
-            </Box>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <Typography.Text style={{ fontSize: 13, fontWeight: 500 }}>Target Domain</Typography.Text>
+                <Select
+                  style={{ width: '100%' }}
+                  value={targetDomain}
+                  onChange={(val) => setTargetDomain(val)}
+                  options={[
+                    { value: 'enterprise', label: 'Enterprise' },
+                    { value: 'research', label: 'Research' },
+                    { value: 'healthcare', label: 'Healthcare' },
+                  ]}
+                />
+              </div>
+            </div>
 
             {/* Checkboxes */}
-            <Box display="flex" flexDirection="column" gap={0.5}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={validateData}
-                    onChange={(e) => setValidateData(e.target.checked)}
-                    size="small"
-                    sx={{ p: 0.5, mr: 0.5 }}
-                  />
-                }
-                label={
-                  <Typography fontSize={13}>Validate data before import</Typography>
-                }
-              />
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={mergeData}
-                    onChange={(e) => setMergeData(e.target.checked)}
-                    size="small"
-                    sx={{ p: 0.5, mr: 0.5 }}
-                  />
-                }
-                label={
-                  <Typography fontSize={13}>Merge with existing data</Typography>
-                }
-              />
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={skipDuplicates}
-                    onChange={(e) => setSkipDuplicates(e.target.checked)}
-                    size="small"
-                    sx={{ p: 0.5, mr: 0.5 }}
-                  />
-                }
-                label={
-                  <Typography fontSize={13} color="text.secondary">
-                    Skip duplicate entries
-                  </Typography>
-                }
-              />
-            </Box>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <Checkbox checked={validateData} onChange={(e) => setValidateData(e.target.checked)}>
+                <Typography.Text style={{ fontSize: 13 }}>Validate data before import</Typography.Text>
+              </Checkbox>
+              <Checkbox checked={mergeData} onChange={(e) => setMergeData(e.target.checked)}>
+                <Typography.Text style={{ fontSize: 13 }}>Merge with existing data</Typography.Text>
+              </Checkbox>
+              <Checkbox checked={skipDuplicates} onChange={(e) => setSkipDuplicates(e.target.checked)}>
+                <Typography.Text type="secondary" style={{ fontSize: 13 }}>Skip duplicate entries</Typography.Text>
+              </Checkbox>
+            </div>
 
             {/* Import Button */}
             <Button
-              variant="contained"
-              fullWidth
-              startIcon={<Upload size={18} />}
-              sx={{
-                py: 1.5,
-                borderRadius: 2,
-                fontWeight: 600,
-                fontSize: 14,
-                mt: 'auto',
-              }}
+              type="primary"
+              block
+              icon={<Upload size={16} />}
+              style={{ marginTop: 'auto' }}
             >
               Start Import
             </Button>
-          </Box>
+          </div>
         </Card>
 
         {/* ── Export Card ── */}
         <Card
-          variant="outlined"
-          sx={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            borderRadius: 3,
-            overflow: 'hidden',
-          }}
+          style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+          styles={{ body: { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: 0 } }}
         >
           {/* Export Header */}
-          <Box
-            display="flex"
-            alignItems="center"
-            gap={1}
-            height={56}
-            px={2.5}
-            sx={{ borderBottom: 1, borderColor: 'divider' }}
+          <div
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              height: 56, padding: '0 20px',
+              borderBottom: '1px solid rgba(255,255,255,0.12)',
+            }}
           >
-            <Download size={20} color="#8b5cf6" />
-            <Typography fontSize={16} fontWeight={600}>
-              Export Data
-            </Typography>
-          </Box>
+            <Download size={20} color="var(--primary-color)" />
+            <Typography.Text style={{ fontSize: 16, fontWeight: 600 }}>Export Data</Typography.Text>
+          </div>
 
           {/* Export Content */}
-          <Box
-            flex={1}
-            p={2.5}
-            display="flex"
-            flexDirection="column"
-            gap={2.5}
-            overflow="auto"
-          >
+          <div style={{ flex: 1, padding: 20, display: 'flex', flexDirection: 'column', gap: 20, overflow: 'auto' }}>
             {/* Export Scope */}
-            <Box display="flex" flexDirection="column" gap={1.5}>
-              <Typography fontSize={13} fontWeight={500}>
-                Export Scope
-              </Typography>
-              <Box display="flex" flexDirection="column" gap={1}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <Typography.Text style={{ fontSize: 13, fontWeight: 500 }}>Export Scope</Typography.Text>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {scopeOptions.map((opt) => {
                   const selected = exportScope === opt.value;
                   return (
-                    <Box
+                    <div
                       key={opt.value}
                       onClick={() => setExportScope(opt.value)}
-                      sx={{
+                      style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: 1.25,
-                        px: 2,
-                        py: 1.5,
-                        borderRadius: 2,
+                        gap: 10,
+                        padding: '12px 16px',
+                        borderRadius: 8,
                         cursor: 'pointer',
-                        border: 1,
-                        borderColor: selected ? 'primary.main' : 'divider',
-                        bgcolor: selected ? 'primary.main' : 'transparent',
+                        border: `1px solid ${selected ? 'var(--primary-color)' : 'rgba(255,255,255,0.12)'}`,
+                        background: selected ? 'var(--primary-color)' : 'transparent',
                         transition: 'all 0.15s',
-                        '&:hover': {
-                          borderColor: selected ? 'primary.main' : 'text.secondary',
-                        },
                       }}
                     >
                       {/* Radio indicator */}
-                      <Box
-                        sx={{
+                      <div
+                        style={{
                           width: 18,
                           height: 18,
                           borderRadius: '50%',
-                          border: 2,
-                          borderColor: selected ? '#fff' : 'divider',
+                          border: `2px solid ${selected ? '#fff' : 'rgba(255,255,255,0.12)'}`,
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -421,98 +285,84 @@ export default function ImportExportPage() {
                         }}
                       >
                         {selected && (
-                          <Box
-                            sx={{
+                          <div
+                            style={{
                               width: 8,
                               height: 8,
                               borderRadius: '50%',
-                              bgcolor: '#fff',
+                              background: '#fff',
                             }}
                           />
                         )}
-                      </Box>
-                      <Typography fontSize={13} color={selected ? '#fff' : 'text.primary'}>
+                      </div>
+                      <Typography.Text style={{ fontSize: 13, color: selected ? '#fff' : undefined }}>
                         {opt.label}{' '}
-                        <Typography
-                          component="span"
-                          fontSize={13}
-                          color={selected ? 'rgba(255,255,255,0.7)' : 'text.secondary'}
+                        <Typography.Text
+                          style={{
+                            fontSize: 13,
+                            color: selected ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.45)',
+                          }}
                         >
                           ({opt.description})
-                        </Typography>
-                      </Typography>
-                    </Box>
+                        </Typography.Text>
+                      </Typography.Text>
+                    </div>
                   );
                 })}
-              </Box>
-            </Box>
+              </div>
+            </div>
 
             {/* Export Format */}
-            <Box display="flex" flexDirection="column" gap={1.5}>
-              <Typography fontSize={13} fontWeight={500}>
-                Export Format
-              </Typography>
-              <Box display="flex" gap={1.5}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <Typography.Text style={{ fontSize: 13, fontWeight: 500 }}>Export Format</Typography.Text>
+              <div style={{ display: 'flex', gap: 12 }}>
                 {formatOptions.map(({ value, label, icon: Icon }) => {
                   const selected = exportFormat === value;
                   return (
-                    <Box
+                    <div
                       key={value}
                       onClick={() => setExportFormat(value)}
-                      sx={{
+                      style={{
                         flex: 1,
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
-                        gap: 1,
-                        py: 2,
-                        px: 1,
-                        borderRadius: 2,
-                        border: selected ? 2 : 1,
-                        borderColor: selected ? 'primary.main' : 'divider',
-                        bgcolor: selected ? 'background.paper' : 'transparent',
+                        gap: 8,
+                        padding: '16px 8px',
+                        borderRadius: 8,
+                        border: `${selected ? '2px' : '1px'} solid ${selected ? 'var(--primary-color)' : 'rgba(255,255,255,0.12)'}`,
                         cursor: 'pointer',
                         transition: 'all 0.15s',
-                        '&:hover': {
-                          borderColor: selected ? 'primary.main' : 'text.secondary',
-                        },
                       }}
                     >
-                      <Icon
-                        size={24}
-                        color={selected ? '#8b5cf6' : '#a1a1aa'}
-                      />
-                      <Typography
-                        fontSize={13}
-                        fontWeight={selected ? 500 : 400}
-                        color={selected ? 'text.primary' : 'text.secondary'}
+                      <Icon size={24} color={selected ? 'var(--primary-color)' : '#a1a1aa'} />
+                      <Typography.Text
+                        style={{
+                          fontSize: 13,
+                          fontWeight: selected ? 500 : 400,
+                          color: selected ? undefined : 'rgba(255,255,255,0.45)',
+                        }}
                       >
                         {label}
-                      </Typography>
-                    </Box>
+                      </Typography.Text>
+                    </div>
                   );
                 })}
-              </Box>
-            </Box>
+              </div>
+            </div>
 
             {/* Export Button */}
             <Button
-              variant="contained"
-              fullWidth
-              startIcon={<Download size={18} />}
-              sx={{
-                py: 1.5,
-                borderRadius: 2,
-                fontWeight: 600,
-                fontSize: 14,
-                mt: 'auto',
-              }}
+              type="primary"
+              block
+              icon={<Download size={16} />}
+              style={{ marginTop: 'auto' }}
             >
               Export Data
             </Button>
-          </Box>
+          </div>
         </Card>
-      </Box>
+      </div>
     </>
   );
 }

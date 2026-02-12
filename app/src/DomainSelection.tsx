@@ -1,18 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Typography, Input, Tag, Card, Button, Checkbox, Flex, Divider } from 'antd';
 import {
-  Box,
-  Typography,
-  TextField,
-  InputAdornment,
-  Chip,
-  Card,
-  CardContent,
-  Button,
-  Avatar,
-  Checkbox,
-} from '@mui/material';
-import { Share2, Search, Globe, Building2, Wallet, Cpu, ArrowRight, ChevronDown } from 'lucide-react';
+  Share2, Search, Globe, Landmark,
+  Wallet, Plug, ArrowRight, ChevronDown, ChevronUp, Bell, Check, LogOut,
+} from 'lucide-react';
+import { logout, getAuth } from './utils/auth';
 
 interface Domain {
   id: string;
@@ -24,111 +17,215 @@ interface Domain {
 }
 
 const domains: Domain[] = [
-  { id: 'enterprise', title: 'Enterprise', description: 'Corporate structures, business processes, and organizational hierarchies.', icon: <Globe size={24} />, color: '#8b5cf6', stats: { classes: 156, relations: 89, instances: '12.4K' } },
-  { id: 'healthcare', title: 'Healthcare', description: 'Medical terminologies, patient records, and clinical workflows.', icon: <Building2 size={24} />, color: '#22D3EE', stats: { classes: 234, relations: 156, instances: '45.2K' } },
+  { id: 'enterprise', title: 'Enterprise', description: 'Corporate structures, business processes, and organizational hierarchies.', icon: <Globe size={24} />, color: 'var(--primary-color)', stats: { classes: 156, relations: 89, instances: '12.4K' } },
+  { id: 'healthcare', title: 'Healthcare', description: 'Medical terminologies, patient records, and clinical workflows.', icon: <Landmark size={24} />, color: '#22D3EE', stats: { classes: 234, relations: 156, instances: '45.2K' } },
   { id: 'finance', title: 'Finance', description: 'Financial instruments, transactions, and regulatory compliance.', icon: <Wallet size={24} />, color: '#F472B6', stats: { classes: 189, relations: 112, instances: '28.7K' } },
-  { id: 'iot', title: 'IoT & Sensors', description: 'Device telemetry, sensor networks, and real-time data streams.', icon: <Cpu size={24} />, color: '#4ADE80', stats: { classes: 98, relations: 67, instances: '156K' } },
+  { id: 'iot', title: 'IoT & Sensors', description: 'Device telemetry, sensor networks, and real-time data streams.', icon: <Plug size={24} />, color: '#4ADE80', stats: { classes: 98, relations: 67, instances: '156K' } },
 ];
 
 export default function DomainSelection() {
   const navigate = useNavigate();
+  const auth = getAuth();
   const [selected, setSelected] = useState<string[]>(['enterprise']);
   const [filter, setFilter] = useState('all');
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState('English');
 
   const toggleDomain = (id: string) => {
     setSelected((prev) => prev.includes(id) ? prev.filter((d) => d !== id) : [...prev, id]);
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#0a0a0f' }}>
       {/* Header */}
-      <Box sx={{ height: 72, display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 6, borderBottom: 1, borderColor: 'divider' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Share2 size={28} color="#8b5cf6" />
-          <Typography variant="h5" fontWeight={700}>Ontology</Typography>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Avatar sx={{ bgcolor: 'primary.main', width: 40, height: 40 }}>A</Avatar>
-          <Typography variant="body2" fontWeight={500}>Admin User</Typography>
-          <ChevronDown size={16} />
-        </Box>
-      </Box>
+      <Flex align="center" justify="space-between" style={{ height: 64, padding: '0 24px', borderBottom: '1px solid #27273a' }}>
+        <Flex align="center" gap={12}>
+          <Share2 size={28} color="var(--primary-color)" />
+          <Typography.Title level={4} style={{ margin: 0, fontWeight: 700 }}>Ontology</Typography.Title>
+        </Flex>
+        <Flex align="center" gap={12}>
+          <div
+            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+            onClick={() => navigate('/notifications')}
+          >
+            <Bell size={20} color="#a1a1aa" />
+          </div>
+          <Flex
+            align="center"
+            gap={10}
+            style={{ cursor: 'pointer' }}
+            onClick={() => setUserMenuOpen((prev) => !prev)}
+          >
+            <div
+              style={{
+                width: 32, height: 32, borderRadius: '50%',
+                background: 'var(--primary-color)', display: 'flex',
+                alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              <Typography.Text style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>
+                {auth?.user?.name?.[0] || 'A'}
+              </Typography.Text>
+            </div>
+            <Typography.Text style={{ fontSize: 14, fontWeight: 500 }}>
+              {auth?.user?.name || 'Admin User'}
+            </Typography.Text>
+            {userMenuOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+          </Flex>
+        </Flex>
+      </Flex>
+
+      {/* User Menu Popover */}
+      {userMenuOpen && (
+        <div style={{ position: 'relative' }}>
+          <div
+            style={{
+              position: 'absolute', top: 0, right: 24, zIndex: 1300,
+              width: 248, background: '#1a1a24',
+              border: '1px solid #27273a', borderRadius: 12, padding: '8px 0',
+            }}
+          >
+            {/* User Info */}
+            <Flex align="center" gap={12} style={{ padding: '12px 16px' }}>
+              <div
+                style={{
+                  width: 32, height: 32, borderRadius: '50%',
+                  background: 'var(--primary-color)', display: 'flex',
+                  alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                }}
+              >
+                <Typography.Text style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>
+                  {auth?.user?.name?.[0] || 'A'}
+                </Typography.Text>
+              </div>
+              <div>
+                <Typography.Text style={{ fontSize: 14, fontWeight: 500, display: 'block' }}>
+                  {auth?.user?.name || 'Admin User'}
+                </Typography.Text>
+                <Typography.Text style={{ fontSize: 12, color: '#a1a1aa', display: 'block' }}>
+                  {auth?.user?.email || 'admin@ontology.io'}
+                </Typography.Text>
+              </div>
+            </Flex>
+            <Divider style={{ margin: '0 8px' }} />
+
+            {/* Language */}
+            <div style={{ padding: '8px 16px' }}>
+              <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa' }}>Language</Typography.Text>
+            </div>
+            {(['English', '中文', '日本語'] as const).map((lang) => {
+              const isActive = selectedLanguage === lang;
+              return (
+                <Flex
+                  key={lang}
+                  align="center"
+                  gap={12}
+                  onClick={() => setSelectedLanguage(lang)}
+                  style={{
+                    padding: '8px 16px', margin: '0 8px', borderRadius: 8, cursor: 'pointer',
+                    background: isActive ? 'rgba(var(--primary-rgb), 0.13)' : 'transparent',
+                  }}
+                >
+                  <div style={{ width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {isActive && <Check size={14} color="var(--primary-color)" />}
+                  </div>
+                  <Globe size={14} color="#a1a1aa" />
+                  <Typography.Text style={{ fontSize: 13 }}>{lang}</Typography.Text>
+                </Flex>
+              );
+            })}
+            <Divider style={{ margin: '0 8px' }} />
+
+            {/* Logout */}
+            <Flex
+              align="center"
+              gap={12}
+              onClick={() => { logout(); navigate('/login'); }}
+              style={{
+                padding: '8px 16px', margin: '0 8px', borderRadius: 8, cursor: 'pointer',
+              }}
+            >
+              <LogOut size={14} color="#f87171" />
+              <Typography.Text style={{ fontSize: 13, fontWeight: 500, color: '#f87171' }}>Log out</Typography.Text>
+            </Flex>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, p: 6 }}>
+      <Flex vertical align="center" gap={40} style={{ flex: 1, padding: 48 }}>
         {/* Title */}
-        <Box sx={{ textAlign: 'center', maxWidth: 600 }}>
-          <Typography variant="h4" fontWeight={700} gutterBottom>Select Your Domains</Typography>
-          <Typography color="text.secondary">Choose one or more business domains to manage your knowledge graphs. You can switch between domains at any time.</Typography>
-        </Box>
+        <div style={{ textAlign: 'center', maxWidth: 600 }}>
+          <Typography.Title level={3} style={{ fontWeight: 700 }}>Select Your Domains</Typography.Title>
+          <Typography.Text type="secondary">Choose one or more business domains to manage your knowledge graphs. You can switch between domains at any time.</Typography.Text>
+        </div>
 
         {/* Search & Filter */}
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', maxWidth: 1200 }}>
-          <TextField
-            size="small"
+        <Flex align="center" justify="space-between" style={{ width: '100%', maxWidth: 1200 }}>
+          <Input
             placeholder="Search domains..."
-            InputProps={{ startAdornment: <InputAdornment position="start"><Search size={18} /></InputAdornment> }}
-            sx={{ width: 320 }}
+            prefix={<Search size={16} />}
+            style={{ width: 320 }}
           />
-          <Box sx={{ display: 'flex', gap: 1 }}>
+          <Flex gap={8}>
             {['All', 'Recent', 'Favorites'].map((label) => (
-              <Chip
+              <Tag
                 key={label}
-                label={label}
                 onClick={() => setFilter(label.toLowerCase())}
-                color={filter === label.toLowerCase() ? 'primary' : 'default'}
-                variant={filter === label.toLowerCase() ? 'filled' : 'outlined'}
-              />
+                color={filter === label.toLowerCase() ? 'purple' : undefined}
+                style={{ cursor: 'pointer', padding: '4px 12px', borderRadius: 16 }}
+              >
+                {label}
+              </Tag>
             ))}
-          </Box>
-        </Box>
+          </Flex>
+        </Flex>
 
         {/* Domain Cards */}
-        <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', justifyContent: 'center' }}>
+        <Flex gap={24} wrap="wrap" justify="center">
           {domains.map((domain) => {
             const isSelected = selected.includes(domain.id);
             return (
               <Card
                 key={domain.id}
                 onClick={() => toggleDomain(domain.id)}
-                sx={{
+                style={{
                   width: 280,
                   cursor: 'pointer',
-                  border: 2,
-                  borderColor: isSelected ? 'primary.main' : 'divider',
-                  boxShadow: isSelected ? `0 8px 24px ${domain.color}30` : 1,
+                  border: `2px solid ${isSelected ? 'var(--primary-color)' : '#27273a'}`,
+                  boxShadow: isSelected ? `0 8px 24px ${domain.color}30` : undefined,
                 }}
               >
-                <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, height: '100%' }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <Avatar sx={{ bgcolor: `${domain.color}20`, color: domain.color, width: 52, height: 52 }}>
+                <Flex vertical gap={16} style={{ height: '100%' }}>
+                  <Flex justify="space-between" align="flex-start">
+                    <div style={{ width: 52, height: 52, borderRadius: '50%', background: `${domain.color}20`, color: domain.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       {domain.icon}
-                    </Avatar>
-                    <Checkbox checked={isSelected} sx={{ '& .MuiSvgIcon-root': { color: isSelected ? 'primary.main' : 'text.disabled' } }} />
-                  </Box>
-                  <Box sx={{ flex: 1 }}>
-                    <Typography variant="h6" fontWeight={600}>{domain.title}</Typography>
-                    <Typography variant="body2" color="text.secondary">{domain.description}</Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', gap: 2 }}>
-                    <Box><Typography variant="caption" color="text.disabled">Classes</Typography><Typography variant="body2" fontWeight={500}>{domain.stats.classes}</Typography></Box>
-                    <Box><Typography variant="caption" color="text.disabled">Relations</Typography><Typography variant="body2" fontWeight={500}>{domain.stats.relations}</Typography></Box>
-                    <Box><Typography variant="caption" color="text.disabled">Instances</Typography><Typography variant="body2" fontWeight={500}>{domain.stats.instances}</Typography></Box>
-                  </Box>
-                </CardContent>
+                    </div>
+                    <Checkbox checked={isSelected} />
+                  </Flex>
+                  <div style={{ flex: 1 }}>
+                    <Typography.Title level={5} style={{ margin: 0 }}>{domain.title}</Typography.Title>
+                    <Typography.Text type="secondary" style={{ fontSize: 13 }}>{domain.description}</Typography.Text>
+                  </div>
+                  <Flex gap={16}>
+                    <div><Typography.Text type="secondary" style={{ fontSize: 12, display: 'block' }}>Classes</Typography.Text><Typography.Text strong>{domain.stats.classes}</Typography.Text></div>
+                    <div><Typography.Text type="secondary" style={{ fontSize: 12, display: 'block' }}>Relations</Typography.Text><Typography.Text strong>{domain.stats.relations}</Typography.Text></div>
+                    <div><Typography.Text type="secondary" style={{ fontSize: 12, display: 'block' }}>Instances</Typography.Text><Typography.Text strong>{domain.stats.instances}</Typography.Text></div>
+                  </Flex>
+                </Flex>
               </Card>
             );
           })}
-        </Box>
+        </Flex>
 
         {/* Action Bar */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Typography color="text.secondary">{selected.length} domain{selected.length !== 1 ? 's' : ''} selected</Typography>
-          <Button variant="contained" size="large" endIcon={<ArrowRight size={18} />} onClick={() => navigate('/knowledge-graph')} disabled={selected.length === 0}>
+        <Flex align="center" gap={16}>
+          <Typography.Text type="secondary">{selected.length} domain{selected.length !== 1 ? 's' : ''} selected</Typography.Text>
+          <Button type="primary" size="large" icon={<ArrowRight size={16} />} iconPosition="end" onClick={() => navigate('/knowledge-graph')} disabled={selected.length === 0}>
             Enter Workspace
           </Button>
-        </Box>
-      </Box>
-    </Box>
+        </Flex>
+      </Flex>
+    </div>
   );
 }

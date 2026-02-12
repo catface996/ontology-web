@@ -1,0 +1,32 @@
+diff --git a/node_modules/antd/es/typography/Base/Ellipsis.js b/node_modules/antd/es/typography/Base/Ellipsis.js
+index 666209c..b99b6cc 100644
+--- a/node_modules/antd/es/typography/Base/Ellipsis.js
++++ b/node_modules/antd/es/typography/Base/Ellipsis.js
+@@ -99,9 +99,9 @@ export default function EllipsisMeasure(props) {
+   // Trigger start measure
+   useLayoutEffect(() => {
+     if (enableMeasure && width && nodeLen) {
+-      setNeedEllipsis(STATUS_MEASURE_PREPARE);
++      setNeedEllipsis(prev => prev === STATUS_MEASURE_PREPARE ? prev : STATUS_MEASURE_PREPARE);
+     } else {
+-      setNeedEllipsis(STATUS_MEASURE_NONE);
++      setNeedEllipsis(prev => prev === STATUS_MEASURE_NONE ? prev : STATUS_MEASURE_NONE);
+     }
+   }, [width, text, rows, enableMeasure, nodeList]);
+   // Measure process
+diff --git a/node_modules/antd/lib/typography/Base/Ellipsis.js b/node_modules/antd/lib/typography/Base/Ellipsis.js
+index 88707c9..39abc7a 100644
+--- a/node_modules/antd/lib/typography/Base/Ellipsis.js
++++ b/node_modules/antd/lib/typography/Base/Ellipsis.js
+@@ -106,9 +106,9 @@ function EllipsisMeasure(props) {
+   // Trigger start measure
+   (0, _useLayoutEffect.default)(() => {
+     if (enableMeasure && width && nodeLen) {
+-      setNeedEllipsis(STATUS_MEASURE_PREPARE);
++      setNeedEllipsis(prev => prev === STATUS_MEASURE_PREPARE ? prev : STATUS_MEASURE_PREPARE);
+     } else {
+-      setNeedEllipsis(STATUS_MEASURE_NONE);
++      setNeedEllipsis(prev => prev === STATUS_MEASURE_NONE ? prev : STATUS_MEASURE_NONE);
+     }
+   }, [width, text, rows, enableMeasure, nodeList]);
+   // Measure process

@@ -1,49 +1,44 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import {
-  Box,
-  Drawer,
-  List,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  Typography,
-  Divider,
-  Collapse,
-} from '@mui/material';
+import { Layout, Typography, Divider, Flex } from 'antd';
 import {
   Share2,
   ChevronDown,
   ChevronRight,
+  Check,
   Globe,
-  Building2,
+  Landmark,
   Wallet,
-  Cpu,
-  GitBranch,
+  Plug,
+  GitFork,
+  GitMerge,
   Boxes,
-  Link as LinkIcon,
-  List as ListIcon,
+  ArrowLeftRight,
+  List,
   Database,
   Search,
   Upload,
   MessageCircle,
   ListChecks,
-  Plug,
-  GitMerge,
-  Brain,
   Users,
   Shield,
   Key,
   Activity,
   FileText,
-  Gauge,
+  Brain,
   FlaskConical,
-  ArrowRightCircle,
-  ArrowLeftCircle,
+  CircleCheck,
+  History,
+  Settings,
+  ScrollText,
+  LayoutDashboard,
+  ArrowRight,
+  ArrowLeft,
   ShieldCheck,
-  GitCompareArrows,
-  Fingerprint,
+  GitCompare,
+  ScanLine,
 } from 'lucide-react';
+import { useThemeColor, THEME_COLORS } from '../contexts/ThemeColorContext';
 
 const drawerWidth = 280;
 
@@ -62,69 +57,76 @@ interface Domain {
 }
 
 const domains: Domain[] = [
-  { icon: <Globe size={18} />, label: 'Enterprise', color: 'inherit' },
-  { icon: <Building2 size={18} />, label: 'Healthcare', color: '#22D3EE' },
-  { icon: <Wallet size={18} />, label: 'Finance', color: '#F472B6' },
-  { icon: <Cpu size={18} />, label: 'IoT & Sensors', color: '#4ADE80' },
+  { icon: <Globe size={20} />, label: 'Enterprise', color: 'inherit' },
+  { icon: <Landmark size={20} />, label: 'Healthcare', color: '#22D3EE' },
+  { icon: <Wallet size={20} />, label: 'Finance', color: '#F472B6' },
+  { icon: <Plug size={20} />, label: 'IoT & Sensors', color: '#4ADE80' },
 ];
 
 const ontologyItems: NavItem[] = [
-  { icon: <GitBranch size={20} />, label: 'Knowledge Graph', path: '/knowledge-graph' },
+  { icon: <GitFork size={20} />, label: 'Knowledge Graph', path: '/knowledge-graph' },
   { icon: <Boxes size={20} />, label: 'Classes', path: '/classes' },
-  { icon: <LinkIcon size={20} />, label: 'Relations', path: '/relations' },
-  { icon: <ListIcon size={20} />, label: 'Properties', path: '/properties' },
+  { icon: <ArrowLeftRight size={20} />, label: 'Relations', path: '/relations' },
+  { icon: <List size={20} />, label: 'Properties', path: '/properties' },
   { icon: <Database size={20} />, label: 'Instances', path: '/instances' },
 ];
 
 const toolsItems: NavItem[] = [
+  { icon: <Search size={20} />, label: 'Global Search', path: '/search' },
   { icon: <Search size={20} />, label: 'SPARQL Query', path: '/sparql-query' },
   { icon: <Brain size={20} />, label: 'Reasoning', path: '/reasoning' },
-  { icon: <Upload size={20} />, label: 'Import/Export', path: '/import-export' },
+  { icon: <GitFork size={20} />, label: 'Reasoning Graph', path: '/reasoning-graph' },
+  { icon: <CircleCheck size={20} />, label: 'Validation', path: '/validation' },
   { icon: <FileText size={20} />, label: 'Reports', path: '/report-management' },
+  { icon: <History size={20} />, label: 'Version History', path: '/version-history' },
 ];
 
-const agentItems: NavItem[] = [
+const aiAgentItems: NavItem[] = [
   { icon: <MessageCircle size={20} />, label: 'Agent Chat', path: '/agent-chat' },
   { icon: <ListChecks size={20} />, label: 'Task History', path: '/task-history' },
 ];
 
-const agentFlowItems: NavItem[] = [
-  { icon: <Gauge size={20} />, label: 'Bottleneck', path: '/agent-chat/bottleneck', iconColor: '#8b5cf6', openInNewTab: true },
+const aiAgentFlowItems: NavItem[] = [
+  { icon: <LayoutDashboard size={20} />, label: 'Bottleneck', path: '/agent-chat/bottleneck', iconColor: 'var(--primary-color)', openInNewTab: true },
   { icon: <FlaskConical size={20} />, label: 'What-if', path: '/agent-chat/what-if', iconColor: '#f59e0b', openInNewTab: true },
-  { icon: <ArrowRightCircle size={20} />, label: 'Forward', path: '/agent-chat/forward', iconColor: '#06b6d4', openInNewTab: true },
-  { icon: <ArrowLeftCircle size={20} />, label: 'Backward', path: '/agent-chat/backward', iconColor: '#a855f7', openInNewTab: true },
+  { icon: <ArrowRight size={20} />, label: 'Forward', path: '/agent-chat/forward', iconColor: '#06b6d4', openInNewTab: true },
+  { icon: <ArrowLeft size={20} />, label: 'Backward', path: '/agent-chat/backward', iconColor: '#a855f7', openInNewTab: true },
   { icon: <ShieldCheck size={20} />, label: 'Constraint', path: '/agent-chat/constraint', iconColor: '#6366f1', openInNewTab: true },
-  { icon: <GitCompareArrows size={20} />, label: 'Diff', path: '/agent-chat/diff', iconColor: '#10b981', openInNewTab: true },
-  { icon: <Fingerprint size={20} />, label: 'Pattern', path: '/agent-chat/pattern', iconColor: '#ec4899', openInNewTab: true },
+  { icon: <GitCompare size={20} />, label: 'Diff', path: '/agent-chat/diff', iconColor: '#10b981', openInNewTab: true },
+  { icon: <ScanLine size={20} />, label: 'Pattern', path: '/agent-chat/pattern', iconColor: '#ec4899', openInNewTab: true },
 ];
 
-const integrationItems: NavItem[] = [
+const dataItems: NavItem[] = [
   { icon: <Database size={20} />, label: 'Data Sources', path: '/data-sources' },
   { icon: <Plug size={20} />, label: 'Connectors', path: '/connectors' },
   { icon: <GitMerge size={20} />, label: 'Field Mapping', path: '/field-mapping' },
+  { icon: <Upload size={20} />, label: 'Import/Export', path: '/import-export' },
 ];
 
-const settingsItems: NavItem[] = [
+const adminItems: NavItem[] = [
   { icon: <Users size={20} />, label: 'User Management', path: '/user-management' },
   { icon: <Shield size={20} />, label: 'Roles', path: '/roles-permissions' },
+  { icon: <Globe size={20} />, label: 'Namespaces', path: '/namespaces' },
+  { icon: <Settings size={20} />, label: 'System Settings', path: '/system-settings' },
+  { icon: <ScrollText size={20} />, label: 'Change Log', path: '/change-log' },
   { icon: <Key size={20} />, label: 'API Keys', path: '/api-keys' },
   { icon: <Activity size={20} />, label: 'Audit Logs', path: '/audit-logs' },
 ];
 
-type SectionKey = 'domains' | 'ontologies' | 'tools' | 'agent' | 'agentFlows' | 'integrations' | 'settings';
+type SectionKey = 'domains' | 'ontology' | 'tools' | 'aiAgent' | 'data' | 'admin';
 
 export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { primaryColor, setPrimaryColor } = useThemeColor();
   const [activeDomain, setActiveDomain] = useState('Enterprise');
   const [openSections, setOpenSections] = useState<Record<SectionKey, boolean>>({
     domains: true,
-    ontologies: true,
+    ontology: true,
     tools: true,
-    agent: true,
-    agentFlows: true,
-    integrations: true,
-    settings: true,
+    aiAgent: false,
+    data: false,
+    admin: false,
   });
 
   const toggleSection = (key: SectionKey) => {
@@ -136,99 +138,159 @@ export default function Sidebar() {
   };
 
   const renderNavItems = (items: NavItem[]) => (
-    <List disablePadding>
+    <div style={{ padding: '0 4px' }}>
       {items.map((item) => (
-        <ListItemButton
+        <Flex
           key={item.label}
-          selected={isSelected(item.path)}
+          align="center"
+          gap={12}
           onClick={() => item.openInNewTab ? window.open(item.path, '_blank') : navigate(item.path)}
-          sx={{ borderRadius: 100 }}
+          style={{
+            padding: '8px 16px',
+            borderRadius: 100,
+            cursor: 'pointer',
+            background: isSelected(item.path) ? 'rgba(var(--primary-rgb), 0.12)' : 'transparent',
+            color: isSelected(item.path) ? '#f4f4f5' : '#a1a1aa',
+            marginBottom: 2,
+          }}
         >
-          <ListItemIcon sx={item.iconColor ? { color: item.iconColor } : undefined}>
+          <span style={{ fontSize: 18, display: 'flex', alignItems: 'center', color: item.iconColor || 'inherit' }}>
             {item.icon}
-          </ListItemIcon>
-          <ListItemText primary={item.label} />
-        </ListItemButton>
+          </span>
+          <Typography.Text style={{ fontSize: 14, color: 'inherit' }}>{item.label}</Typography.Text>
+        </Flex>
       ))}
-    </List>
+    </div>
   );
 
   const renderSection = (title: string, key: SectionKey, items: NavItem[]) => (
-    <Box>
-      <ListItemButton onClick={() => toggleSection(key)} sx={{ py: 1 }}>
-        <ListItemText
-          primary={title}
-          primaryTypographyProps={{ variant: 'caption', color: 'text.secondary' }}
-        />
-        {openSections[key] ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-      </ListItemButton>
-      <Collapse in={openSections[key]}>{renderNavItems(items)}</Collapse>
-    </Box>
+    <div>
+      <Flex
+        align="center"
+        onClick={() => toggleSection(key)}
+        style={{ padding: '8px 16px', cursor: 'pointer' }}
+      >
+        <Typography.Text style={{ flex: 1, fontSize: 12, color: '#a1a1aa', letterSpacing: 0.5 }}>
+          {title}
+        </Typography.Text>
+        {openSections[key] ? <ChevronDown size={14} color="#a1a1aa" /> : <ChevronRight size={14} color="#a1a1aa" />}
+      </Flex>
+      {openSections[key] && renderNavItems(items)}
+    </div>
   );
 
   return (
-    <Drawer
-      variant="permanent"
-      sx={{ width: drawerWidth, flexShrink: 0 }}
-      PaperProps={{ sx: { width: drawerWidth } }}
+    <Layout.Sider
+      width={drawerWidth}
+      style={{
+        background: '#0d0d14',
+        borderRight: '1px solid #1e1e2a',
+        height: '100vh',
+        overflow: 'hidden',
+      }}
     >
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Header */}
-      <Box height={64} display="flex" alignItems="center" justifyContent="center" gap={1}>
-        <Share2 size={24} />
-        <Typography variant="h6">Ontology</Typography>
-      </Box>
-      <Divider />
+      <Flex align="center" justify="center" gap={8} style={{ height: 64, flexShrink: 0, borderBottom: '1px solid #1e1e2a' }}>
+        <Share2 size={28} color="#e4e4e7" />
+        <Typography.Text style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#e4e4e7' }}>Ontology</Typography.Text>
+      </Flex>
 
       {/* Content */}
-      <Box flex={1} overflow="auto" px={1}>
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '0 8px' }}>
         {/* Domains */}
-        <Box py={1}>
-          <ListItemButton onClick={() => toggleSection('domains')} sx={{ py: 1 }}>
-            <ListItemText
-              primary="DOMAINS"
-              primaryTypographyProps={{ variant: 'caption', color: 'text.secondary' }}
-            />
-            {openSections.domains ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-          </ListItemButton>
-          <Collapse in={openSections.domains}>
-            <List disablePadding>
+        <div style={{ padding: '8px 0' }}>
+          <Flex
+            align="center"
+            onClick={() => toggleSection('domains')}
+            style={{ padding: '8px 8px', cursor: 'pointer' }}
+          >
+            <Typography.Text style={{ flex: 1, fontSize: 12, color: '#a1a1aa', letterSpacing: 0.5 }}>
+              DOMAINS
+            </Typography.Text>
+            {openSections.domains ? <ChevronDown size={14} color="#a1a1aa" /> : <ChevronRight size={14} color="#a1a1aa" />}
+          </Flex>
+          {openSections.domains && (
+            <div>
               {domains.map((d) => (
-                <ListItemButton
+                <Flex
                   key={d.label}
-                  selected={activeDomain === d.label}
+                  align="center"
+                  gap={12}
                   onClick={() => setActiveDomain(d.label)}
-                  sx={{ borderRadius: 2 }}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: 8,
+                    cursor: 'pointer',
+                    background: activeDomain === d.label ? 'rgba(var(--primary-rgb), 0.12)' : 'transparent',
+                  }}
                 >
-                  <ListItemIcon sx={{ color: activeDomain === d.label ? 'inherit' : d.color }}>
+                  <span style={{ fontSize: 16, color: activeDomain === d.label ? 'inherit' : d.color }}>
                     {d.icon}
-                  </ListItemIcon>
-                  <ListItemText primary={d.label} primaryTypographyProps={{ variant: 'body2' }} />
-                </ListItemButton>
+                  </span>
+                  <Typography.Text style={{ fontSize: 14 }}>{d.label}</Typography.Text>
+                </Flex>
               ))}
-            </List>
-          </Collapse>
-        </Box>
-        <Divider />
+            </div>
+          )}
+        </div>
+        <Divider style={{ margin: '0' }} />
 
-        {renderSection('ONTOLOGIES', 'ontologies', ontologyItems)}
+        {renderSection('ONTOLOGY', 'ontology', ontologyItems)}
         {renderSection('TOOLS', 'tools', toolsItems)}
-        {renderSection('AGENT', 'agent', agentItems)}
-        {renderSection('AGENT FLOWS', 'agentFlows', agentFlowItems)}
-        {renderSection('INTEGRATIONS', 'integrations', integrationItems)}
-        {renderSection('SETTINGS', 'settings', settingsItems)}
-      </Box>
 
-      {/* Footer */}
-      <Divider />
-      <Box p={2} display="flex" alignItems="center" gap={1}>
-        <Box flex={1}>
-          <Typography variant="body2">Admin User</Typography>
-          <Typography variant="caption" color="text.disabled">
-            admin@ontology.io
-          </Typography>
-        </Box>
-        <ChevronDown size={20} />
-      </Box>
-    </Drawer>
+        {/* AI AGENT — custom render with internal divider */}
+        <div>
+          <Flex
+            align="center"
+            onClick={() => toggleSection('aiAgent')}
+            style={{ padding: '8px 16px', cursor: 'pointer' }}
+          >
+            <Typography.Text style={{ flex: 1, fontSize: 12, color: '#a1a1aa', letterSpacing: 0.5 }}>
+              AI AGENT
+            </Typography.Text>
+            {openSections.aiAgent ? <ChevronDown size={14} color="#a1a1aa" /> : <ChevronRight size={14} color="#a1a1aa" />}
+          </Flex>
+          {openSections.aiAgent && (
+            <>
+              {renderNavItems(aiAgentItems)}
+              <Divider style={{ margin: '8px 16px' }}>
+                <Typography.Text style={{ fontSize: 12, color: '#a1a1aa' }}>Flow Agents</Typography.Text>
+              </Divider>
+              {renderNavItems(aiAgentFlowItems)}
+            </>
+          )}
+        </div>
+
+        {renderSection('DATA', 'data', dataItems)}
+        {renderSection('ADMIN', 'admin', adminItems)}
+      </div>
+
+      {/* Theme Color Picker */}
+      <Divider style={{ margin: 0 }} />
+      <Flex wrap="wrap" gap={6} justify="center" style={{ padding: '12px 16px', flexShrink: 0 }}>
+        {THEME_COLORS.map((c) => (
+          <div
+            key={c}
+            onClick={() => setPrimaryColor(c)}
+            style={{
+              width: 20,
+              height: 20,
+              borderRadius: '50%',
+              backgroundColor: c,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              outline: primaryColor === c ? '2px solid #fff' : 'none',
+              outlineOffset: 2,
+            }}
+          >
+            {primaryColor === c && <Check size={10} color="#fff" />}
+          </div>
+        ))}
+      </Flex>
+      </div>
+    </Layout.Sider>
   );
 }

@@ -1,7 +1,10 @@
-import { ThemeProvider, CssBaseline } from '@mui/material';
+import { useMemo } from 'react';
+import { ConfigProvider } from 'antd';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import theme from './theme';
+import createTheme from './theme';
+import { ThemeColorProvider, useThemeColor } from './contexts/ThemeColorContext';
 import LoginPage from './LoginPage';
+import RegisterPage from './RegisterPage';
 import DomainSelection from './DomainSelection';
 import MainLayout from './MainLayout';
 import KnowledgeGraphPage from './pages/KnowledgeGraphPage';
@@ -34,24 +37,41 @@ import BackwardAgentPage from './pages/BackwardAgentPage';
 import ConstraintAgentPage from './pages/ConstraintAgentPage';
 import DiffAgentPage from './pages/DiffAgentPage';
 import PatternAgentPage from './pages/PatternAgentPage';
+import UserDetailPage from './pages/UserDetailPage';
+import GlobalSearchPage from './pages/GlobalSearchPage';
+import VersionHistoryPage from './pages/VersionHistoryPage';
+import ValidationDashboardPage from './pages/ValidationDashboardPage';
+import NamespaceManagementPage from './pages/NamespaceManagementPage';
+import ClassLogicPage from './pages/ClassLogicPage';
+import RelationLogicPage from './pages/RelationLogicPage';
+import ReasoningGraphPage from './pages/ReasoningGraphPage';
+import AddDomainPage from './pages/AddDomainPage';
+import RemoveDomainPage from './pages/RemoveDomainPage';
+import SystemSettingsPage from './pages/SystemSettingsPage';
+import NotificationCenterPage from './pages/NotificationCenterPage';
+import ChangeLogPage from './pages/ChangeLogPage';
 import PagePlaceholder from './components/PagePlaceholder';
+import RequireAuth from './components/RequireAuth';
 
-function App() {
+function ThemedApp() {
+  const { primaryColor } = useThemeColor();
+  const appTheme = useMemo(() => createTheme(primaryColor), [primaryColor]);
+
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
+    <ConfigProvider theme={appTheme}>
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/domain" element={<DomainSelection />} />
-          <Route path="/agent-chat/bottleneck" element={<AgentConversationFlowPage />} />
-          <Route path="/agent-chat/what-if" element={<WhatIfAgentPage />} />
-          <Route path="/agent-chat/forward" element={<ForwardAgentPage />} />
-          <Route path="/agent-chat/backward" element={<BackwardAgentPage />} />
-          <Route path="/agent-chat/constraint" element={<ConstraintAgentPage />} />
-          <Route path="/agent-chat/diff" element={<DiffAgentPage />} />
-          <Route path="/agent-chat/pattern" element={<PatternAgentPage />} />
-          <Route path="/" element={<MainLayout />}>
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/domain" element={<RequireAuth><DomainSelection /></RequireAuth>} />
+          <Route path="/agent-chat/bottleneck" element={<RequireAuth><AgentConversationFlowPage /></RequireAuth>} />
+          <Route path="/agent-chat/what-if" element={<RequireAuth><WhatIfAgentPage /></RequireAuth>} />
+          <Route path="/agent-chat/forward" element={<RequireAuth><ForwardAgentPage /></RequireAuth>} />
+          <Route path="/agent-chat/backward" element={<RequireAuth><BackwardAgentPage /></RequireAuth>} />
+          <Route path="/agent-chat/constraint" element={<RequireAuth><ConstraintAgentPage /></RequireAuth>} />
+          <Route path="/agent-chat/diff" element={<RequireAuth><DiffAgentPage /></RequireAuth>} />
+          <Route path="/agent-chat/pattern" element={<RequireAuth><PatternAgentPage /></RequireAuth>} />
+          <Route path="/" element={<RequireAuth><MainLayout /></RequireAuth>}>
             <Route index element={<Navigate to="/knowledge-graph" replace />} />
             <Route path="knowledge-graph" element={<KnowledgeGraphPage />} />
             <Route path="classes" element={<ClassesPage />} />
@@ -75,13 +95,34 @@ function App() {
             <Route path="report-management" element={<ReportManagementPage />} />
             <Route path="report-management/:reportId" element={<ReportDetailPage />} />
             <Route path="user-management" element={<UserManagementPage />} />
+            <Route path="user-management/:userId" element={<UserDetailPage />} />
+            <Route path="user-management/:userId/add-domain" element={<AddDomainPage />} />
+            <Route path="user-management/:userId/remove-domain" element={<RemoveDomainPage />} />
+            <Route path="search" element={<GlobalSearchPage />} />
+            <Route path="version-history" element={<VersionHistoryPage />} />
+            <Route path="validation" element={<ValidationDashboardPage />} />
+            <Route path="namespaces" element={<NamespaceManagementPage />} />
+            <Route path="classes/:classId/logic" element={<ClassLogicPage />} />
+            <Route path="relations/:relationId/logic" element={<RelationLogicPage />} />
+            <Route path="reasoning-graph" element={<ReasoningGraphPage />} />
             <Route path="roles-permissions" element={<RolesPermissionsPage />} />
+            <Route path="system-settings" element={<SystemSettingsPage />} />
+            <Route path="notifications" element={<NotificationCenterPage />} />
+            <Route path="change-log" element={<ChangeLogPage />} />
             <Route path="api-keys" element={<PagePlaceholder title="API Keys" />} />
             <Route path="audit-logs" element={<PagePlaceholder title="Audit Logs" />} />
           </Route>
         </Routes>
       </BrowserRouter>
-    </ThemeProvider>
+    </ConfigProvider>
+  );
+}
+
+function App() {
+  return (
+    <ThemeColorProvider>
+      <ThemedApp />
+    </ThemeColorProvider>
   );
 }
 

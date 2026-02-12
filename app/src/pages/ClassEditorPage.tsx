@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Breadcrumb, Typography, Input, Button, Card, Select } from 'antd';
 import {
-  Box, Breadcrumbs, Link, Typography, TextField, Button, Card, IconButton,
-  Select, MenuItem, FormControl, InputLabel,
-} from '@mui/material';
-import { ChevronRight, Save, Info, List, Plus, Pencil, Trash2, Eye, Box as BoxIcon, Boxes, User, Building2, MapPin, Calendar, FileText } from 'lucide-react';
+  ChevronRight, Save, Info, List, Plus, Pencil, Trash2, Eye,
+  Boxes, User, Building2, MapPin, Calendar, FileText, Brain,
+} from 'lucide-react';
 import SuccessModal from '../components/SuccessModal';
+import { useHeader } from '../contexts/HeaderContext';
 
 export interface ClassData {
   id: string;
@@ -19,7 +20,7 @@ export interface ClassData {
 }
 
 const classesData: ClassData[] = [
-  { id: '1', name: 'Entity', description: 'Base class for all entities in the knowledge graph', parent: null, properties: 5, instances: 0, icon: Boxes, color: '#8B5CF6' },
+  { id: '1', name: 'Entity', description: 'Base class for all entities in the knowledge graph', parent: null, properties: 5, instances: 0, icon: Boxes, color: 'var(--primary-color)' },
   { id: '2', name: 'Person', description: 'Represents a human individual with personal attributes', parent: 'Entity', properties: 12, instances: 1250, icon: User, color: '#22D3EE' },
   { id: '3', name: 'Organization', description: 'A company, institution, or group with a formal structure', parent: 'Entity', properties: 8, instances: 340, icon: Building2, color: '#F472B6' },
   { id: '4', name: 'Location', description: 'Geographic place or address with coordinates', parent: 'Entity', properties: 9, instances: 420, icon: MapPin, color: '#4ADE80' },
@@ -41,6 +42,7 @@ const defaultRelations = [
 export default function ClassEditorPage() {
   const { classId } = useParams();
   const navigate = useNavigate();
+  const { setBreadcrumbs, setActions } = useHeader();
   const editingClass = classId && classId !== 'new' ? classesData.find(c => c.id === classId) : null;
   const isEditing = !!editingClass;
   const [name, setName] = useState('');
@@ -56,122 +58,151 @@ export default function ClassEditorPage() {
     }
   }, [editingClass]);
 
+  useEffect(() => {
+    setBreadcrumbs(
+      <Breadcrumb
+        separator={<ChevronRight size={10} />}
+        items={[
+          { title: <a onClick={(e) => { e.preventDefault(); navigate('/classes'); }}>Classes</a> },
+          { title: <Typography.Text strong>{isEditing ? `Edit ${editingClass?.name}` : 'Add New Class'}</Typography.Text> },
+        ]}
+      />
+    );
+    setActions(
+      <>
+        {isEditing && (
+          <Button icon={<Brain size={16} />} onClick={() => navigate(`/classes/${classId}/logic`)}>
+            Logic Rules
+          </Button>
+        )}
+        <Button onClick={() => navigate('/classes')}>Cancel</Button>
+        <Button type="primary" icon={<Save size={16} />} onClick={() => setSuccessModalOpen(true)}>Save Class</Button>
+      </>
+    );
+  }, [setBreadcrumbs, setActions, navigate, isEditing, editingClass?.name, classId]);
+
   return (
     <>
-      {/* Header */}
-      <Box height={64} display="flex" alignItems="center" justifyContent="space-between" px={3} borderBottom={1} borderColor="divider">
-        <Breadcrumbs separator={<ChevronRight size={14} />}>
-          <Link underline="hover" color="text.secondary" href="#" onClick={(e) => { e.preventDefault(); navigate('/classes'); }}>Classes</Link>
-          <Typography color="text.primary" fontWeight={500}>{isEditing ? `Edit ${editingClass?.name}` : 'Add New Class'}</Typography>
-        </Breadcrumbs>
-        <Box display="flex" gap={1.5}>
-          <Button variant="outlined" onClick={() => navigate('/classes')}>Cancel</Button>
-          <Button variant="contained" startIcon={<Save size={16} />} onClick={() => setSuccessModalOpen(true)}>Save Class</Button>
-        </Box>
-      </Box>
-
       {/* Content */}
-      <Box flex={1} p={3} display="flex" gap={3} overflow="auto">
+      <div style={{ flex: 1, padding: 24, display: 'flex', gap: 24, overflow: 'auto' }}>
         {/* Left Column */}
-        <Box flex={1} display="flex" flexDirection="column" gap={3}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 24 }}>
           {/* Basic Info Card */}
-          <Card variant="outlined" sx={{ p: 3 }}>
-            <Box display="flex" alignItems="center" gap={1.5} mb={2.5}>
-              <Info size={20} color="#8b5cf6" />
-              <Typography variant="h6">Basic Information</Typography>
-            </Box>
-            <Box display="flex" flexDirection="column" gap={2}>
-              <TextField fullWidth label="Class Name *" placeholder="e.g., Person, Organization, Product" value={name} onChange={(e) => setName(e.target.value)} />
-              <TextField fullWidth label="URI" placeholder="http://ontology.example.com/Person" value={name ? `http://ontology.example.com/${name}` : ''} />
-              <TextField fullWidth label="Description" placeholder="Describe the purpose and usage of this class..." multiline rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
-              <FormControl fullWidth>
-                <InputLabel>Parent Class</InputLabel>
-                <Select label="Parent Class" value={parent} onChange={(e) => setParent(e.target.value)}>
-                  <MenuItem value="">Select parent class (optional)</MenuItem>
-                  <MenuItem value="Entity">Entity</MenuItem>
-                  <MenuItem value="Thing">Thing</MenuItem>
-                </Select>
-              </FormControl>
-            </Box>
+          <Card>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+              <Info size={20} color="var(--primary-color)" />
+              <Typography.Title level={5} style={{ margin: 0 }}>Basic Information</Typography.Title>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>Class Name *</label>
+                <Input placeholder="e.g., Person, Organization, Product" value={name} onChange={(e) => setName(e.target.value)} />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>URI</label>
+                <Input placeholder="http://ontology.example.com/Person" value={name ? `http://ontology.example.com/${name}` : ''} readOnly />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>Description</label>
+                <Input.TextArea placeholder="Describe the purpose and usage of this class..." rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>Parent Class</label>
+                <Select
+                  style={{ width: '100%' }}
+                  placeholder="Select parent class (optional)"
+                  value={parent || undefined}
+                  onChange={(val) => setParent(val)}
+                  allowClear
+                  onClear={() => setParent('')}
+                  options={[
+                    { value: 'Entity', label: 'Entity' },
+                    { value: 'Thing', label: 'Thing' },
+                  ]}
+                />
+              </div>
+            </div>
           </Card>
 
           {/* Properties Card */}
-          <Card variant="outlined" sx={{ p: 3, flex: 1 }}>
-            <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-              <Box display="flex" alignItems="center" gap={1.5}>
-                <List size={20} color="#8b5cf6" />
-                <Typography variant="h6">Properties</Typography>
-              </Box>
-              <Button size="small" startIcon={<Plus size={14} />}>Add Property</Button>
-            </Box>
-            <Box display="flex" flexDirection="column" gap={1}>
+          <Card style={{ flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <List size={20} color="var(--primary-color)" />
+                <Typography.Title level={5} style={{ margin: 0 }}>Properties</Typography.Title>
+              </div>
+              <Button icon={<Plus size={16} />}>Add Property</Button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {defaultProperties.map((prop) => (
-                <Box key={prop.name} display="flex" alignItems="center" justifyContent="space-between" p={2} bgcolor="action.hover" borderRadius={2}>
-                  <Box>
-                    <Typography variant="body2" fontWeight={500}>{prop.name}</Typography>
-                    <Typography variant="caption" color="text.secondary">{prop.type} • {prop.constraint}</Typography>
-                  </Box>
-                  <Box display="flex" gap={1}>
-                    <IconButton size="small"><Pencil size={16} /></IconButton>
-                    <IconButton size="small"><Trash2 size={16} /></IconButton>
-                  </Box>
-                </Box>
+                <div key={prop.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 16, background: 'rgba(255,255,255,0.04)', borderRadius: 8 }}>
+                  <div>
+                    <Typography.Text strong style={{ fontSize: 13 }}>{prop.name}</Typography.Text>
+                    <br />
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>{prop.type} &bull; {prop.constraint}</Typography.Text>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <Button type="text" size="small" icon={<Pencil size={16} />} />
+                    <Button type="text" size="small" icon={<Trash2 size={16} />} />
+                  </div>
+                </div>
               ))}
-            </Box>
+            </div>
           </Card>
-        </Box>
+        </div>
 
         {/* Right Column */}
-        <Box width={360} display="flex" flexDirection="column" gap={3}>
+        <div style={{ width: 360, display: 'flex', flexDirection: 'column', gap: 24 }}>
           {/* Preview Card */}
-          <Card variant="outlined" sx={{ p: 3 }}>
-            <Box display="flex" alignItems="center" gap={1.5} mb={2}>
-              <Eye size={20} color="#8b5cf6" />
-              <Typography variant="h6">Class Preview</Typography>
-            </Box>
-            <Box bgcolor="action.hover" borderRadius={2} p={2}>
-              <Box display="flex" alignItems="center" gap={1} mb={1}>
-                <BoxIcon size={18} color="#8b5cf6" />
-                <Typography fontWeight={600}>{name || 'ClassName'}</Typography>
-              </Box>
-              <Typography variant="caption" color="text.secondary" display="block" mb={1.5}>
+          <Card>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+              <Eye size={20} color="var(--primary-color)" />
+              <Typography.Title level={5} style={{ margin: 0 }}>Class Preview</Typography.Title>
+            </div>
+            <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <Boxes size={18} color="var(--primary-color)" />
+                <Typography.Text strong style={{ fontSize: 15 }}>{name || 'ClassName'}</Typography.Text>
+              </div>
+              <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 12 }}>
                 {name ? `http://ontology.example.com/${name}` : 'http://ontology.example.com/...'}
-              </Typography>
-              <Box display="flex" flexDirection="column" gap={0.5}>
+              </Typography.Text>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {defaultProperties.map((prop) => (
-                  <Box key={prop.name} display="flex" alignItems="center" gap={1}>
-                    <Box width={6} height={6} borderRadius="50%" bgcolor="primary.main" />
-                    <Typography variant="body2">{prop.name}</Typography>
-                    <Typography variant="caption" color="text.secondary">{prop.type}</Typography>
-                  </Box>
+                  <div key={prop.name} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--primary-color)' }} />
+                    <Typography.Text style={{ fontSize: 13 }}>{prop.name}</Typography.Text>
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>{prop.type}</Typography.Text>
+                  </div>
                 ))}
-              </Box>
-            </Box>
+              </div>
+            </div>
           </Card>
 
           {/* Relations Card */}
-          <Card variant="outlined" sx={{ p: 3, flex: 1 }}>
-            <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-              <Typography variant="h6">Relations</Typography>
-              <Button size="small" startIcon={<Plus size={14} />}>Add</Button>
-            </Box>
-            <Box display="flex" flexDirection="column" gap={1}>
+          <Card style={{ flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <Typography.Title level={5} style={{ margin: 0 }}>Relations</Typography.Title>
+              <Button icon={<Plus size={16} />}>Add</Button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {defaultRelations.map((rel) => (
-                <Box key={rel.name} display="flex" alignItems="center" justifyContent="space-between" p={2} bgcolor="action.hover" borderRadius={2}>
-                  <Box>
-                    <Typography variant="body2" fontWeight={500}>{rel.name}</Typography>
-                    <Typography variant="caption" color="text.secondary">→ {rel.target} • {rel.type}</Typography>
-                  </Box>
-                  <Box display="flex" gap={1}>
-                    <IconButton size="small"><Pencil size={16} /></IconButton>
-                    <IconButton size="small"><Trash2 size={16} /></IconButton>
-                  </Box>
-                </Box>
+                <div key={rel.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 16, background: 'rgba(255,255,255,0.04)', borderRadius: 8 }}>
+                  <div>
+                    <Typography.Text strong style={{ fontSize: 13 }}>{rel.name}</Typography.Text>
+                    <br />
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>&rarr; {rel.target} &bull; {rel.type}</Typography.Text>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <Button type="text" size="small" icon={<Pencil size={16} />} />
+                    <Button type="text" size="small" icon={<Trash2 size={16} />} />
+                  </div>
+                </div>
               ))}
-            </Box>
+            </div>
           </Card>
-        </Box>
-      </Box>
+        </div>
+      </div>
 
       <SuccessModal
         open={successModalOpen}

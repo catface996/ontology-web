@@ -1,4 +1,4 @@
-import { Box, Typography, Select, MenuItem, type SelectChangeEvent } from '@mui/material';
+import { Typography, Select, Flex } from 'antd';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 /* ── Types ── */
@@ -48,10 +48,6 @@ export default function Pagination({
   const to = Math.min(count, (page + 1) * rowsPerPage);
   const pages = buildPageNumbers(currentPage, totalPages);
 
-  const handleRowsChange = (e: SelectChangeEvent<number>) => {
-    onRowsPerPageChange?.(Number(e.target.value));
-  };
-
   /* ── Page button ── */
   const PageBtn = ({
     children,
@@ -64,98 +60,77 @@ export default function Pagination({
     disabled?: boolean;
     onClick?: () => void;
   }) => (
-    <Box
+    <div
       onClick={disabled ? undefined : onClick}
-      sx={{
+      style={{
         width: 32,
         height: 32,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        borderRadius: 1.5,
+        borderRadius: 6,
         fontSize: 13,
         fontWeight: active ? 500 : 400,
         cursor: disabled ? 'default' : 'pointer',
         userSelect: 'none',
         transition: 'all 0.15s',
         ...(active
-          ? { bgcolor: 'primary.main', color: '#fff' }
+          ? { background: 'var(--primary-color)', color: '#fff' }
           : {
-              border: 1,
-              borderColor: 'divider',
-              color: disabled ? 'text.disabled' : 'text.secondary',
-              '&:hover': disabled
-                ? {}
-                : { bgcolor: 'action.hover', borderColor: 'text.secondary' },
+              border: '1px solid #27273a',
+              color: disabled ? '#71717a' : '#a1a1aa',
             }),
       }}
     >
       {children}
-    </Box>
+    </div>
   );
 
   return (
-    <Box
-      display="flex"
-      alignItems="center"
-      justifyContent="space-between"
-      height={56}
-      px={2.5}
-      sx={{ borderTop: 1, borderColor: 'divider' }}
+    <Flex
+      align="center"
+      justify="space-between"
+      style={{ height: 56, padding: '0 20px', borderTop: '1px solid #27273a' }}
     >
       {/* Left — info text */}
-      <Typography fontSize={13} color="text.secondary">
+      <Typography.Text style={{ fontSize: 13, color: '#a1a1aa' }}>
         Showing {from}-{to} of {count.toLocaleString()} {label}
-      </Typography>
+      </Typography.Text>
 
       {/* Right — controls */}
-      <Box display="flex" alignItems="center" gap={1} flexShrink={0}>
+      <Flex align="center" gap={8} style={{ flexShrink: 0 }}>
         {/* Rows per page */}
         {onRowsPerPageChange && (
           <>
-            <Typography fontSize={13} color="text.secondary" whiteSpace="nowrap" flexShrink={0}>
+            <Typography.Text style={{ fontSize: 13, color: '#a1a1aa', whiteSpace: 'nowrap', flexShrink: 0 }}>
               Rows per page:
-            </Typography>
+            </Typography.Text>
             <Select
-              size="small"
               value={rowsPerPage}
-              onChange={handleRowsChange}
-              sx={{
-                minWidth: 56,
-                height: 32,
-                borderRadius: 1.5,
-                fontSize: 13,
-                '& .MuiSelect-select': { py: 0.5, px: 1.25 },
-              }}
-            >
-              {rowsPerPageOptions.map((opt) => (
-                <MenuItem key={opt} value={opt} sx={{ fontSize: 13 }}>
-                  {opt}
-                </MenuItem>
-              ))}
-            </Select>
-
+              onChange={(val) => onRowsPerPageChange(val)}
+              style={{ minWidth: 56 }}
+              size="small"
+              options={rowsPerPageOptions.map((opt) => ({ label: opt, value: opt }))}
+            />
           </>
         )}
 
         {/* Page navigation */}
-        <Box display="flex" alignItems="center" gap={0.5}>
+        <Flex align="center" gap={4}>
           {/* Prev */}
           <PageBtn disabled={page === 0} onClick={() => onPageChange(page - 1)}>
-            <ChevronLeft size={16} />
+            <ChevronLeft size={12} />
           </PageBtn>
 
           {/* Page numbers */}
           {pages.map((p, i) =>
             p === '...' ? (
-              <Typography
+              <Typography.Text
                 key={`dots-${i}`}
-                fontSize={13}
-                color="text.secondary"
-                sx={{ width: 32, textAlign: 'center', userSelect: 'none' }}
+                style={{ fontSize: 13, color: '#a1a1aa', width: 32, textAlign: 'center', userSelect: 'none' }}
               >
                 ...
-              </Typography>
+              </Typography.Text>
             ) : (
               <PageBtn
                 key={p}
@@ -172,10 +147,10 @@ export default function Pagination({
             disabled={page >= totalPages - 1}
             onClick={() => onPageChange(page + 1)}
           >
-            <ChevronRight size={16} />
+            <ChevronRight size={12} />
           </PageBtn>
-        </Box>
-      </Box>
-    </Box>
+        </Flex>
+      </Flex>
+    </Flex>
   );
 }

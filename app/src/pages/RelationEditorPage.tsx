@@ -1,15 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Breadcrumb, Typography, Input, Button, Card, Select, Checkbox, Tooltip } from 'antd';
 import {
-  Box, Breadcrumbs, Link, Typography, TextField, Button, Card,
-  FormControl, InputLabel, Select, MenuItem, Checkbox, FormControlLabel,
-  IconButton, Tooltip,
-} from '@mui/material';
-import {
-  ChevronRight, Save, Info, Link as LinkIcon, Eye, Settings2,
-  Box as BoxIcon, ArrowRight, Key,
+  ChevronRight, Save, Info, ArrowLeftRight, Eye, Settings,
+  Boxes, ArrowRight, Key, Brain,
 } from 'lucide-react';
 import SuccessModal from '../components/SuccessModal';
+import { useHeader } from '../contexts/HeaderContext';
 
 interface RelationData {
   id: string;
@@ -48,6 +45,7 @@ const relationProperties = [
 export default function RelationEditorPage() {
   const { relationId } = useParams();
   const navigate = useNavigate();
+  const { setBreadcrumbs, setActions } = useHeader();
   const isEditing = relationId && relationId !== 'new';
   const existingRelation = isEditing ? existingRelations[relationId] : null;
 
@@ -76,6 +74,31 @@ export default function RelationEditorPage() {
     }
   }, [existingRelation]);
 
+  useEffect(() => {
+    setBreadcrumbs(
+      <Breadcrumb
+        separator={<ChevronRight size={10} />}
+        items={[
+          { title: <a onClick={(e) => { e.preventDefault(); navigate('/relations'); }}>Relations</a> },
+          { title: <Typography.Text strong>{isEditing ? `Edit ${existingRelation?.name}` : 'Add New Relation'}</Typography.Text> },
+        ]}
+      />
+    );
+    setActions(
+      <>
+        {isEditing && (
+          <Button icon={<Brain size={16} />} onClick={() => navigate(`/relations/${relationId}/logic`)}>
+            Logic Rules
+          </Button>
+        )}
+        <Button onClick={() => navigate('/relations')}>Cancel</Button>
+        <Button type="primary" icon={<Save size={16} />} onClick={() => setSuccessModalOpen(true)}>
+          Save Relation
+        </Button>
+      </>
+    );
+  }, [setBreadcrumbs, setActions, navigate, isEditing, existingRelation?.name, relationId]);
+
   const handlePropertyChange = (key: string) => {
     setProperties((prev) => ({ ...prev, [key]: !prev[key] }));
   };
@@ -84,344 +107,225 @@ export default function RelationEditorPage() {
 
   return (
     <>
-      {/* Header */}
-      <Box
-        height={64}
-        display="flex"
-        alignItems="center"
-        justifyContent="space-between"
-        px={3}
-        borderBottom={1}
-        borderColor="divider"
-      >
-        <Breadcrumbs separator={<ChevronRight size={14} />}>
-          <Link
-            underline="hover"
-            color="text.secondary"
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
-              navigate('/relations');
-            }}
-          >
-            Relations
-          </Link>
-          <Typography color="text.primary" fontWeight={500}>
-            {isEditing ? `Edit ${existingRelation?.name}` : 'Add New Relation'}
-          </Typography>
-        </Breadcrumbs>
-        <Box display="flex" gap={1.5}>
-          <Button variant="outlined" onClick={() => navigate('/relations')}>
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<Save size={16} />}
-            onClick={() => setSuccessModalOpen(true)}
-          >
-            Save Relation
-          </Button>
-        </Box>
-      </Box>
-
       {/* Content */}
-      <Box flex={1} p={3} display="flex" gap={3} overflow="auto">
+      <div style={{ flex: 1, padding: 24, display: 'flex', gap: 24, overflow: 'auto' }}>
         {/* Left Column */}
-        <Box flex={1} display="flex" flexDirection="column" gap={3}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 24 }}>
           {/* Basic Info Card */}
-          <Card variant="outlined" sx={{ p: 3, borderRadius: 3 }}>
-            <Box display="flex" alignItems="center" gap={1.5} mb={2.5}>
-              <Info size={20} color="#8b5cf6" />
-              <Typography variant="h6" fontWeight={600}>
+          <Card>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+              <Info size={20} color="var(--primary-color)" />
+              <Typography.Title level={5} style={{ margin: 0, fontWeight: 600 }}>
                 Basic Information
-              </Typography>
-            </Box>
-            <Box display="flex" flexDirection="column" gap={2}>
-              <TextField
-                fullWidth
-                label="Relation Name *"
-                placeholder="e.g., worksFor, hasParent, locatedIn"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-              <TextField
-                fullWidth
-                label="URI"
-                placeholder="http://ontology.example.com/worksFor"
-                value={uri}
-                InputProps={{ readOnly: true }}
-                sx={{ '& .MuiInputBase-input': { color: 'text.secondary' } }}
-              />
-              <TextField
-                fullWidth
-                label="Description"
-                placeholder="Describe the purpose of this relation..."
-                multiline
-                rows={3}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </Box>
+              </Typography.Title>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>Relation Name *</label>
+                <Input
+                  placeholder="e.g., worksFor, hasParent, locatedIn"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>URI</label>
+                <Input
+                  placeholder="http://ontology.example.com/worksFor"
+                  value={uri}
+                  readOnly
+                  style={{ color: 'rgba(255,255,255,0.45)' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>Description</label>
+                <Input.TextArea
+                  placeholder="Describe the purpose of this relation..."
+                  rows={3}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
+              </div>
+            </div>
           </Card>
 
           {/* Domain & Range Card */}
-          <Card variant="outlined" sx={{ p: 3, borderRadius: 3, flex: 1 }}>
-            <Box display="flex" alignItems="center" gap={1.5} mb={2.5}>
-              <LinkIcon size={20} color="#8b5cf6" />
-              <Typography variant="h6" fontWeight={600}>
+          <Card style={{ flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+              <ArrowLeftRight size={20} color="var(--primary-color)" />
+              <Typography.Title level={5} style={{ margin: 0, fontWeight: 600 }}>
                 Domain & Range
-              </Typography>
-            </Box>
-            <Box display="flex" gap={3} alignItems="flex-start">
+              </Typography.Title>
+            </div>
+            <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
               {/* Domain */}
-              <Box flex={1} display="flex" flexDirection="column" gap={2}>
-                <FormControl fullWidth>
-                  <InputLabel>Domain (Source Class) *</InputLabel>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>Domain (Source Class) *</label>
                   <Select
-                    label="Domain (Source Class) *"
+                    style={{ width: '100%' }}
                     value={domain}
-                    onChange={(e) => {
-                      setDomain(e.target.value);
-                      setDomainField(availableFields[e.target.value]?.[0] || '');
+                    onChange={(val) => {
+                      setDomain(val);
+                      setDomainField(availableFields[val]?.[0] || '');
                     }}
-                    startAdornment={
-                      <BoxIcon size={16} color="#8b5cf6" style={{ marginRight: 8 }} />
-                    }
-                  >
-                    {availableClasses.map((cls) => (
-                      <MenuItem key={cls} value={cls}>
-                        {cls}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <FormControl fullWidth size="small">
-                  <InputLabel>Source Field</InputLabel>
+                    options={availableClasses.map((cls) => ({ value: cls, label: cls }))}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>Source Field</label>
                   <Select
-                    label="Source Field"
+                    style={{ width: '100%' }}
                     value={domainField}
-                    onChange={(e) => setDomainField(e.target.value)}
-                  >
-                    {availableFields[domain]?.map((field) => (
-                      <MenuItem key={field} value={field}>
-                        {field}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Box>
+                    onChange={(val) => setDomainField(val)}
+                    options={availableFields[domain]?.map((field) => ({ value: field, label: field })) || []}
+                  />
+                </div>
+              </div>
 
               {/* Arrow */}
-              <Box
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                pt={2}
-              >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: 32 }}>
                 <ArrowRight size={24} color="gray" />
-              </Box>
+              </div>
 
               {/* Range */}
-              <Box flex={1} display="flex" flexDirection="column" gap={2}>
-                <FormControl fullWidth>
-                  <InputLabel>Range (Target Class) *</InputLabel>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>Range (Target Class) *</label>
                   <Select
-                    label="Range (Target Class) *"
+                    style={{ width: '100%' }}
                     value={range}
-                    onChange={(e) => {
-                      setRange(e.target.value);
-                      setRangeField(availableFields[e.target.value]?.[0] || '');
+                    onChange={(val) => {
+                      setRange(val);
+                      setRangeField(availableFields[val]?.[0] || '');
                     }}
-                    startAdornment={
-                      <BoxIcon size={16} color="#8b5cf6" style={{ marginRight: 8 }} />
-                    }
-                  >
-                    {availableClasses.map((cls) => (
-                      <MenuItem key={cls} value={cls}>
-                        {cls}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <FormControl fullWidth size="small">
-                  <InputLabel>Target Field</InputLabel>
+                    options={availableClasses.map((cls) => ({ value: cls, label: cls }))}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>Target Field</label>
                   <Select
-                    label="Target Field"
+                    style={{ width: '100%' }}
                     value={rangeField}
-                    onChange={(e) => setRangeField(e.target.value)}
-                  >
-                    {availableFields[range]?.map((field) => (
-                      <MenuItem key={field} value={field}>
-                        {field}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Box>
-            </Box>
+                    onChange={(val) => setRangeField(val)}
+                    options={availableFields[range]?.map((field) => ({ value: field, label: field })) || []}
+                  />
+                </div>
+              </div>
+            </div>
           </Card>
-        </Box>
+        </div>
 
         {/* Right Column */}
-        <Box width={360} display="flex" flexDirection="column" gap={3}>
+        <div style={{ width: 360, display: 'flex', flexDirection: 'column', gap: 24 }}>
           {/* Preview Card */}
-          <Card variant="outlined" sx={{ p: 3, borderRadius: 3 }}>
-            <Box display="flex" alignItems="center" gap={1.5} mb={2}>
-              <Eye size={20} color="#8b5cf6" />
-              <Typography variant="h6" fontWeight={600}>
+          <Card>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+              <Eye size={20} color="var(--primary-color)" />
+              <Typography.Title level={5} style={{ margin: 0, fontWeight: 600 }}>
                 Relation Preview
-              </Typography>
-            </Box>
+              </Typography.Title>
+            </div>
             {/* Preview Content Container */}
-            <Box bgcolor="action.hover" borderRadius={2} p={2}>
+            <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: 16 }}>
               {/* Preview Diagram - Single Line */}
-              <Box
-                display="flex"
-                alignItems="center"
-                justifyContent="space-between"
-              >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 {/* Source Box */}
-                <Box
-                  display="flex"
-                  alignItems="center"
-                  gap={0.5}
-                  bgcolor="primary.main"
-                  px={1.5}
-                  py={1}
-                  borderRadius={1.5}
-                  flexShrink={0}
-                >
-                  <BoxIcon size={14} color="white" />
-                  <Typography fontSize={13} fontWeight={500} color="primary.contrastText">
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 4,
+                  background: 'var(--primary-color)', padding: '8px 12px', borderRadius: 6, flexShrink: 0,
+                }}>
+                  <Boxes size={14} color="white" />
+                  <Typography.Text style={{ fontSize: 13, fontWeight: 500, color: 'white' }}>
                     {domain}
-                  </Typography>
-                </Box>
+                  </Typography.Text>
+                </div>
 
                 {/* Arrow Line with Label */}
-                <Box display="flex" alignItems="center" gap={0.5} px={1}>
-                  <Typography
-                    fontSize={12}
-                    color="text.secondary"
-                    sx={{
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      maxWidth: 80,
-                    }}
-                  >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '0 8px' }}>
+                  <Typography.Text type="secondary" style={{
+                    fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap', maxWidth: 80,
+                  }}>
                     {name || 'relation'}
-                  </Typography>
+                  </Typography.Text>
                   <ArrowRight size={16} color="gray" style={{ flexShrink: 0 }} />
-                </Box>
+                </div>
 
                 {/* Target Box */}
-                <Box
-                  display="flex"
-                  alignItems="center"
-                  gap={0.5}
-                  border={1}
-                  borderColor="divider"
-                  px={1.5}
-                  py={1}
-                  borderRadius={1.5}
-                  flexShrink={0}
-                >
-                  <BoxIcon size={14} />
-                  <Typography fontSize={13} fontWeight={500}>
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 4,
+                  border: '1px solid rgba(255,255,255,0.12)', padding: '8px 12px', borderRadius: 6, flexShrink: 0,
+                }}>
+                  <Boxes size={14} />
+                  <Typography.Text style={{ fontSize: 13, fontWeight: 500 }}>
                     {range}
-                  </Typography>
-                </Box>
-              </Box>
+                  </Typography.Text>
+                </div>
+              </div>
 
               {/* Field Mapping Preview */}
-              <Box
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                gap={1}
-                mt={2}
-                pt={1.5}
-                borderTop={1}
-                borderColor="divider"
-              >
-                <Box
-                  display="flex"
-                  alignItems="center"
-                  gap={0.5}
-                  bgcolor="background.paper"
-                  px={1}
-                  py={0.5}
-                  borderRadius={1}
-                >
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                marginTop: 16, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.12)',
+              }}>
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 4,
+                  background: 'rgba(255,255,255,0.06)', padding: '4px 8px', borderRadius: 4,
+                }}>
                   <Key size={12} color="gray" />
-                  <Typography fontSize={11} color="text.secondary">
+                  <Typography.Text type="secondary" style={{ fontSize: 11 }}>
                     {domainField}
-                  </Typography>
-                </Box>
+                  </Typography.Text>
+                </div>
 
                 <ArrowRight size={12} color="gray" />
 
-                <Box
-                  display="flex"
-                  alignItems="center"
-                  gap={0.5}
-                  bgcolor="background.paper"
-                  px={1}
-                  py={0.5}
-                  borderRadius={1}
-                >
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 4,
+                  background: 'rgba(255,255,255,0.06)', padding: '4px 8px', borderRadius: 4,
+                }}>
                   <Key size={12} color="gray" />
-                  <Typography fontSize={11} color="text.secondary">
+                  <Typography.Text type="secondary" style={{ fontSize: 11 }}>
                     {rangeField}
-                  </Typography>
-                </Box>
-              </Box>
-            </Box>
+                  </Typography.Text>
+                </div>
+              </div>
+            </div>
           </Card>
 
           {/* Properties Card */}
-          <Card variant="outlined" sx={{ p: 3, borderRadius: 3, flex: 1 }}>
-            <Box display="flex" alignItems="center" gap={1.5} mb={2}>
-              <Settings2 size={20} color="#8b5cf6" />
-              <Typography variant="h6" fontWeight={600}>
+          <Card style={{ flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+              <Settings size={20} color="var(--primary-color)" />
+              <Typography.Title level={5} style={{ margin: 0, fontWeight: 600 }}>
                 Properties
-              </Typography>
-            </Box>
-            <Box display="flex" flexDirection="column" gap={1.5}>
+              </Typography.Title>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {relationProperties.map((prop) => (
-                <Box
+                <div
                   key={prop.key}
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="space-between"
-                  bgcolor="action.hover"
-                  borderRadius={2}
-                  p={1.5}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: 12,
+                  }}
                 >
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={properties[prop.key]}
-                        onChange={() => handlePropertyChange(prop.key)}
-                        size="small"
-                      />
-                    }
-                    label={
-                      <Typography variant="body2">{prop.label}</Typography>
-                    }
-                    sx={{ m: 0 }}
-                  />
-                  <Tooltip title={prop.tooltip} arrow>
-                    <IconButton size="small">
-                      <Info size={14} color="gray" />
-                    </IconButton>
+                  <Checkbox
+                    checked={properties[prop.key]}
+                    onChange={() => handlePropertyChange(prop.key)}
+                  >
+                    <Typography.Text style={{ fontSize: 13 }}>{prop.label}</Typography.Text>
+                  </Checkbox>
+                  <Tooltip title={prop.tooltip}>
+                    <Button type="text" size="small" icon={<Info size={14} color="gray" />} />
                   </Tooltip>
-                </Box>
+                </div>
               ))}
-            </Box>
+            </div>
           </Card>
-        </Box>
-      </Box>
+        </div>
+      </div>
 
       <SuccessModal
         open={successModalOpen}

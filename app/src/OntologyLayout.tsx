@@ -1,21 +1,5 @@
 import React, { useState } from 'react';
-import {
-  Box,
-  Drawer,
-  List,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  Typography,
-  Divider,
-  IconButton,
-  TextField,
-  Button,
-  Breadcrumbs,
-  Link,
-  Collapse,
-  InputAdornment,
-} from '@mui/material';
+import { Divider, Input, Button, Breadcrumb, Typography } from 'antd';
 import {
   Share2,
   ChevronDown,
@@ -63,7 +47,7 @@ export default function OntologyLayout() {
   };
 
   const domains: DomainData[] = [
-    { icon: <Globe size={18} />, label: 'Enterprise', color: 'text.primary', active: true },
+    { icon: <Globe size={18} />, label: 'Enterprise', color: '#f4f4f5', active: true },
     { icon: <Building2 size={18} />, label: 'Healthcare', color: '#22D3EE' },
     { icon: <Wallet size={18} />, label: 'Finance', color: '#F472B6' },
     { icon: <Cpu size={18} />, label: 'IoT & Sensors', color: '#4ADE80' },
@@ -83,153 +67,157 @@ export default function OntologyLayout() {
   ];
 
   const renderSection = (title: string, key: string, items: NavItemData[]) => (
-    <Box sx={{ py: 1 }}>
-      <ListItemButton onClick={() => toggleSection(key)} sx={{ px: 1 }}>
-        <ListItemText primary={title} primaryTypographyProps={{ variant: 'caption', color: 'text.secondary' }} />
+    <div style={{ padding: '8px 0' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 8px', cursor: 'pointer' }} onClick={() => toggleSection(key)}>
+        <span style={{ fontSize: 12, color: '#a1a1aa' }}>{title}</span>
         {openSections[key] ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-      </ListItemButton>
-      <Collapse in={openSections[key]}>
-        <List disablePadding>
+      </div>
+      {openSections[key] && (
+        <div>
           {items.map((item) => (
-            <ListItemButton
+            <div
               key={item.label}
-              selected={selectedNav === item.label}
+              style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '8px 12px', borderRadius: 8, cursor: 'pointer', backgroundColor: selectedNav === item.label ? '#1a1a24' : 'transparent' }}
               onClick={() => setSelectedNav(item.label)}
-              sx={{ gap: 2, py: 1 }}
             >
-              <ListItemIcon sx={{ minWidth: 'auto' }}>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.label} />
-            </ListItemButton>
+              <span style={{ display: 'flex' }}>{item.icon}</span>
+              <span style={{ fontSize: 14 }}>{item.label}</span>
+            </div>
           ))}
-        </List>
-      </Collapse>
-    </Box>
+        </div>
+      )}
+    </div>
   );
 
   return (
-    <Box sx={{ display: 'flex', height: '100vh' }}>
-      <Drawer variant="permanent" sx={{ width: drawerWidth, '& .MuiDrawer-paper': { width: drawerWidth } }}>
+    <div style={{ display: 'flex', height: '100vh' }}>
+      <div style={{ width: drawerWidth, flexShrink: 0, display: 'flex', flexDirection: 'column', borderRight: '1px solid #27273a', backgroundColor: '#0d0d14', height: '100vh', overflow: 'hidden' }}>
         {/* Header */}
-        <Box sx={{ height: 64, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+        <div style={{ height: 64, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
           <Share2 size={24} />
-          <Typography variant="h6">Ontology</Typography>
-        </Box>
-        <Divider />
+          <span style={{ fontSize: 20, fontWeight: 600 }}>Ontology</span>
+        </div>
+        <Divider style={{ margin: 0, borderColor: '#27273a' }} />
 
         {/* Content */}
-        <Box sx={{ flex: 1, overflow: 'auto', px: 1 }}>
+        <div style={{ flex: 1, overflow: 'auto', padding: '0 8px' }}>
           {/* Domains */}
-          <Box sx={{ py: 1 }}>
-            <ListItemButton onClick={() => toggleSection('domains')} sx={{ px: 1 }}>
-              <ListItemText primary="DOMAINS" primaryTypographyProps={{ variant: 'caption', color: 'text.secondary' }} />
+          <div style={{ padding: '8px 0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 8px', cursor: 'pointer' }} onClick={() => toggleSection('domains')}>
+              <span style={{ fontSize: 12, color: '#a1a1aa' }}>DOMAINS</span>
               {openSections.domains ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-            </ListItemButton>
-            <Collapse in={openSections.domains}>
-              <List disablePadding>
+            </div>
+            {openSections.domains && (
+              <div>
                 {domains.map((domain) => (
-                  <ListItemButton key={domain.label} selected={domain.active} sx={{ gap: 1.5, py: 0.75 }}>
-                    <ListItemIcon sx={{ minWidth: 'auto', color: domain.active ? 'text.primary' : domain.color }}>
-                      {domain.icon}
-                    </ListItemIcon>
-                    <ListItemText primary={domain.label} primaryTypographyProps={{ variant: 'body2' }} />
-                  </ListItemButton>
+                  <div key={domain.label} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '6px 12px', borderRadius: 8, cursor: 'pointer', backgroundColor: domain.active ? '#1a1a24' : 'transparent' }}>
+                    <span style={{ display: 'flex', color: domain.active ? '#f4f4f5' : domain.color }}>{domain.icon}</span>
+                    <span style={{ fontSize: 14 }}>{domain.label}</span>
+                  </div>
                 ))}
-              </List>
-            </Collapse>
-          </Box>
-          <Divider />
+              </div>
+            )}
+          </div>
+          <Divider style={{ margin: 0, borderColor: '#27273a' }} />
 
           {renderSection('ONTOLOGIES', 'ontologies', ontologyNavItems)}
           {renderSection('TOOLS', 'tools', toolsNavItems)}
-        </Box>
+        </div>
 
         {/* Footer */}
-        <Divider />
-        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="body2">Admin User</Typography>
-            <Typography variant="caption" color="text.disabled">admin@ontology.io</Typography>
-          </Box>
+        <Divider style={{ margin: 0, borderColor: '#27273a' }} />
+        <div style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ flex: 1 }}>
+            <span style={{ fontSize: 14, display: 'block' }}>Admin User</span>
+            <span style={{ fontSize: 12, color: '#71717a', display: 'block' }}>admin@ontology.io</span>
+          </div>
           <ChevronDown size={20} />
-        </Box>
-      </Drawer>
+        </div>
+      </div>
 
       {/* Main Content */}
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         {/* Header */}
-        <Box sx={{ height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 3, borderBottom: 1, borderColor: 'divider' }}>
-          <Breadcrumbs separator={<ChevronRight size={14} />}>
-            <Link underline="hover" color="text.secondary" sx={{ cursor: 'pointer' }}>Ontologies</Link>
-            <Typography color="text.primary">{selectedNav}</Typography>
-          </Breadcrumbs>
-          <Box sx={{ display: 'flex', gap: 1.5 }}>
-            <TextField
-              size="small"
+        <div style={{ height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', borderBottom: '1px solid #27273a' }}>
+          <Breadcrumb
+            separator={<ChevronRight size={14} />}
+            items={[
+              { title: <a href="#">Ontologies</a> },
+              { title: <Typography.Text strong>{selectedNav}</Typography.Text> },
+            ]}
+          />
+          <div style={{ display: 'flex', gap: 12 }}>
+            <Input
               placeholder="Search classes..."
-              InputProps={{ startAdornment: <InputAdornment position="start"><Search size={16} /></InputAdornment> }}
-              sx={{ width: 240 }}
+              prefix={<Search size={16} />}
+              style={{ width: 240 }}
             />
-            <Button variant="contained" startIcon={<Plus size={16} />}>New Class</Button>
-          </Box>
-        </Box>
+            <Button type="primary" icon={<Plus size={16} />}>New Class</Button>
+          </div>
+        </div>
 
         {/* Content Area */}
-        <Box sx={{ flex: 1, display: 'flex' }}>
+        <div style={{ flex: 1, display: 'flex' }}>
           {/* Search Panel */}
-          <Box sx={{ width: 280, borderRight: 1, borderColor: 'divider', display: 'flex', flexDirection: 'column' }}>
-            <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-              <Typography variant="subtitle2" gutterBottom>Classes</Typography>
-              <TextField
-                size="small"
-                fullWidth
+          <div style={{ width: 280, borderRight: '1px solid #27273a', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: 16, borderBottom: '1px solid #27273a' }}>
+              <span style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, display: 'block' }}>Classes</span>
+              <Input
                 placeholder="Filter classes..."
-                InputProps={{ startAdornment: <InputAdornment position="start"><Search size={16} /></InputAdornment> }}
+                prefix={<Search size={16} />}
+                style={{ width: '100%' }}
               />
-            </Box>
-            <List sx={{ flex: 1, overflow: 'auto' }}>
+            </div>
+            <div style={{ flex: 1, overflow: 'auto' }}>
               {['Person', 'Organization', 'Product', 'Event', 'Location'].map((cls) => (
-                <ListItemButton key={cls}><ListItemText primary={cls} /></ListItemButton>
+                <div key={cls} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 8, cursor: 'pointer', backgroundColor: 'transparent' }}>
+                  <span style={{ fontSize: 14 }}>{cls}</span>
+                </div>
               ))}
-            </List>
-          </Box>
+            </div>
+          </div>
 
           {/* Canvas */}
-          <Box sx={{ flex: 1, p: 2.5, display: 'flex', flexDirection: 'column' }}>
-            <Typography variant="subtitle1" gutterBottom>Graph Canvas</Typography>
-            <Box sx={{ flex: 1, border: 1, borderColor: 'divider', borderRadius: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Typography color="text.disabled">Knowledge Graph Visualization</Typography>
-            </Box>
-          </Box>
+          <div style={{ flex: 1, padding: 20, display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontSize: 16, fontWeight: 600, marginBottom: 8, display: 'block' }}>Graph Canvas</span>
+            <div style={{ flex: 1, border: '1px solid #27273a', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ color: '#71717a' }}>Knowledge Graph Visualization</span>
+            </div>
+          </div>
 
           {/* Properties Panel */}
-          <Box sx={{ width: propertiesPanelWidth, borderLeft: 1, borderColor: 'divider', display: 'flex', flexDirection: 'column' }}>
-            <Box sx={{ height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, borderBottom: 1, borderColor: 'divider' }}>
-              <Typography variant="subtitle1">Class Properties</Typography>
-              <IconButton size="small"><X size={20} /></IconButton>
-            </Box>
-            <Box sx={{ flex: 1, p: 2, overflow: 'auto' }}>
-              <Typography variant="caption" color="text.secondary">SELECTED CLASS</Typography>
-              <Box sx={{ p: 1.5, mt: 1, mb: 2, bgcolor: 'background.paper', border: 1, borderColor: 'divider', borderRadius: 1 }}>
-                <Typography variant="body2">Person</Typography>
-              </Box>
-              <Divider sx={{ my: 2 }} />
-              <Typography variant="caption" color="text.secondary">BASIC PROPERTIES</Typography>
-              <List dense disablePadding>
+          <div style={{ width: propertiesPanelWidth, borderLeft: '1px solid #27273a', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', borderBottom: '1px solid #27273a' }}>
+              <span style={{ fontSize: 16, fontWeight: 600 }}>Class Properties</span>
+              <Button type="text" size="small" icon={<X size={20} />} />
+            </div>
+            <div style={{ flex: 1, padding: 16, overflow: 'auto' }}>
+              <span style={{ fontSize: 12, color: '#a1a1aa' }}>SELECTED CLASS</span>
+              <div style={{ padding: 12, marginTop: 8, marginBottom: 16, backgroundColor: '#111118', border: '1px solid #27273a', borderRadius: 4 }}>
+                <span style={{ fontSize: 14 }}>Person</span>
+              </div>
+              <Divider style={{ margin: '16px 0', borderColor: '#27273a' }} />
+              <span style={{ fontSize: 12, color: '#a1a1aa' }}>BASIC PROPERTIES</span>
+              <div>
                 {['name', 'email', 'birthDate', 'address'].map((prop) => (
-                  <ListItemButton key={prop}><ListItemText primary={prop} /></ListItemButton>
+                  <div key={prop} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 8, cursor: 'pointer', backgroundColor: 'transparent' }}>
+                    <span style={{ fontSize: 14 }}>{prop}</span>
+                  </div>
                 ))}
-              </List>
-              <Divider sx={{ my: 2 }} />
-              <Typography variant="caption" color="text.secondary">RELATIONS</Typography>
-              <List dense disablePadding>
+              </div>
+              <Divider style={{ margin: '16px 0', borderColor: '#27273a' }} />
+              <span style={{ fontSize: 12, color: '#a1a1aa' }}>RELATIONS</span>
+              <div>
                 {['worksAt → Organization', 'knows → Person', 'livesIn → Location'].map((rel) => (
-                  <ListItemButton key={rel}><ListItemText primary={rel} /></ListItemButton>
+                  <div key={rel} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 8, cursor: 'pointer', backgroundColor: 'transparent' }}>
+                    <span style={{ fontSize: 14 }}>{rel}</span>
+                  </div>
                 ))}
-              </List>
-            </Box>
-          </Box>
-        </Box>
-      </Box>
-    </Box>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

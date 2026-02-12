@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Box, Breadcrumbs, Link, Typography, TextField, InputAdornment, Button } from '@mui/material';
-import { Search, Plus, ChevronRight, X, ZoomIn, ZoomOut, Maximize2, User, Building2, MapPin, ArrowRight, ArrowLeft, ExternalLink } from 'lucide-react';
+import { Breadcrumb, Typography, Input } from 'antd';
+import { Search, X, ZoomIn, ZoomOut, Maximize, User, Landmark, MapPin, ArrowRight, ArrowLeft, ExternalLink } from 'lucide-react';
 import * as d3 from 'd3';
+import { useHeader } from '../contexts/HeaderContext';
 
 interface SearchItem {
   name: string;
@@ -42,14 +43,14 @@ const graphData = {
 
 const subclasses = [
   { name: 'Person', icon: User },
-  { name: 'Organization', icon: Building2 },
+  { name: 'Organization', icon: Landmark },
   { name: 'Location', icon: MapPin },
 ];
 
 const relatedOntologies = [
-  { name: 'worksAt', desc: 'Person → Organization', icon: ArrowRight, color: '#8b5cf6' },
-  { name: 'locatedIn', desc: 'Organization → Location', icon: ArrowRight, color: '#8b5cf6' },
-  { name: 'hasParent', desc: 'owl:Thing → Entity', icon: ArrowLeft, color: '#22D3EE' },
+  { name: 'worksAt', desc: 'Person \u2192 Organization', icon: ArrowRight, color: 'var(--primary-color)' },
+  { name: 'locatedIn', desc: 'Organization \u2192 Location', icon: ArrowRight, color: 'var(--primary-color)' },
+  { name: 'hasParent', desc: 'owl:Thing \u2192 Entity', icon: ArrowLeft, color: '#22D3EE' },
 ];
 
 interface GraphCanvasProps {
@@ -103,7 +104,7 @@ function GraphCanvas({ selected, selectedType }: GraphCanvasProps) {
 
     const links = g.selectAll<SVGLineElement, LinkData>('.link').data(linksData).enter().append('line')
       .attr('class', 'link')
-      .attr('stroke', (d) => d.style === 'dashed' ? '#22D3EE' : '#8B5CF6')
+      .attr('stroke', (d) => d.style === 'dashed' ? '#22D3EE' : 'var(--primary-color)')
       .attr('stroke-width', 2)
       .attr('stroke-dasharray', (d) => d.style === 'dashed' ? '6,4' : 'none');
     linksRef.current = links;
@@ -132,16 +133,12 @@ function GraphCanvas({ selected, selectedType }: GraphCanvasProps) {
     const getEndpoints = (d: LinkData) => {
       const src = nodesDataRef.current.find((n) => n.id === d.source)!;
       const tgt = nodesDataRef.current.find((n) => n.id === d.target)!;
-      // Connection points are always at top or bottom center of the node
-      const halfH = 25; // nodeH / 2
+      const halfH = 25;
       if (src.y < tgt.y) {
-        // source above target: source bottom → target top
         return { x1: src.x, y1: src.y + halfH, x2: tgt.x, y2: tgt.y - halfH };
       } else if (src.y > tgt.y) {
-        // source below target: source top → target bottom
         return { x1: src.x, y1: src.y - halfH, x2: tgt.x, y2: tgt.y + halfH };
       } else {
-        // same level: both use bottom center
         return { x1: src.x, y1: src.y + halfH, x2: tgt.x, y2: tgt.y + halfH };
       }
     };
@@ -157,8 +154,8 @@ function GraphCanvas({ selected, selectedType }: GraphCanvasProps) {
 
     nodes.attr('transform', (d) => `translate(${d.x - 60}, ${d.y - 25})`);
     nodes.append('rect').attr('class', 'node-rect').attr('width', 120).attr('height', 50).attr('rx', 10)
-      .attr('fill', (d) => d.type === 'Root Class' ? '#8B5CF6' : 'transparent')
-      .attr('stroke', '#8B5CF6').attr('stroke-width', 2);
+      .attr('fill', (d) => d.type === 'Root Class' ? 'var(--primary-color)' : 'transparent')
+      .attr('stroke', 'var(--primary-color)').attr('stroke-width', 2);
 
     updateLinks();
 
@@ -184,10 +181,9 @@ function GraphCanvas({ selected, selectedType }: GraphCanvasProps) {
     if (!nodes || !links || !linkLabels) return;
 
     if (!selected) {
-      // Reset all to default
       nodes.style('opacity', 1).style('filter', 'none');
       nodes.select('.node-rect')
-        .attr('stroke', '#8B5CF6')
+        .attr('stroke', 'var(--primary-color)')
         .attr('stroke-width', 2);
       links.style('opacity', 1)
         .attr('stroke-width', 2);
@@ -196,18 +192,15 @@ function GraphCanvas({ selected, selectedType }: GraphCanvasProps) {
     }
 
     if (selectedType === 'Class') {
-      // Highlight matching node, dim others
       nodes.style('opacity', (d) => d.id === selected ? 1 : 0.2)
         .style('filter', (d) => d.id === selected ? 'url(#glow)' : 'none');
       nodes.select('.node-rect')
         .attr('stroke-width', (d: { id: string }) => d.id === selected ? 3 : 2);
 
-      // Highlight links connected to this node, dim others
       links.style('opacity', (d) => (d.source === selected || d.target === selected) ? 1 : 0.1)
         .attr('stroke-width', (d) => (d.source === selected || d.target === selected) ? 3 : 2);
       linkLabels.style('opacity', (d) => (d.source === selected || d.target === selected) ? 1 : 0.1);
 
-      // Keep connected nodes slightly more visible
       const connectedNodes = new Set<string>();
       graphData.links.forEach((l) => {
         if (l.source === selected) connectedNodes.add(l.target);
@@ -219,14 +212,12 @@ function GraphCanvas({ selected, selectedType }: GraphCanvasProps) {
         return 0.15;
       });
     } else {
-      // Relation selected: highlight matching link
       const matchingLink = graphData.links.find((l) => l.label === selected);
 
       links.style('opacity', (d) => d.label === selected ? 1 : 0.1)
         .attr('stroke-width', (d) => d.label === selected ? 4 : 2);
       linkLabels.style('opacity', (d) => d.label === selected ? 1 : 0.1);
 
-      // Highlight source/target nodes, dim others
       nodes.style('opacity', (d) => {
         if (matchingLink && (d.id === matchingLink.source || d.id === matchingLink.target)) return 1;
         return 0.15;
@@ -244,6 +235,7 @@ function GraphCanvas({ selected, selectedType }: GraphCanvasProps) {
 
 export default function KnowledgeGraphPage() {
   const [selected, setSelected] = useState<string>('Entity');
+  const { setBreadcrumbs } = useHeader();
 
   const selectedItem = searchResults.find((r) => r.name === selected) ?? null;
 
@@ -251,262 +243,257 @@ export default function KnowledgeGraphPage() {
     setSelected((prev) => prev === name ? '' : name);
   }, []);
 
+  useEffect(() => {
+    setBreadcrumbs(
+      <Breadcrumb items={[
+        { title: 'Ontologies' },
+        { title: 'Knowledge Graph' },
+      ]} />
+    );
+  }, [setBreadcrumbs]);
+
   return (
     <>
-      {/* Header */}
-      <Box height={64} display="flex" alignItems="center" justifyContent="space-between" px={3} borderBottom={1} borderColor="divider">
-        <Breadcrumbs separator={<ChevronRight size={14} />}>
-          <Link underline="hover" color="text.secondary" href="#">Ontologies</Link>
-          <Typography color="text.primary" fontWeight={500}>Knowledge Graph</Typography>
-        </Breadcrumbs>
-        <Box display="flex" gap={1.5}>
-          <TextField size="small" placeholder="Search classes..." sx={{ width: 240, bgcolor: 'action.hover', '& .MuiOutlinedInput-notchedOutline': { border: 'none' } }} InputProps={{ startAdornment: <InputAdornment position="start"><Search size={16} /></InputAdornment> }} />
-          <Button variant="contained" startIcon={<Plus size={16} />}>New Class</Button>
-        </Box>
-      </Box>
-
       {/* Content */}
-      <Box flex={1} display="flex" overflow="hidden">
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         {/* Search Panel */}
-        <Box width={280} borderRight={1} borderColor="divider" display="flex" flexDirection="column">
-          <Box p={2} borderBottom={1} borderColor="divider">
-            <Typography fontSize={14} fontWeight={600} mb={1.5}>Search Ontology</Typography>
-            <TextField
-              fullWidth
-              size="small"
+        <div style={{ width: 280, borderRight: '1px solid #303030', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ padding: 16, borderBottom: '1px solid #303030' }}>
+            <Typography.Text style={{ fontSize: 14, fontWeight: 600, display: 'block', marginBottom: 12 }}>Search Ontology</Typography.Text>
+            <Input
               placeholder="Search by name..."
-              sx={{ bgcolor: 'action.hover', '& .MuiOutlinedInput-notchedOutline': { border: 'none' } }}
-              InputProps={{ startAdornment: <InputAdornment position="start"><Search size={16} /></InputAdornment> }}
+              prefix={<Search size={16} />}
             />
-          </Box>
-          <Box flex={1} overflow="auto" p={1.5}>
-            <Box display="flex" justifyContent="space-between" alignItems="center" px={0.5} py={1}>
-              <Typography fontSize={12} fontWeight={500} color="text.secondary">Results</Typography>
-              <Typography fontSize={12} color="text.secondary">{searchResults.length} found</Typography>
-            </Box>
+          </div>
+          <div style={{ flex: 1, overflow: 'auto', padding: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 4px' }}>
+              <Typography.Text style={{ fontSize: 12, fontWeight: 500, color: '#a1a1aa' }}>Results</Typography.Text>
+              <Typography.Text style={{ fontSize: 12, color: '#a1a1aa' }}>{searchResults.length} found</Typography.Text>
+            </div>
             {searchResults.map((item) => {
               const isActive = item.name === selected;
               return (
-                <Box
+                <div
                   key={item.name}
                   onClick={() => handleSelect(item.name)}
-                  sx={{
+                  style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 1.25,
-                    px: 1.5,
-                    py: 1.25,
-                    borderRadius: 2,
-                    mb: 0.5,
-                    bgcolor: isActive ? 'primary.main' : 'transparent',
+                    gap: 10,
+                    padding: '10px 12px',
+                    borderRadius: 8,
+                    marginBottom: 4,
+                    backgroundColor: isActive ? 'var(--primary-color)' : 'transparent',
                     cursor: 'pointer',
-                    '&:hover': { bgcolor: isActive ? 'primary.main' : 'action.hover' },
                     transition: 'background-color 0.15s',
                   }}
                 >
-                  <Box
-                    sx={{
+                  <div
+                    style={{
                       width: 8,
                       height: 8,
-                      borderRadius: '4px',
-                      bgcolor: isActive ? 'transparent' : (item.type === 'Relation' ? '#22D3EE' : '#A855F7'),
+                      borderRadius: 4,
+                      backgroundColor: isActive ? 'transparent' : (item.type === 'Relation' ? '#22D3EE' : '#A855F7'),
                       flexShrink: 0,
                     }}
                   />
-                  <Typography
-                    fontSize={14}
-                    fontWeight={isActive ? 500 : 400}
-                    color={isActive ? 'primary.contrastText' : 'text.primary'}
-                    sx={{ flex: 1 }}
+                  <Typography.Text
+                    style={{
+                      fontSize: 14,
+                      fontWeight: isActive ? 500 : 400,
+                      color: isActive ? '#fff' : undefined,
+                      flex: 1,
+                    }}
                   >
                     {item.name}
-                  </Typography>
-                  <Typography
-                    fontSize={11}
-                    sx={{
+                  </Typography.Text>
+                  <Typography.Text
+                    style={{
+                      fontSize: 11,
                       opacity: isActive ? 0.7 : 1,
                       color: isActive
-                        ? 'primary.contrastText'
-                        : (item.type === 'Relation' ? '#22D3EE' : 'text.secondary'),
+                        ? '#fff'
+                        : (item.type === 'Relation' ? '#22D3EE' : '#a1a1aa'),
                     }}
                   >
                     {item.type}
-                  </Typography>
-                </Box>
+                  </Typography.Text>
+                </div>
               );
             })}
-          </Box>
-        </Box>
+          </div>
+        </div>
 
         {/* Graph Canvas */}
-        <Box flex={1} p={2.5} display="flex" flexDirection="column" gap={2}>
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Typography fontSize={16} fontWeight={600}>Knowledge Graph</Typography>
-            <Box display="flex" gap={1}>
-              {[ZoomIn, ZoomOut, Maximize2].map((Icon, i) => (
-                <Box
+        <div style={{ flex: 1, padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography.Text style={{ fontSize: 16, fontWeight: 600 }}>Knowledge Graph</Typography.Text>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {[ZoomIn, ZoomOut, Maximize].map((Icon, i) => (
+                <div
                   key={i}
-                  sx={{
+                  style={{
                     width: 32,
                     height: 32,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    bgcolor: 'action.hover',
-                    borderRadius: 2,
+                    backgroundColor: 'rgba(255,255,255,0.04)',
+                    borderRadius: 8,
                     cursor: 'pointer',
                   }}
                 >
                   <Icon size={16} />
-                </Box>
+                </div>
               ))}
-            </Box>
-          </Box>
-          <Box flex={1} border={1} borderColor="divider" borderRadius={3} overflow="hidden" bgcolor="background.default">
+            </div>
+          </div>
+          <div style={{ flex: 1, border: '1px solid #303030', borderRadius: 12, overflow: 'hidden', backgroundColor: '#141414' }}>
             <GraphCanvas selected={selected || null} selectedType={selectedItem?.type ?? null} />
-          </Box>
-        </Box>
+          </div>
+        </div>
 
         {/* Properties Panel */}
-        <Box width={320} borderLeft={1} borderColor="divider" display="flex" flexDirection="column">
-          <Box height={64} display="flex" alignItems="center" justifyContent="space-between" px={2.5} borderBottom={1} borderColor="divider">
-            <Typography fontSize={16} fontWeight={600}>Class Properties</Typography>
-            <Box
-              sx={{
+        <div style={{ width: 320, borderLeft: '1px solid #303030', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', borderBottom: '1px solid #303030' }}>
+            <Typography.Text style={{ fontSize: 16, fontWeight: 600 }}>Class Properties</Typography.Text>
+            <div
+              style={{
                 width: 32,
                 height: 32,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                borderRadius: 2,
+                borderRadius: 8,
                 cursor: 'pointer',
               }}
             >
               <X size={18} color="#a1a1aa" />
-            </Box>
-          </Box>
-          <Box flex={1} overflow="auto" p={2.5} display="flex" flexDirection="column" gap={2.5}>
+            </div>
+          </div>
+          <div style={{ flex: 1, overflow: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 20 }}>
             {/* Class Header */}
-            <Box display="flex" alignItems="center" gap={1.5}>
-              <Box
-                sx={{
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div
+                style={{
                   width: 40,
                   height: 40,
-                  borderRadius: 2.5,
-                  bgcolor: 'primary.main',
+                  borderRadius: 10,
+                  backgroundColor: 'var(--primary-color)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: '0 4px 12px rgba(139, 92, 246, 0.25)',
+                  boxShadow: '0 4px 12px rgba(var(--primary-rgb), 0.25)',
                 }}
               >
-                <Typography color="primary.contrastText" fontWeight={600}>E</Typography>
-              </Box>
-              <Box>
-                <Typography fontSize={18} fontWeight={600}>Entity</Typography>
-                <Typography fontSize={12} color="text.secondary">owl:Thing</Typography>
-              </Box>
-            </Box>
+                <Typography.Text style={{ color: '#fff', fontWeight: 600 }}>E</Typography.Text>
+              </div>
+              <div>
+                <Typography.Text style={{ fontSize: 18, fontWeight: 600, display: 'block' }}>Entity</Typography.Text>
+                <Typography.Text style={{ fontSize: 12, color: '#a1a1aa' }}>owl:Thing</Typography.Text>
+              </div>
+            </div>
 
-            <Box height={1} bgcolor="divider" />
+            <div style={{ height: 1, backgroundColor: '#303030' }} />
 
             {/* Basic Information */}
-            <Box display="flex" flexDirection="column" gap={1.5}>
-              <Typography fontSize={14} fontWeight={600}>Basic Information</Typography>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <Typography.Text style={{ fontSize: 14, fontWeight: 600 }}>Basic Information</Typography.Text>
               {[
                 { label: 'Label', value: 'Entity' },
                 { label: 'URI', value: 'http://ontology.io/Entity' },
                 { label: 'Description', value: 'The root class for all entities in the knowledge graph.' },
               ].map((prop) => (
-                <Box key={prop.label} display="flex" flexDirection="column" gap={0.5}>
-                  <Typography fontSize={12} color="text.secondary">{prop.label}</Typography>
-                  <Box sx={{ bgcolor: 'action.hover', borderRadius: 2, px: 1.5, py: 1.25 }}>
-                    <Typography fontSize={14} sx={{ lineHeight: prop.label === 'Description' ? 1.4 : undefined }}>
+                <div key={prop.label} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <Typography.Text style={{ fontSize: 12, color: '#a1a1aa' }}>{prop.label}</Typography.Text>
+                  <div style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '10px 12px' }}>
+                    <Typography.Text style={{ fontSize: 14, lineHeight: prop.label === 'Description' ? '1.4' : undefined }}>
                       {prop.value}
-                    </Typography>
-                  </Box>
-                </Box>
+                    </Typography.Text>
+                  </div>
+                </div>
               ))}
-            </Box>
+            </div>
 
-            <Box height={1} bgcolor="divider" />
+            <div style={{ height: 1, backgroundColor: '#303030' }} />
 
             {/* Direct Subclasses */}
-            <Box display="flex" flexDirection="column" gap={1.5}>
-              <Typography fontSize={14} fontWeight={600}>Direct Subclasses</Typography>
-              {subclasses.map((sub) => (
-                <Box
-                  key={sub.name}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1.25,
-                    px: 1.5,
-                    py: 1,
-                    borderRadius: 2,
-                    border: 1,
-                    borderColor: 'divider',
-                  }}
-                >
-                  <sub.icon size={16} />
-                  <Typography fontSize={14}>{sub.name}</Typography>
-                </Box>
-              ))}
-            </Box>
-
-            <Box height={1} bgcolor="divider" />
-
-            {/* Related Ontologies */}
-            <Box display="flex" flexDirection="column" gap={1.5}>
-              <Box display="flex" justifyContent="space-between" alignItems="center">
-                <Typography fontSize={14} fontWeight={600}>Related Ontologies</Typography>
-                <Box sx={{ bgcolor: 'action.hover', borderRadius: 2.5, px: 1, py: 0.25, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Typography fontSize={12} fontWeight={500}>5</Typography>
-                </Box>
-              </Box>
-              <Box display="flex" flexDirection="column" gap={1}>
-                {relatedOntologies.map((rel) => (
-                  <Box
-                    key={rel.name}
-                    sx={{
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <Typography.Text style={{ fontSize: 14, fontWeight: 600 }}>Direct Subclasses</Typography.Text>
+              {subclasses.map((sub) => {
+                const Icon = sub.icon;
+                return (
+                  <div
+                    key={sub.name}
+                    style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 1.25,
-                      px: 1.5,
-                      py: 1.25,
-                      borderRadius: 2,
-                      bgcolor: 'action.hover',
+                      gap: 10,
+                      padding: '8px 12px',
+                      borderRadius: 8,
+                      border: '1px solid #303030',
                     }}
                   >
-                    <rel.icon size={14} color={rel.color} />
-                    <Box flex={1} minWidth={0}>
-                      <Typography fontSize={13} fontWeight={500}>{rel.name}</Typography>
-                      <Typography fontSize={11} color="text.secondary">{rel.desc}</Typography>
-                    </Box>
-                  </Box>
-                ))}
-              </Box>
-              <Box
-                sx={{
+                    <Icon size={16} />
+                    <Typography.Text style={{ fontSize: 14 }}>{sub.name}</Typography.Text>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div style={{ height: 1, backgroundColor: '#303030' }} />
+
+            {/* Related Ontologies */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography.Text style={{ fontSize: 14, fontWeight: 600 }}>Related Ontologies</Typography.Text>
+                <div style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 10, padding: '2px 8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Typography.Text style={{ fontSize: 12, fontWeight: 500 }}>5</Typography.Text>
+                </div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {relatedOntologies.map((rel) => {
+                  const Icon = rel.icon;
+                  return (
+                    <div
+                      key={rel.name}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                        padding: '10px 12px',
+                        borderRadius: 8,
+                        backgroundColor: 'rgba(255,255,255,0.04)',
+                      }}
+                    >
+                      <Icon size={14} color={rel.color} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <Typography.Text style={{ fontSize: 13, fontWeight: 500, display: 'block' }}>{rel.name}</Typography.Text>
+                        <Typography.Text style={{ fontSize: 11, color: '#a1a1aa' }}>{rel.desc}</Typography.Text>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div
+                style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: 0.75,
-                  px: 1.5,
-                  py: 1,
-                  borderRadius: 2,
-                  border: 1,
-                  borderColor: 'divider',
+                  gap: 6,
+                  padding: '8px 12px',
+                  borderRadius: 8,
+                  border: '1px solid #303030',
                   cursor: 'pointer',
                 }}
               >
-                <Typography fontSize={13}>View All Relations</Typography>
+                <Typography.Text style={{ fontSize: 13 }}>View All Relations</Typography.Text>
                 <ExternalLink size={14} color="#a1a1aa" />
-              </Box>
-            </Box>
-          </Box>
-        </Box>
-      </Box>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </>
   );
 }

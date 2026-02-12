@@ -1,14 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Button, Breadcrumb, Checkbox, Select } from 'antd';
 import {
-  Box, Breadcrumbs, Link, Typography, Button, Card, Checkbox, FormControlLabel,
-  Select, MenuItem, FormControl,
-} from '@mui/material';
-import {
-  ChevronRight, Play, List, GitFork, Settings2, ChevronDown, Zap,
+  ChevronRight, Play, List, GitFork, Settings2, Zap,
   Download, Factory, TriangleAlert, Package, GitBranch, Timer, TrendingUp,
   Workflow, Gauge, Cpu, CircleCheck,
 } from 'lucide-react';
 import * as d3 from 'd3';
+import { useHeader } from '../contexts/HeaderContext';
 
 /* ── Types ── */
 type ViewMode = 'list' | 'graph';
@@ -18,8 +17,8 @@ const inferences = [
   {
     id: 1,
     icon: Factory,
-    iconColor: '#8B5CF6',
-    iconBg: '#8B5CF620',
+    iconColor: 'var(--primary-color)',
+    iconBg: 'rgba(var(--primary-rgb), 0.13)',
     title: 'Production Line A → Order #1024',
     badge: '98%',
     badgeColor: '#22C55E',
@@ -62,19 +61,19 @@ const chainSteps = [
     num: '1',
     title: 'Input Analysis',
     desc: 'Parsed Order #1024 requirements: 500 units, priority HIGH, due in 48h',
-    color: '#8b5cf6',
+    color: 'var(--primary-color)',
   },
   {
     num: '2',
     title: 'Capacity Check',
     desc: 'Line A: 800 units/day capacity, 60% utilization → Available',
-    color: '#8b5cf6',
+    color: 'var(--primary-color)',
   },
   {
     num: '3',
     title: 'Resource Matching',
     desc: 'Required: Machine M1, M2. Both available on Line A during window',
-    color: '#8b5cf6',
+    color: 'var(--primary-color)',
   },
   {
     num: '✓',
@@ -94,7 +93,7 @@ const inferenceRules = [
 
 /* ── Graph view nodes ── */
 const graphNodes = {
-  input: { icon: Package, label: 'Order #1024', color: '#8B5CF6', bg: '#8B5CF6' },
+  input: { icon: Package, label: 'Order #1024', color: 'var(--primary-color)', bg: 'var(--primary-color)' },
   checks: [
     { icon: Gauge, label: 'Capacity', status: '60% ✓' },
     { icon: Cpu, label: 'Resources', status: 'M1,M2 ✓' },
@@ -103,371 +102,6 @@ const graphNodes = {
   lineA: { icon: Factory, label: 'Production Line A', status: '800 units/day' },
   result: { icon: CircleCheck, label: 'Assigned', sub: '98% confidence' },
 };
-
-/* ── Config Panel (shared by both views) ── */
-function ConfigPanel({
-  reasoningType,
-  setReasoningType,
-  sourceOntology,
-  setSourceOntology,
-  rules,
-  onToggleRule,
-}: {
-  reasoningType: string;
-  setReasoningType: (v: string) => void;
-  sourceOntology: string;
-  setSourceOntology: (v: string) => void;
-  rules: { label: string; checked: boolean }[];
-  onToggleRule: (index: number) => void;
-}) {
-  return (
-    <Card
-      variant="outlined"
-      sx={{
-        width: 320,
-        flexShrink: 0,
-        display: 'flex',
-        flexDirection: 'column',
-        borderRadius: 3,
-        overflow: 'hidden',
-      }}
-    >
-      {/* Header */}
-      <Box
-        display="flex"
-        alignItems="center"
-        gap={1.25}
-        px={2.5}
-        py={2}
-        sx={{ borderBottom: 1, borderColor: 'divider' }}
-      >
-        <Settings2 size={18} color="#8b5cf6" />
-        <Typography fontSize={14} fontWeight={600}>
-          Reasoning Configuration
-        </Typography>
-      </Box>
-
-      {/* Body */}
-      <Box flex={1} p={2.5} display="flex" flexDirection="column" gap={2.5} overflow="auto">
-        {/* Reasoning Type */}
-        <Box display="flex" flexDirection="column" gap={1.25}>
-          <Typography fontSize={12} fontWeight={600} color="text.secondary" textTransform="uppercase">
-            Reasoning Type
-          </Typography>
-          <FormControl fullWidth size="small">
-            <Select
-              value={reasoningType}
-              onChange={(e) => setReasoningType(e.target.value)}
-              sx={{ borderRadius: 2, bgcolor: 'action.hover' }}
-              IconComponent={() => <ChevronDown size={16} color="#a1a1aa" style={{ marginRight: 12 }} />}
-            >
-              <MenuItem value="production-scheduling">Production Scheduling</MenuItem>
-              <MenuItem value="resource-allocation">Resource Allocation</MenuItem>
-              <MenuItem value="dependency-analysis">Dependency Analysis</MenuItem>
-            </Select>
-          </FormControl>
-        </Box>
-
-        {/* Source Ontology */}
-        <Box display="flex" flexDirection="column" gap={1.25}>
-          <Typography fontSize={12} fontWeight={600} color="text.secondary" textTransform="uppercase">
-            Source Ontology
-          </Typography>
-          <FormControl fullWidth size="small">
-            <Select
-              value={sourceOntology}
-              onChange={(e) => setSourceOntology(e.target.value)}
-              sx={{ borderRadius: 2, bgcolor: 'action.hover' }}
-              IconComponent={() => <ChevronDown size={16} color="#a1a1aa" style={{ marginRight: 12 }} />}
-            >
-              <MenuItem value="supply-chain">Supply Chain Ontology</MenuItem>
-              <MenuItem value="manufacturing">Manufacturing Ontology</MenuItem>
-              <MenuItem value="logistics">Logistics Ontology</MenuItem>
-            </Select>
-          </FormControl>
-        </Box>
-
-        {/* Inference Rules */}
-        <Box display="flex" flexDirection="column" gap={1.25}>
-          <Typography fontSize={12} fontWeight={600} color="text.secondary" textTransform="uppercase">
-            Inference Rules
-          </Typography>
-          <Box display="flex" flexDirection="column" gap={1}>
-            {rules.map((rule, i) => (
-              <Box
-                key={i}
-                onClick={() => onToggleRule(i)}
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1.25,
-                  px: 1.5,
-                  py: 1.25,
-                  borderRadius: 2,
-                  bgcolor: 'action.hover',
-                  cursor: 'pointer',
-                }}
-              >
-                <Checkbox
-                  checked={rule.checked}
-                  size="small"
-                  sx={{ p: 0 }}
-                  tabIndex={-1}
-                />
-                <Typography fontSize={13}>{rule.label}</Typography>
-              </Box>
-            ))}
-          </Box>
-        </Box>
-      </Box>
-    </Card>
-  );
-}
-
-/* ── Results Panel (list view) ── */
-function ResultsPanel() {
-  return (
-    <Card
-      variant="outlined"
-      sx={{
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        borderRadius: 3,
-        overflow: 'hidden',
-        minWidth: 0,
-      }}
-    >
-      {/* Header */}
-      <Box
-        display="flex"
-        alignItems="center"
-        justifyContent="space-between"
-        px={2.5}
-        py={2}
-        sx={{ borderBottom: 1, borderColor: 'divider' }}
-      >
-        <Box display="flex" alignItems="center" gap={1.25}>
-          <Zap size={18} color="#F59E0B" />
-          <Typography fontSize={14} fontWeight={600}>
-            Inference Results
-          </Typography>
-          <Box
-            sx={{
-              bgcolor: '#22C55E20',
-              color: '#22C55E',
-              borderRadius: 100,
-              px: 1.25,
-              py: 0.5,
-              fontSize: 11,
-              fontWeight: 500,
-              lineHeight: 1,
-            }}
-          >
-            12 inferences
-          </Box>
-        </Box>
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 0.75,
-            px: 1.5,
-            py: 0.75,
-            borderRadius: '6px',
-            bgcolor: 'action.hover',
-            cursor: 'pointer',
-            '&:hover': { bgcolor: 'action.selected' },
-          }}
-        >
-          <Download size={14} />
-          <Typography fontSize={12} fontWeight={500}>Export</Typography>
-        </Box>
-      </Box>
-
-      {/* Inference Cards */}
-      <Box flex={1} p={2.5} display="flex" flexDirection="column" gap={2} overflow="auto">
-        {inferences.map((inf) => {
-          const Icon = inf.icon;
-          return (
-            <Box
-              key={inf.id}
-              sx={{
-                p: 2,
-                borderRadius: 2,
-                bgcolor: 'action.hover',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 1.5,
-              }}
-            >
-              {/* Card Header */}
-              <Box display="flex" alignItems="center" gap={1.25}>
-                <Box
-                  sx={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: '6px',
-                    bgcolor: inf.iconBg,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                  }}
-                >
-                  <Icon size={16} color={inf.iconColor} />
-                </Box>
-                <Typography fontSize={14} fontWeight={500} sx={{ flex: 1 }}>
-                  {inf.title}
-                </Typography>
-                <Box
-                  sx={{
-                    bgcolor: `${inf.badgeColor}20`,
-                    color: inf.badgeColor,
-                    borderRadius: 100,
-                    px: 1,
-                    py: 0.5,
-                    fontSize: 11,
-                    fontWeight: 600,
-                    lineHeight: 1,
-                  }}
-                >
-                  {inf.badge}
-                </Box>
-              </Box>
-
-              {/* Description */}
-              <Typography fontSize={13} color="text.secondary" lineHeight={1.5}>
-                {inf.description}
-              </Typography>
-
-              {/* Meta */}
-              <Box display="flex" alignItems="center" gap={2}>
-                <Box display="flex" alignItems="center" gap={0.5}>
-                  <GitBranch size={12} color="#a1a1aa" />
-                  <Typography fontSize={11} color="text.secondary">
-                    {inf.ruleTag}
-                  </Typography>
-                </Box>
-                {inf.meta.type === 'time' && (
-                  <Box display="flex" alignItems="center" gap={0.5}>
-                    <Timer size={12} color="#a1a1aa" />
-                    <Typography fontSize={11} color="text.secondary">
-                      {inf.meta.label}
-                    </Typography>
-                  </Box>
-                )}
-                {inf.meta.type === 'action' && (
-                  <Typography fontSize={11} color="primary.main" fontWeight={500}>
-                    {inf.meta.label}
-                  </Typography>
-                )}
-                {inf.meta.type === 'savings' && (
-                  <Box display="flex" alignItems="center" gap={0.5}>
-                    <TrendingUp size={12} color="#22C55E" />
-                    <Typography fontSize={11} color="#22C55E">
-                      {inf.meta.label}
-                    </Typography>
-                  </Box>
-                )}
-              </Box>
-            </Box>
-          );
-        })}
-      </Box>
-    </Card>
-  );
-}
-
-/* ── Inference Chain Panel (list view) ── */
-function ChainPanel() {
-  return (
-    <Card
-      variant="outlined"
-      sx={{
-        width: 320,
-        flexShrink: 0,
-        display: 'flex',
-        flexDirection: 'column',
-        borderRadius: 3,
-        overflow: 'hidden',
-      }}
-    >
-      {/* Header */}
-      <Box
-        display="flex"
-        alignItems="center"
-        gap={1.25}
-        px={2.5}
-        py={2}
-        sx={{ borderBottom: 1, borderColor: 'divider' }}
-      >
-        <Workflow size={18} color="#8b5cf6" />
-        <Typography fontSize={14} fontWeight={600}>
-          Inference Chain
-        </Typography>
-      </Box>
-
-      {/* Steps */}
-      <Box flex={1} p={2.5} display="flex" flexDirection="column" gap={2} overflow="auto">
-        <Typography
-          fontSize={11}
-          fontWeight={600}
-          color="text.secondary"
-          letterSpacing={1}
-          textTransform="uppercase"
-        >
-          Reasoning Path
-        </Typography>
-
-        {chainSteps.map((step, i) => (
-          <Box key={i}>
-            {/* Step */}
-            <Box display="flex" flexDirection="column" gap={1}>
-              <Box display="flex" alignItems="center" gap={1}>
-                <Box
-                  sx={{
-                    width: 20,
-                    height: 20,
-                    borderRadius: '50%',
-                    bgcolor: step.color,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                  }}
-                >
-                  <Typography fontSize={11} fontWeight={600} color="#fff">
-                    {step.num}
-                  </Typography>
-                </Box>
-                <Typography fontSize={13} fontWeight={500} color={step.color === '#22C55E' ? '#22C55E' : 'text.primary'}>
-                  {step.title}
-                </Typography>
-              </Box>
-              <Typography fontSize={12} color="text.secondary" lineHeight={1.4} pl={3.5}>
-                {step.desc}
-              </Typography>
-            </Box>
-
-            {/* Connector line */}
-            {i < chainSteps.length - 1 && (
-              <Box
-                sx={{
-                  width: 2,
-                  height: 20,
-                  bgcolor: 'divider',
-                  ml: '9px',
-                  mt: 1,
-                }}
-              />
-            )}
-          </Box>
-        ))}
-      </Box>
-    </Card>
-  );
-}
 
 /* ── SVG icon paths (lucide) ── */
 const ICON_PACKAGE = 'M16.5 9.4l-9-5.19M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16zM3.27 6.96L12 12.01l8.73-5.05M12 22.08V12';
@@ -503,23 +137,391 @@ interface FlowEdge {
 }
 
 const flowNodes: FlowNode[] = [
-  { id: 'input', row: 0, col: 1, w: 152, h: 72, rx: 14, fill: '#8B5CF6', stroke: null, strokeWidth: 0, icon: ICON_PACKAGE, iconColor: '#fff', label: 'Order #1024', labelColor: '#fff' },
-  { id: 'capacity', row: 1, col: 0, w: 120, h: 60, rx: 12, fill: '#16163a', stroke: '#8B5CF6', strokeWidth: 2, icon: ICON_GAUGE, iconColor: '#8B5CF6', label: 'Capacity', labelColor: '#e4e4e7', sub: '60% ✓', subColor: '#22C55E' },
-  { id: 'resources', row: 1, col: 1, w: 120, h: 60, rx: 12, fill: '#16163a', stroke: '#8B5CF6', strokeWidth: 2, icon: ICON_CPU, iconColor: '#8B5CF6', label: 'Resources', labelColor: '#e4e4e7', sub: 'M1,M2 ✓', subColor: '#22C55E' },
-  { id: 'depends', row: 1, col: 2, w: 120, h: 60, rx: 12, fill: '#16163a', stroke: '#8B5CF6', strokeWidth: 2, icon: ICON_GITBRANCH, iconColor: '#8B5CF6', label: 'Depends', labelColor: '#e4e4e7', sub: 'None ✓', subColor: '#22C55E' },
+  { id: 'input', row: 0, col: 1, w: 152, h: 72, rx: 14, fill: 'var(--primary-color)', stroke: null, strokeWidth: 0, icon: ICON_PACKAGE, iconColor: '#fff', label: 'Order #1024', labelColor: '#fff' },
+  { id: 'capacity', row: 1, col: 0, w: 120, h: 60, rx: 12, fill: '#16163a', stroke: 'var(--primary-color)', strokeWidth: 2, icon: ICON_GAUGE, iconColor: 'var(--primary-color)', label: 'Capacity', labelColor: '#e4e4e7', sub: '60% ✓', subColor: '#22C55E' },
+  { id: 'resources', row: 1, col: 1, w: 120, h: 60, rx: 12, fill: '#16163a', stroke: 'var(--primary-color)', strokeWidth: 2, icon: ICON_CPU, iconColor: 'var(--primary-color)', label: 'Resources', labelColor: '#e4e4e7', sub: 'M1,M2 ✓', subColor: '#22C55E' },
+  { id: 'depends', row: 1, col: 2, w: 120, h: 60, rx: 12, fill: '#16163a', stroke: 'var(--primary-color)', strokeWidth: 2, icon: ICON_GITBRANCH, iconColor: 'var(--primary-color)', label: 'Depends', labelColor: '#e4e4e7', sub: 'None ✓', subColor: '#22C55E' },
   { id: 'lineA', row: 2, col: 1, w: 152, h: 66, rx: 12, fill: '#16163a', stroke: '#22C55E', strokeWidth: 2, icon: ICON_FACTORY, iconColor: '#22C55E', label: 'Production Line A', labelColor: '#e4e4e7', sub: '800 units/day', subColor: '#22C55E' },
   { id: 'result', row: 3, col: 1, w: 168, h: 76, rx: 14, fill: '#22C55E', stroke: null, strokeWidth: 0, icon: ICON_CIRCLECHECK, iconColor: '#fff', label: 'Assigned', labelColor: '#fff', sub: '98% confidence', subColor: 'rgba(255,255,255,0.6)' },
 ];
 
 const flowEdges: FlowEdge[] = [
-  { from: 'input', to: 'capacity', color: '#8B5CF6' },
-  { from: 'input', to: 'resources', color: '#8B5CF6' },
-  { from: 'input', to: 'depends', color: '#8B5CF6' },
-  { from: 'capacity', to: 'lineA', color: '#8B5CF6' },
-  { from: 'resources', to: 'lineA', color: '#8B5CF6' },
-  { from: 'depends', to: 'lineA', color: '#8B5CF6' },
+  { from: 'input', to: 'capacity', color: 'var(--primary-color)' },
+  { from: 'input', to: 'resources', color: 'var(--primary-color)' },
+  { from: 'input', to: 'depends', color: 'var(--primary-color)' },
+  { from: 'capacity', to: 'lineA', color: 'var(--primary-color)' },
+  { from: 'resources', to: 'lineA', color: 'var(--primary-color)' },
+  { from: 'depends', to: 'lineA', color: 'var(--primary-color)' },
   { from: 'lineA', to: 'result', color: '#22C55E' },
 ];
+
+/* ── Config Panel (shared by both views) ── */
+function ConfigPanel({
+  reasoningType,
+  setReasoningType,
+  sourceOntology,
+  setSourceOntology,
+  rules,
+  onToggleRule,
+}: {
+  reasoningType: string;
+  setReasoningType: (v: string) => void;
+  sourceOntology: string;
+  setSourceOntology: (v: string) => void;
+  rules: { label: string; checked: boolean }[];
+  onToggleRule: (index: number) => void;
+}) {
+  return (
+    <div
+      style={{
+        width: 320,
+        flexShrink: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        border: '1px solid #27273a',
+        borderRadius: 12,
+        backgroundColor: '#0d0d14',
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          padding: '0 20px',
+          height: 56,
+          flexShrink: 0,
+          borderBottom: '1px solid #27273a',
+        }}
+      >
+        <Settings2 size={18} color="var(--primary-color)" />
+        <span style={{ fontSize: 14, fontWeight: 600, color: '#f4f4f5' }}>
+          Reasoning Configuration
+        </span>
+      </div>
+
+      {/* Body */}
+      <div style={{ flex: 1, padding: 20, display: 'flex', flexDirection: 'column', gap: 20, overflow: 'auto' }}>
+        {/* Reasoning Type */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', textTransform: 'uppercase' }}>
+            Reasoning Type
+          </span>
+          <Select
+            value={reasoningType}
+            onChange={(value) => setReasoningType(value)}
+            style={{ width: '100%' }}
+            options={[
+              { value: 'production-scheduling', label: 'Production Scheduling' },
+              { value: 'resource-allocation', label: 'Resource Allocation' },
+              { value: 'dependency-analysis', label: 'Dependency Analysis' },
+            ]}
+          />
+        </div>
+
+        {/* Source Ontology */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', textTransform: 'uppercase' }}>
+            Source Ontology
+          </span>
+          <Select
+            value={sourceOntology}
+            onChange={(value) => setSourceOntology(value)}
+            style={{ width: '100%' }}
+            options={[
+              { value: 'supply-chain', label: 'Supply Chain Ontology' },
+              { value: 'manufacturing', label: 'Manufacturing Ontology' },
+              { value: 'logistics', label: 'Logistics Ontology' },
+            ]}
+          />
+        </div>
+
+        {/* Inference Rules */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', textTransform: 'uppercase' }}>
+            Inference Rules
+          </span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {rules.map((rule, i) => (
+              <div
+                key={i}
+                onClick={() => onToggleRule(i)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  padding: '10px 12px',
+                  borderRadius: 8,
+                  backgroundColor: '#1a1a24',
+                  cursor: 'pointer',
+                }}
+              >
+                <Checkbox
+                  checked={rule.checked}
+                  tabIndex={-1}
+                />
+                <span style={{ fontSize: 13, color: '#f4f4f5' }}>{rule.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Results Panel (list view) ── */
+function ResultsPanel() {
+  return (
+    <div
+      style={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        minWidth: 0,
+        border: '1px solid #27273a',
+        borderRadius: 12,
+        backgroundColor: '#0d0d14',
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0 20px',
+          height: 56,
+          flexShrink: 0,
+          borderBottom: '1px solid #27273a',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Zap size={18} color="#F59E0B" />
+          <span style={{ fontSize: 14, fontWeight: 600, color: '#f4f4f5' }}>
+            Inference Results
+          </span>
+          <span
+            style={{
+              backgroundColor: '#22C55E20',
+              color: '#22C55E',
+              borderRadius: 100,
+              padding: '4px 10px',
+              fontSize: 11,
+              fontWeight: 500,
+              lineHeight: 1,
+            }}
+          >
+            12 inferences
+          </span>
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '6px 12px',
+            borderRadius: 6,
+            backgroundColor: '#1a1a24',
+            cursor: 'pointer',
+          }}
+        >
+          <Download size={14} />
+          <span style={{ fontSize: 12, fontWeight: 500, color: '#f4f4f5' }}>Export</span>
+        </div>
+      </div>
+
+      {/* Inference Cards */}
+      <div style={{ flex: 1, padding: 20, display: 'flex', flexDirection: 'column', gap: 16, overflow: 'auto' }}>
+        {inferences.map((inf) => {
+          const Icon = inf.icon;
+          return (
+            <div
+              key={inf.id}
+              style={{
+                padding: 16,
+                borderRadius: 8,
+                backgroundColor: '#1a1a24',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 12,
+              }}
+            >
+              {/* Card Header */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 6,
+                    backgroundColor: inf.iconBg,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <Icon size={16} color={inf.iconColor} />
+                </div>
+                <span style={{ fontSize: 14, fontWeight: 500, flex: 1, color: '#f4f4f5' }}>
+                  {inf.title}
+                </span>
+                <span
+                  style={{
+                    backgroundColor: `${inf.badgeColor}20`,
+                    color: inf.badgeColor,
+                    borderRadius: 100,
+                    padding: '4px 8px',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    lineHeight: 1,
+                  }}
+                >
+                  {inf.badge}
+                </span>
+              </div>
+
+              {/* Description */}
+              <span style={{ fontSize: 13, color: '#a1a1aa', lineHeight: 1.5 }}>
+                {inf.description}
+              </span>
+
+              {/* Meta */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <GitBranch size={12} color="#a1a1aa" />
+                  <span style={{ fontSize: 11, color: '#a1a1aa' }}>
+                    {inf.ruleTag}
+                  </span>
+                </div>
+                {inf.meta.type === 'time' && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Timer size={12} color="#a1a1aa" />
+                    <span style={{ fontSize: 11, color: '#a1a1aa' }}>
+                      {inf.meta.label}
+                    </span>
+                  </div>
+                )}
+                {inf.meta.type === 'action' && (
+                  <span style={{ fontSize: 11, color: 'var(--primary-color)', fontWeight: 500 }}>
+                    {inf.meta.label}
+                  </span>
+                )}
+                {inf.meta.type === 'savings' && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <TrendingUp size={12} color="#22C55E" />
+                    <span style={{ fontSize: 11, color: '#22C55E' }}>
+                      {inf.meta.label}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ── Inference Chain Panel (list view) ── */
+function ChainPanel() {
+  return (
+    <div
+      style={{
+        width: 320,
+        flexShrink: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        border: '1px solid #27273a',
+        borderRadius: 12,
+        backgroundColor: '#0d0d14',
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          padding: '0 20px',
+          height: 56,
+          flexShrink: 0,
+          borderBottom: '1px solid #27273a',
+        }}
+      >
+        <Workflow size={18} color="var(--primary-color)" />
+        <span style={{ fontSize: 14, fontWeight: 600, color: '#f4f4f5' }}>
+          Inference Chain
+        </span>
+      </div>
+
+      {/* Steps */}
+      <div style={{ flex: 1, padding: 20, display: 'flex', flexDirection: 'column', gap: 16, overflow: 'auto' }}>
+        <span
+          style={{
+            fontSize: 11,
+            fontWeight: 600,
+            color: '#a1a1aa',
+            letterSpacing: 1,
+            textTransform: 'uppercase',
+          }}
+        >
+          Reasoning Path
+        </span>
+
+        {chainSteps.map((step, i) => (
+          <div key={i}>
+            {/* Step */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div
+                  style={{
+                    width: 20,
+                    height: 20,
+                    borderRadius: '50%',
+                    backgroundColor: step.color,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <span style={{ fontSize: 11, fontWeight: 600, color: '#fff' }}>
+                    {step.num}
+                  </span>
+                </div>
+                <span style={{ fontSize: 13, fontWeight: 500, color: step.color === '#22C55E' ? '#22C55E' : '#f4f4f5' }}>
+                  {step.title}
+                </span>
+              </div>
+              <span style={{ fontSize: 12, color: '#a1a1aa', lineHeight: 1.4, paddingLeft: 28 }}>
+                {step.desc}
+              </span>
+            </div>
+
+            {/* Connector line */}
+            {i < chainSteps.length - 1 && (
+              <div
+                style={{
+                  width: 2,
+                  height: 20,
+                  backgroundColor: '#27273a',
+                  marginLeft: 9,
+                  marginTop: 8,
+                }}
+              />
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 /* ── Graph Canvas (D3 rendered flow chart) ── */
 function GraphCanvasView() {
@@ -590,7 +592,7 @@ function GraphCanvasView() {
     glowP.append('feDropShadow').attr('dx', 0).attr('dy', 0).attr('stdDeviation', 12).attr('flood-color', 'rgba(139,92,246,0.4)');
 
     // Arrow markers
-    ['#8B5CF6', '#22C55E'].forEach((color) => {
+    ['var(--primary-color)', '#22C55E'].forEach((color) => {
       const markerId = `arrow-${color.replace('#', '')}`;
       defs.append('marker')
         .attr('id', markerId)
@@ -732,26 +734,29 @@ function GraphCanvasView() {
   }, []);
 
   return (
-    <Card
-      variant="outlined"
-      sx={{
+    <div
+      style={{
         flex: 1,
         display: 'flex',
         flexDirection: 'column',
-        borderRadius: 3,
         overflow: 'hidden',
         minHeight: 0,
+        border: '1px solid #27273a',
+        borderRadius: 12,
+        backgroundColor: '#0d0d14',
       }}
     >
-      <Box ref={containerRef} sx={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+      <div ref={containerRef} style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
         <svg ref={svgRef} style={{ width: '100%', height: '100%', display: 'block' }} />
-      </Box>
-    </Card>
+      </div>
+    </div>
   );
 }
 
 /* ── Main component ── */
 export default function ReasoningPage() {
+  const navigate = useNavigate();
+  const { setBreadcrumbs, setActions } = useHeader();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [reasoningType, setReasoningType] = useState('production-scheduling');
   const [sourceOntology, setSourceOntology] = useState('supply-chain');
@@ -763,77 +768,69 @@ export default function ReasoningPage() {
     );
   };
 
+  useEffect(() => {
+    setBreadcrumbs(
+      <Breadcrumb separator={<ChevronRight size={14} />}>
+        <Breadcrumb.Item><span style={{ color: '#a1a1aa', cursor: 'pointer' }}>Tools</span></Breadcrumb.Item>
+        <Breadcrumb.Item><span style={{ color: '#f4f4f5', fontWeight: 500 }}>{viewMode === 'list' ? 'Reasoning' : 'Reasoning Graph'}</span></Breadcrumb.Item>
+      </Breadcrumb>
+    );
+    setActions(
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        {/* View Toggle */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+            padding: 4,
+            borderRadius: 8,
+            backgroundColor: '#1a1a24',
+            height: 36,
+            boxSizing: 'border-box',
+          }}
+        >
+          {([
+            { key: 'list' as const, Icon: List, label: 'List' },
+            { key: 'graph' as const, Icon: GitFork, label: 'Graph' },
+          ] as const).map(({ key, Icon, label }) => (
+            <div
+              key={key}
+              onClick={() => key === 'graph' ? navigate('/reasoning-graph') : setViewMode(key)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '0 12px',
+                height: 28,
+                borderRadius: 6,
+                cursor: 'pointer',
+                backgroundColor: viewMode === key ? '#111118' : 'transparent',
+              }}
+            >
+              <Icon size={14} color={viewMode === key ? '#f4f4f5' : '#a1a1aa'} />
+              <span style={{ fontSize: 12, fontWeight: 500, color: viewMode === key ? '#f4f4f5' : '#a1a1aa' }}>
+                {label}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* Run Inference Button */}
+        <Button
+          type="primary"
+          icon={<Play size={16} />}
+        >
+          Run Inference
+        </Button>
+      </div>
+    );
+  }, [setBreadcrumbs, setActions, navigate, viewMode]);
+
   return (
     <>
-      {/* Header */}
-      <Box
-        height={64}
-        display="flex"
-        alignItems="center"
-        justifyContent="space-between"
-        px={3}
-        borderBottom={1}
-        borderColor="divider"
-      >
-        <Breadcrumbs separator={<ChevronRight size={14} />}>
-          <Link underline="hover" color="text.secondary" href="#">
-            Tools
-          </Link>
-          <Typography color="text.primary" fontWeight={500}>
-            {viewMode === 'list' ? 'Reasoning' : 'Reasoning Graph'}
-          </Typography>
-        </Breadcrumbs>
-
-        <Box display="flex" alignItems="stretch" gap={1.5}>
-          {/* View Toggle */}
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 0.5,
-              p: 0.5,
-              borderRadius: 2,
-              bgcolor: 'action.hover',
-            }}
-          >
-            {([
-              { key: 'list' as const, Icon: List, label: 'List' },
-              { key: 'graph' as const, Icon: GitFork, label: 'Graph' },
-            ] as const).map(({ key, Icon, label }) => (
-              <Box
-                key={key}
-                onClick={() => setViewMode(key)}
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 0.75,
-                  px: 1.5,
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  bgcolor: viewMode === key ? 'background.paper' : 'transparent',
-                }}
-              >
-                <Icon size={14} color={viewMode === key ? '#f4f4f5' : '#a1a1aa'} />
-                <Typography fontSize={12} fontWeight={500} color={viewMode === key ? 'text.primary' : 'text.secondary'}>
-                  {label}
-                </Typography>
-              </Box>
-            ))}
-          </Box>
-
-          {/* Run Inference Button */}
-          <Button
-            variant="contained"
-            startIcon={<Play size={16} />}
-            sx={{ boxShadow: '0 4px 12px rgba(139, 92, 246, 0.25)' }}
-          >
-            Run Inference
-          </Button>
-        </Box>
-      </Box>
-
       {/* Main Content */}
-      <Box flex={1} p={2.5} display="flex" gap={2.5} overflow="hidden">
+      <div style={{ flex: 1, padding: 20, display: 'flex', gap: 20, overflow: 'hidden' }}>
         {/* Config Panel (always visible) */}
         <ConfigPanel
           reasoningType={reasoningType}
@@ -853,7 +850,7 @@ export default function ReasoningPage() {
         ) : (
           <GraphCanvasView />
         )}
-      </Box>
+      </div>
     </>
   );
 }

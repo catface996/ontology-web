@@ -1,14 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Breadcrumb, Button, Typography, Flex } from 'antd';
 import {
-  Box, Breadcrumbs, Link, Typography, IconButton,
-} from '@mui/material';
-import {
-  ChevronRight, SlidersHorizontal, Search, Eye, RefreshCw, Square,
+  SlidersHorizontal, Search, Square,
   Database, Upload, Boxes, Link as LinkIcon,
+  Eye, Redo,
 } from 'lucide-react';
 import Pagination from '../components/Pagination';
+import { useHeader } from '../contexts/HeaderContext';
 
-/* ── Types ── */
+/* -- Types -- */
 type TaskStatus = 'in_progress' | 'completed' | 'failed';
 type FilterTab = 'all' | 'completed' | 'in_progress' | 'failed';
 
@@ -23,17 +23,17 @@ interface TaskItem {
   duration: string;
 }
 
-/* ── Status config ── */
+/* -- Status config -- */
 const statusConfig: Record<TaskStatus, { label: string; color: string; bg: string }> = {
-  in_progress: { label: 'In Progress', color: '#8B5CF6', bg: '#8B5CF620' },
+  in_progress: { label: 'In Progress', color: 'var(--primary-color)', bg: 'rgba(var(--primary-rgb), 0.13)' },
   completed:   { label: 'Completed',   color: '#22C55E', bg: '#22C55E20' },
   failed:      { label: 'Failed',      color: '#EF4444', bg: '#EF444420' },
 };
 
-/* ── Mock data ── */
+/* -- Mock data -- */
 const allTasks: TaskItem[] = [
   {
-    id: 1, icon: Database, iconColor: '#8B5CF6',
+    id: 1, icon: Database, iconColor: 'var(--primary-color)',
     title: 'Create 10 Person Instances',
     description: 'Generate sample Person data with name, email, organization',
     status: 'in_progress', started: 'Today, 10:32 AM', duration: '2m 15s',
@@ -71,11 +71,28 @@ const filterTabs: { value: FilterTab; label: string }[] = [
   { value: 'failed', label: 'Failed' },
 ];
 
-/* ── Main component ── */
+/* -- Main component -- */
 export default function TaskHistoryPage() {
+  const { setBreadcrumbs, setActions } = useHeader();
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  useEffect(() => {
+    setBreadcrumbs(
+      <Breadcrumb
+        items={[
+          { title: <a href="#">Agent</a> },
+          { title: <Typography.Text strong>Task History</Typography.Text> },
+        ]}
+      />
+    );
+    setActions(
+      <Button icon={<SlidersHorizontal size={16} />}>
+        Filter
+      </Button>
+    );
+  }, [setBreadcrumbs, setActions]);
 
   const filteredTasks =
     activeFilter === 'all'
@@ -84,179 +101,130 @@ export default function TaskHistoryPage() {
 
   return (
     <>
-      {/* Header */}
-      <Box
-        height={64}
-        display="flex"
-        alignItems="center"
-        justifyContent="space-between"
-        px={3}
-        borderBottom={1}
-        borderColor="divider"
-      >
-        <Breadcrumbs separator={<ChevronRight size={14} />}>
-          <Link underline="hover" color="text.secondary" href="#">
-            Agent
-          </Link>
-          <Typography color="text.primary" fontWeight={500}>
-            Task History
-          </Typography>
-        </Breadcrumbs>
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 0.75,
-            px: 2,
-            py: 1.25,
-            borderRadius: 2,
-            bgcolor: 'action.hover',
-            cursor: 'pointer',
-            '&:hover': { bgcolor: 'action.selected' },
-          }}
-        >
-          <SlidersHorizontal size={16} />
-          <Typography variant="body2" fontWeight={500} fontSize={14}>
-            Filter
-          </Typography>
-        </Box>
-      </Box>
-
-      {/* Main Content */}
-      <Box flex={1} p={3} display="flex" flexDirection="column" gap={2} overflow="hidden">
+      <div style={{ flex: 1, padding: 24, display: 'flex', flexDirection: 'column', gap: 16, overflow: 'hidden' }}>
         {/* Toolbar */}
-        <Box display="flex" alignItems="center" justifyContent="space-between">
+        <Flex align="center" justify="space-between">
           {/* Filter Tabs */}
-          <Box display="flex" gap={1}>
+          <Flex gap={8}>
             {filterTabs.map((tab) => {
               const active = activeFilter === tab.value;
               return (
-                <Box
+                <div
                   key={tab.value}
                   onClick={() => setActiveFilter(tab.value)}
-                  sx={{
-                    px: 2,
-                    py: 1,
+                  style={{
+                    padding: '8px 16px',
                     borderRadius: 100,
-                    bgcolor: active ? 'primary.main' : 'action.hover',
-                    color: active ? '#fff' : 'text.primary',
+                    background: active ? 'var(--primary-color)' : 'rgba(255,255,255,0.06)',
+                    color: active ? '#fff' : undefined,
                     cursor: 'pointer',
                     transition: 'all 0.15s',
-                    '&:hover': { bgcolor: active ? 'primary.dark' : 'action.selected' },
                   }}
                 >
-                  <Typography fontSize={13} fontWeight={500}>
+                  <Typography.Text style={{ fontSize: 13, fontWeight: 500, color: 'inherit' }}>
                     {tab.label}
-                  </Typography>
-                </Box>
+                  </Typography.Text>
+                </div>
               );
             })}
-          </Box>
+          </Flex>
 
           {/* Search */}
-          <Box
-            sx={{
+          <div
+            style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 1,
-              px: 1.5,
-              py: 1,
-              borderRadius: 2,
-              bgcolor: 'action.hover',
+              gap: 8,
+              padding: '8px 12px',
+              borderRadius: 8,
+              background: 'rgba(255,255,255,0.06)',
             }}
           >
             <Search size={16} color="#a1a1aa" />
-            <Typography fontSize={13} color="text.secondary">
+            <Typography.Text style={{ fontSize: 13, color: '#a1a1aa' }}>
               Search tasks...
-            </Typography>
-          </Box>
-        </Box>
+            </Typography.Text>
+          </div>
+        </Flex>
 
         {/* Task List Card */}
-        <Box
-          sx={{
+        <div
+          style={{
             flex: 1,
             display: 'flex',
             flexDirection: 'column',
-            borderRadius: 3,
-            border: 1,
-            borderColor: 'divider',
+            borderRadius: 12,
+            border: '1px solid #27273a',
             overflow: 'hidden',
           }}
         >
           {/* Table Header */}
-          <Box
-            sx={{
+          <div
+            style={{
               display: 'flex',
               alignItems: 'center',
-              px: 2.5,
-              py: 2,
-              bgcolor: 'action.hover',
+              padding: '16px 20px',
+              background: 'rgba(255,255,255,0.06)',
               borderRadius: '12px 12px 0 0',
             }}
           >
-            <Typography fontSize={12} fontWeight={600} color="text.secondary" sx={{ width: 350 }}>
+            <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', width: 350 }}>
               Task
-            </Typography>
-            <Typography fontSize={12} fontWeight={600} color="text.secondary" sx={{ width: 120 }}>
+            </Typography.Text>
+            <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', width: 120 }}>
               Status
-            </Typography>
-            <Typography fontSize={12} fontWeight={600} color="text.secondary" sx={{ width: 150 }}>
+            </Typography.Text>
+            <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', width: 150 }}>
               Started
-            </Typography>
-            <Typography fontSize={12} fontWeight={600} color="text.secondary" sx={{ width: 100 }}>
+            </Typography.Text>
+            <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', width: 100 }}>
               Duration
-            </Typography>
-            <Typography fontSize={12} fontWeight={600} color="text.secondary" sx={{ width: 100 }}>
+            </Typography.Text>
+            <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', width: 100 }}>
               Actions
-            </Typography>
-          </Box>
+            </Typography.Text>
+          </div>
 
           {/* Table Body */}
-          <Box flex={1} overflow="auto">
+          <div style={{ flex: 1, overflow: 'auto' }}>
             {filteredTasks.map((task, idx) => {
               const st = statusConfig[task.status];
               const Icon = task.icon;
               const isLast = idx === filteredTasks.length - 1;
               return (
-                <Box
+                <div
                   key={task.id}
-                  sx={{
+                  style={{
                     display: 'flex',
                     alignItems: 'center',
-                    px: 2.5,
-                    py: 2,
+                    padding: '16px 20px',
                     ...(!isLast && {
-                      borderBottom: 1,
-                      borderColor: 'divider',
+                      borderBottom: '1px solid #27273a',
                     }),
-                    '&:hover': { bgcolor: 'action.hover' },
                     transition: 'background 0.15s',
                   }}
                 >
                   {/* Task */}
-                  <Box sx={{ width: 350, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                    <Box display="flex" alignItems="center" gap={1}>
+                  <div style={{ width: 350, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <Flex align="center" gap={8}>
                       <Icon size={16} color={task.iconColor} />
-                      <Typography fontSize={14} fontWeight={500}>
+                      <Typography.Text style={{ fontSize: 14, fontWeight: 500 }}>
                         {task.title}
-                      </Typography>
-                    </Box>
-                    <Typography fontSize={12} color="text.secondary">
+                      </Typography.Text>
+                    </Flex>
+                    <Typography.Text style={{ fontSize: 12, color: '#a1a1aa' }}>
                       {task.description}
-                    </Typography>
-                  </Box>
+                    </Typography.Text>
+                  </div>
 
                   {/* Status */}
-                  <Box sx={{ width: 120, display: 'flex', alignItems: 'center' }}>
-                    <Box
-                      component="span"
-                      sx={{
+                  <div style={{ width: 120, display: 'flex', alignItems: 'center' }}>
+                    <span
+                      style={{
                         display: 'inline-block',
-                        px: 1.25,
-                        py: 0.5,
+                        padding: '4px 10px',
                         borderRadius: 100,
-                        bgcolor: st.bg,
+                        background: st.bg,
                         color: st.color,
                         fontSize: 12,
                         fontWeight: 500,
@@ -264,41 +232,41 @@ export default function TaskHistoryPage() {
                       }}
                     >
                       {st.label}
-                    </Box>
-                  </Box>
+                    </span>
+                  </div>
 
                   {/* Started */}
-                  <Typography fontSize={13} sx={{ width: 150 }}>
+                  <Typography.Text style={{ fontSize: 13, width: 150 }}>
                     {task.started}
-                  </Typography>
+                  </Typography.Text>
 
                   {/* Duration */}
-                  <Typography fontSize={13} sx={{ width: 100 }}>
+                  <Typography.Text style={{ fontSize: 13, width: 100 }}>
                     {task.duration}
-                  </Typography>
+                  </Typography.Text>
 
                   {/* Actions */}
-                  <Box sx={{ width: 100, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <IconButton size="small" sx={{ p: 0.5 }}>
-                      <Eye size={18} color="#a1a1aa" />
-                    </IconButton>
+                  <Flex style={{ width: 100 }} align="center" gap={8}>
+                    <Button type="text" size="small" icon={<Eye size={16} color="#a1a1aa" />} />
                     {task.status === 'in_progress' ? (
-                      <IconButton size="small" sx={{ p: 0.5 }}>
-                        <Square size={18} color="#EF4444" />
-                      </IconButton>
+                      <Button type="text" size="small" icon={<Square size={18} color="#EF4444" />} />
                     ) : (
-                      <IconButton size="small" sx={{ p: 0.5 }}>
-                        <RefreshCw
-                          size={18}
-                          color={task.status === 'failed' ? '#8B5CF6' : '#a1a1aa'}
-                        />
-                      </IconButton>
+                      <Button
+                        type="text"
+                        size="small"
+                        icon={
+                          <Redo
+                            size={16}
+                            color={task.status === 'failed' ? 'var(--primary-color)' : '#a1a1aa'}
+                          />
+                        }
+                      />
                     )}
-                  </Box>
-                </Box>
+                  </Flex>
+                </div>
               );
             })}
-          </Box>
+          </div>
 
           {/* Pagination */}
           <Pagination
@@ -309,8 +277,8 @@ export default function TaskHistoryPage() {
             onRowsPerPageChange={setRowsPerPage}
             label="tasks"
           />
-        </Box>
-      </Box>
+        </div>
+      </div>
     </>
   );
 }

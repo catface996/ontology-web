@@ -1,11 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import {
-  Box, Breadcrumbs, Link, Typography, TextField, IconButton, LinearProgress,
-} from '@mui/material';
+import { Breadcrumb, Typography, Input, Progress, Button } from 'antd';
 import {
   ChevronRight, Settings, Bot, Loader, CircleCheck, MessageSquarePlus,
   Paperclip, Send,
 } from 'lucide-react';
+import { useHeader } from '../contexts/HeaderContext';
 
 /* ── Types ── */
 interface ChatMessage {
@@ -66,9 +65,27 @@ const recentTasks = [
 
 /* ── Main component ── */
 export default function AgentChatPage() {
+  const { setBreadcrumbs, setActions } = useHeader();
   const [messages, setMessages] = useState(initialMessages);
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setBreadcrumbs(
+      <Breadcrumb
+        separator={<ChevronRight size={14} />}
+        items={[
+          { title: <a href="#">Agent</a> },
+          { title: <Typography.Text strong>Agent Chat</Typography.Text> },
+        ]}
+      />
+    );
+    setActions(
+      <Button icon={<Settings size={16} />}>
+        Settings
+      </Button>
+    );
+  }, [setBreadcrumbs, setActions]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -86,82 +103,46 @@ export default function AgentChatPage() {
 
   return (
     <>
-      {/* Header */}
-      <Box
-        height={64}
-        display="flex"
-        alignItems="center"
-        justifyContent="space-between"
-        px={3}
-        borderBottom={1}
-        borderColor="divider"
-      >
-        <Breadcrumbs separator={<ChevronRight size={14} />}>
-          <Link underline="hover" color="text.secondary" href="#">
-            Agent
-          </Link>
-          <Typography color="text.primary" fontWeight={500}>
-            Agent Chat
-          </Typography>
-        </Breadcrumbs>
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 0.75,
-            px: 2,
-            py: 1.25,
-            borderRadius: 2,
-            bgcolor: 'action.hover',
-            cursor: 'pointer',
-            '&:hover': { bgcolor: 'action.selected' },
-          }}
-        >
-          <Settings size={16} />
-          <Typography variant="body2" fontWeight={500} fontSize={14}>
-            Settings
-          </Typography>
-        </Box>
-      </Box>
-
       {/* Main Content */}
-      <Box flex={1} display="flex" overflow="hidden">
+      <div style={{ height: '100%', display: 'flex', overflow: 'hidden' }}>
         {/* ── Chat Area ── */}
-        <Box flex={1} display="flex" flexDirection="column" minWidth={0}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
           {/* Messages */}
-          <Box flex={1} overflow="auto" px={3} py={3} display="flex" flexDirection="column" gap={3}>
+          <div style={{ flex: 1, overflow: 'auto', paddingLeft: 24, paddingRight: 24, paddingTop: 24, paddingBottom: 24, display: 'flex', flexDirection: 'column', gap: 24 }}>
             {messages.map((msg) => (
-              <Box
+              <div
                 key={msg.id}
-                display="flex"
-                gap={1.5}
-                flexDirection={msg.role === 'user' ? 'row-reverse' : 'row'}
+                style={{
+                  display: 'flex',
+                  gap: 12,
+                  flexDirection: msg.role === 'user' ? 'row-reverse' : 'row',
+                }}
               >
                 {/* Avatar */}
                 {msg.role === 'user' ? (
-                  <Box
-                    sx={{
+                  <div
+                    style={{
                       width: 36,
                       height: 36,
                       borderRadius: '50%',
-                      bgcolor: 'primary.main',
+                      backgroundColor: 'var(--primary-color)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       flexShrink: 0,
                     }}
                   >
-                    <Typography fontSize={14} fontWeight={600} color="#fff">
+                    <span style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>
                       U
-                    </Typography>
-                  </Box>
+                    </span>
+                  </div>
                 ) : (
-                  <Box
-                    sx={{
+                  <div
+                    style={{
                       width: 36,
                       height: 36,
                       borderRadius: '50%',
-                      bgcolor: '#8B5CF6',
+                      backgroundColor: 'var(--primary-color)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -169,280 +150,289 @@ export default function AgentChatPage() {
                     }}
                   >
                     <Bot size={20} color="#fff" />
-                  </Box>
+                  </div>
                 )}
 
                 {/* Message Content */}
-                <Box
-                  display="flex"
-                  flexDirection="column"
-                  gap={1}
-                  minWidth={0}
-                  sx={{
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 8,
+                    minWidth: 0,
                     maxWidth: msg.role === 'user' ? '70%' : undefined,
                     flex: msg.role === 'user' ? undefined : 1,
                     alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start',
                   }}
                 >
                   {/* Name + Time */}
-                  <Box display="flex" alignItems="center" gap={1.5} flexDirection={msg.role === 'user' ? 'row-reverse' : 'row'}>
-                    <Typography
-                      fontSize={14}
-                      fontWeight={600}
-                      color={msg.role === 'agent' ? '#8B5CF6' : 'text.primary'}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexDirection: msg.role === 'user' ? 'row-reverse' : 'row' }}>
+                    <span
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 600,
+                        color: msg.role === 'agent' ? 'var(--primary-color)' : '#f4f4f5',
+                      }}
                     >
                       {msg.name}
-                    </Typography>
-                    <Typography fontSize={12} color="text.secondary">
+                    </span>
+                    <span style={{ fontSize: 12, color: '#a1a1aa' }}>
                       {msg.time}
-                    </Typography>
-                  </Box>
+                    </span>
+                  </div>
 
                   {/* Text */}
-                  <Box
-                    sx={{
+                  <div
+                    style={{
                       ...(msg.role === 'user' && {
-                        bgcolor: 'primary.main',
+                        backgroundColor: 'var(--primary-color)',
                         color: '#fff',
-                        px: 2,
-                        py: 1.5,
+                        paddingLeft: 16,
+                        paddingRight: 16,
+                        paddingTop: 12,
+                        paddingBottom: 12,
                         borderRadius: '16px 16px 4px 16px',
                       }),
                     }}
                   >
-                    <Typography
-                      fontSize={14}
-                      lineHeight={1.6}
-                      sx={{ whiteSpace: 'pre-line' }}
+                    <span
+                      style={{
+                        fontSize: 14,
+                        lineHeight: 1.6,
+                        whiteSpace: 'pre-line',
+                      }}
                     >
                       {msg.content}
-                    </Typography>
-                  </Box>
+                    </span>
+                  </div>
 
                   {/* Task Card (inline) */}
                   {msg.taskCard && (
-                    <Box
-                      sx={{
-                        mt: 0.5,
-                        p: 2,
-                        borderRadius: 2,
-                        bgcolor: 'action.hover',
+                    <div
+                      style={{
+                        marginTop: 4,
+                        padding: 16,
+                        borderRadius: 8,
+                        backgroundColor: '#1a1a24',
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: 1.5,
+                        gap: 12,
                       }}
                     >
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <Loader size={16} color="#8B5CF6" />
-                        <Typography fontSize={13} fontWeight={600}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <Loader size={16} color="var(--primary-color)" />
+                        <span style={{ fontSize: 13, fontWeight: 600 }}>
                           {msg.taskCard.title}
-                        </Typography>
-                        <Box
-                          sx={{
-                            bgcolor: '#8B5CF620',
-                            color: '#8B5CF6',
+                        </span>
+                        <div
+                          style={{
+                            backgroundColor: 'rgba(var(--primary-rgb), 0.13)',
+                            color: 'var(--primary-color)',
                             borderRadius: 100,
-                            px: 1,
-                            py: 0.5,
+                            paddingLeft: 8,
+                            paddingRight: 8,
+                            paddingTop: 4,
+                            paddingBottom: 4,
                             fontSize: 11,
                             fontWeight: 500,
                             lineHeight: 1,
                           }}
                         >
                           {msg.taskCard.status}
-                        </Box>
-                      </Box>
-                      <Box display="flex" flexDirection="column" gap={1}>
-                        <LinearProgress
-                          variant="determinate"
-                          value={(msg.taskCard.progress / msg.taskCard.total) * 100}
-                          sx={{
-                            height: 6,
-                            borderRadius: 100,
-                            bgcolor: 'action.selected',
-                            '& .MuiLinearProgress-bar': {
-                              borderRadius: 100,
-                              bgcolor: '#8B5CF6',
-                            },
-                          }}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <Progress
+                          percent={(msg.taskCard.progress / msg.taskCard.total) * 100}
+                          showInfo={false}
+                          strokeColor="var(--primary-color)"
+                          size={['100%', 6]}
                         />
-                        <Typography fontSize={12} color="text.secondary">
+                        <span style={{ fontSize: 12, color: '#a1a1aa' }}>
                           {msg.taskCard.progressText}
-                        </Typography>
-                      </Box>
-                    </Box>
+                        </span>
+                      </div>
+                    </div>
                   )}
-                </Box>
-              </Box>
+                </div>
+              </div>
             ))}
             <div ref={messagesEndRef} />
-          </Box>
+          </div>
 
           {/* Input Area */}
-          <Box
-            display="flex"
-            alignItems="center"
-            gap={2}
-            px={3}
-            py={3}
-            sx={{ borderTop: 1, borderColor: 'divider' }}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 16,
+              paddingLeft: 24,
+              paddingRight: 24,
+              paddingTop: 24,
+              paddingBottom: 24,
+              borderTop: '1px solid #27273a',
+            }}
           >
-            <Box
-              flex={1}
-              sx={{
+            <div
+              style={{
+                flex: 1,
                 display: 'flex',
                 alignItems: 'center',
-                gap: 1.5,
-                px: 2,
-                py: 1.5,
-                borderRadius: 3,
-                border: 1,
-                borderColor: 'divider',
-                bgcolor: 'background.paper',
+                gap: 12,
+                paddingLeft: 16,
+                paddingRight: 16,
+                paddingTop: 12,
+                paddingBottom: 12,
+                borderRadius: 12,
+                border: '1px solid #27273a',
+                backgroundColor: '#111118',
               }}
             >
               <MessageSquarePlus size={20} color="#a1a1aa" />
-              <TextField
-                variant="standard"
+              <Input
+                variant="borderless"
                 placeholder="Ask Agent to perform a task..."
-                fullWidth
+                style={{ width: '100%' }}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                InputProps={{ disableUnderline: true }}
-                sx={{ '& .MuiInputBase-input': { fontSize: 14, p: 0 } }}
               />
-            </Box>
-            <IconButton size="small" sx={{ width: 32, height: 32 }}>
-              <Paperclip size={18} color="#a1a1aa" />
-            </IconButton>
-            <IconButton
-              size="small"
-              onClick={handleSend}
-              sx={{
-                width: 32,
-                height: 32,
-                bgcolor: 'primary.main',
-                borderRadius: 2,
-                '&:hover': { bgcolor: 'primary.dark' },
+            </div>
+            <button
+              type="button"
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: 4,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
-              <Send size={18} color="#fff" />
-            </IconButton>
-          </Box>
-        </Box>
+              <Paperclip size={18} color="#a1a1aa" />
+            </button>
+            <Button
+              type="primary"
+              onClick={handleSend}
+            >
+              <Send size={18} />
+            </Button>
+          </div>
+        </div>
 
         {/* ── Task Activity Panel ── */}
-        <Box
-          sx={{
+        <div
+          style={{
             width: 320,
             flexShrink: 0,
             display: 'flex',
             flexDirection: 'column',
-            borderLeft: 1,
-            borderColor: 'divider',
-            bgcolor: 'background.paper',
+            borderLeft: '1px solid #27273a',
+            backgroundColor: '#111118',
           }}
         >
           {/* Panel Header */}
-          <Box
-            display="flex"
-            alignItems="center"
-            justifyContent="space-between"
-            px={2.5}
-            py={2}
-            sx={{ borderBottom: 1, borderColor: 'divider' }}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingLeft: 20,
+              paddingRight: 20,
+              paddingTop: 16,
+              paddingBottom: 16,
+              borderBottom: '1px solid #27273a',
+            }}
           >
-            <Typography fontSize={14} fontWeight={600}>
+            <span style={{ fontSize: 14, fontWeight: 600 }}>
               Task Activity
-            </Typography>
-            <Typography fontSize={12} fontWeight={500} color="primary.main" sx={{ cursor: 'pointer' }}>
+            </span>
+            <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--primary-color)' }}>
               View All
-            </Typography>
-          </Box>
+            </span>
+          </div>
 
           {/* Panel Content */}
-          <Box flex={1} p={2} display="flex" flexDirection="column" gap={1.5} overflow="auto">
+          <div style={{ flex: 1, padding: 16, display: 'flex', flexDirection: 'column', gap: 12, overflow: 'auto' }}>
             {/* Current Task */}
-            <Typography
-              fontSize={11}
-              fontWeight={600}
-              color="text.secondary"
-              letterSpacing={1}
-              textTransform="uppercase"
-            >
-              Current Task
-            </Typography>
-            <Box
-              sx={{
-                p: 1.5,
-                borderRadius: 2,
-                bgcolor: '#8B5CF610',
-                border: 1,
-                borderColor: '#8B5CF640',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 1,
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                color: '#a1a1aa',
+                letterSpacing: 1,
+                textTransform: 'uppercase',
               }}
             >
-              <Box display="flex" alignItems="center" gap={1}>
-                <Loader size={14} color="#8B5CF6" />
-                <Typography fontSize={13} fontWeight={500}>
+              Current Task
+            </span>
+            <div
+              style={{
+                padding: 12,
+                borderRadius: 8,
+                backgroundColor: 'rgba(var(--primary-rgb), 0.06)',
+                border: '1px solid rgba(var(--primary-rgb), 0.25)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Loader size={14} color="var(--primary-color)" />
+                <span style={{ fontSize: 13, fontWeight: 500 }}>
                   Creating Person Instances
-                </Typography>
-              </Box>
-              <LinearProgress
-                variant="determinate"
-                value={70}
-                sx={{
-                  height: 4,
-                  borderRadius: 100,
-                  bgcolor: 'action.selected',
-                  '& .MuiLinearProgress-bar': { borderRadius: 100, bgcolor: '#8B5CF6' },
-                }}
+                </span>
+              </div>
+              <Progress
+                percent={70}
+                showInfo={false}
+                strokeColor="var(--primary-color)"
+                size={['100%', 4]}
               />
-              <Typography fontSize={11} color="text.secondary">
+              <span style={{ fontSize: 11, color: '#a1a1aa' }}>
                 7/10 completed • 30s remaining
-              </Typography>
-            </Box>
+              </span>
+            </div>
 
             {/* Recent Tasks */}
-            <Typography
-              fontSize={11}
-              fontWeight={600}
-              color="text.secondary"
-              letterSpacing={1}
-              textTransform="uppercase"
-              mt={1}
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                color: '#a1a1aa',
+                letterSpacing: 1,
+                textTransform: 'uppercase',
+                marginTop: 8,
+              }}
             >
               Recent Tasks
-            </Typography>
+            </span>
             {recentTasks.map((task, i) => (
-              <Box
+              <div
                 key={i}
-                sx={{
-                  p: 1.5,
-                  borderRadius: 2,
-                  bgcolor: 'action.hover',
+                style={{
+                  padding: 12,
+                  borderRadius: 8,
+                  backgroundColor: '#1a1a24',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: 0.75,
+                  gap: 6,
                 }}
               >
-                <Box display="flex" alignItems="center" gap={1}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <CircleCheck size={14} color="#22C55E" />
-                  <Typography fontSize={13} fontWeight={500}>
+                  <span style={{ fontSize: 13, fontWeight: 500 }}>
                     {task.title}
-                  </Typography>
-                </Box>
-                <Typography fontSize={11} color="text.secondary">
+                  </span>
+                </div>
+                <span style={{ fontSize: 11, color: '#a1a1aa' }}>
                   {task.time}
-                </Typography>
-              </Box>
+                </span>
+              </div>
             ))}
-          </Box>
-        </Box>
-      </Box>
+          </div>
+        </div>
+      </div>
     </>
   );
 }

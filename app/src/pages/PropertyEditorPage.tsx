@@ -1,13 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Breadcrumb, Typography, Input, Button, Card, Select, Checkbox, Tag } from 'antd';
 import {
-  Box, Breadcrumbs, Link, Typography, TextField, Button, Card,
-  FormControl, InputLabel, Select, MenuItem, Checkbox, FormControlLabel,
-  Chip,
-} from '@mui/material';
-import {
-  ChevronRight, Save, Info, Type, Eye, Layers, Box as BoxIcon,
-  ExternalLink, Plus, ToggleLeft, Hash, Calendar, List,
+  ChevronRight, Save, Info, Eye, Boxes, Plus, Type as TypeIcon,
+  Hash, Calendar, List, ArrowLeftRight,
 } from 'lucide-react';
 import SuccessModal from '../components/SuccessModal';
 import {
@@ -18,6 +14,7 @@ import {
   DecimalConstraints,
   DateConstraints,
 } from '../components/PropertyConstraints';
+import { useHeader } from '../contexts/HeaderContext';
 
 interface PropertyData {
   id: string;
@@ -40,25 +37,26 @@ const existingProperties: Record<string, PropertyData> = {
 const dataTypes = ['String', 'Text', 'Integer', 'Decimal', 'Boolean', 'Date', 'DateTime', 'Enum'];
 
 const dataTypeIcons: Record<string, React.ComponentType<{ size?: number; color?: string }>> = {
-  String: Type,
-  Text: Type,
+  String: TypeIcon,
+  Text: TypeIcon,
   Integer: Hash,
   Decimal: Hash,
-  Boolean: ToggleLeft,
+  Boolean: TypeIcon,
   Date: Calendar,
   DateTime: Calendar,
   Enum: List,
 };
 
 const usageExamples = [
-  { name: 'Person', icon: BoxIcon },
-  { name: 'Organization', icon: BoxIcon },
-  { name: 'Employee', icon: BoxIcon },
+  { name: 'Person' },
+  { name: 'Organization' },
+  { name: 'Employee' },
 ];
 
 export default function PropertyEditorPage() {
   const { propertyId } = useParams();
   const navigate = useNavigate();
+  const { setBreadcrumbs, setActions } = useHeader();
   const isEditing = propertyId && propertyId !== 'new';
   const existingProperty = isEditing ? existingProperties[propertyId] : null;
 
@@ -106,9 +104,29 @@ export default function PropertyEditorPage() {
     }
   }, [existingProperty]);
 
+  useEffect(() => {
+    setBreadcrumbs(
+      <Breadcrumb
+        separator={<ChevronRight size={10} />}
+        items={[
+          { title: <a onClick={(e) => { e.preventDefault(); navigate('/properties'); }}>Properties</a> },
+          { title: <Typography.Text strong>{isEditing ? `Edit ${existingProperty?.name}` : 'Add New Property'}</Typography.Text> },
+        ]}
+      />
+    );
+    setActions(
+      <div style={{ display: 'flex', gap: 12 }}>
+        <Button onClick={() => navigate('/properties')}>Cancel</Button>
+        <Button type="primary" icon={<Save size={16} />} onClick={() => setSuccessModalOpen(true)}>
+          Save Property
+        </Button>
+      </div>
+    );
+  }, [setBreadcrumbs, setActions, navigate, isEditing, existingProperty?.name]);
+
   const uri = name ? `http://ontology.example.com/${name}` : '';
 
-  const DataTypeIcon = dataTypeIcons[dataType] || Type;
+  const DataTypeIcon = dataTypeIcons[dataType] || TypeIcon;
 
   const renderConstraints = () => {
     switch (dataType) {
@@ -180,92 +198,57 @@ export default function PropertyEditorPage() {
       case 'String':
       case 'Text':
         return (
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="caption" color="text.secondary">
-              Length
-            </Typography>
-            <Typography variant="body2" fontWeight={500}>
-              {minLength} - {maxLength}
-            </Typography>
-          </Box>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>Length</Typography.Text>
+            <Typography.Text strong style={{ fontSize: 13 }}>{minLength} - {maxLength}</Typography.Text>
+          </div>
         );
       case 'Boolean':
         return (
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="caption" color="text.secondary">
-              Default Value
-            </Typography>
-            <Chip
-              label={defaultBoolValue ? 'True' : 'False'}
-              size="small"
-              color={defaultBoolValue ? 'success' : 'default'}
-              sx={{ height: 22, fontSize: 11 }}
-            />
-          </Box>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>Default Value</Typography.Text>
+            <Tag color={defaultBoolValue ? 'success' : 'default'}>{defaultBoolValue ? 'True' : 'False'}</Tag>
+          </div>
         );
       case 'Enum':
         return (
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="caption" color="text.secondary">
-              Values
-            </Typography>
-            <Typography variant="body2" fontWeight={500}>
-              {enumValues.filter(v => v).length} options
-            </Typography>
-          </Box>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>Values</Typography.Text>
+            <Typography.Text strong style={{ fontSize: 13 }}>{enumValues.filter(v => v).length} options</Typography.Text>
+          </div>
         );
       case 'Integer':
         return (
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="caption" color="text.secondary">
-              Range
-            </Typography>
-            <Typography variant="body2" fontWeight={500}>
-              {minIntValue} - {maxIntValue}
-            </Typography>
-          </Box>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography.Text type="secondary" style={{ fontSize: 12 }}>Range</Typography.Text>
+            <Typography.Text strong style={{ fontSize: 13 }}>{minIntValue} - {maxIntValue}</Typography.Text>
+          </div>
         );
       case 'Decimal':
         return (
           <>
-            <Box display="flex" justifyContent="space-between" alignItems="center">
-              <Typography variant="caption" color="text.secondary">
-                Precision / Scale
-              </Typography>
-              <Typography variant="body2" fontWeight={500}>
-                {precision} / {scale}
-              </Typography>
-            </Box>
-            <Box display="flex" justifyContent="space-between" alignItems="center">
-              <Typography variant="caption" color="text.secondary">
-                Range
-              </Typography>
-              <Typography variant="body2" fontWeight={500}>
-                {minDecValue} - {maxDecValue}
-              </Typography>
-            </Box>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>Precision / Scale</Typography.Text>
+              <Typography.Text strong style={{ fontSize: 13 }}>{precision} / {scale}</Typography.Text>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>Range</Typography.Text>
+              <Typography.Text strong style={{ fontSize: 13 }}>{minDecValue} - {maxDecValue}</Typography.Text>
+            </div>
           </>
         );
       case 'Date':
       case 'DateTime':
         return (
           <>
-            <Box display="flex" justifyContent="space-between" alignItems="center">
-              <Typography variant="caption" color="text.secondary">
-                Format
-              </Typography>
-              <Typography variant="body2" fontWeight={500}>
-                {dateFormat}
-              </Typography>
-            </Box>
-            <Box display="flex" justifyContent="space-between" alignItems="center">
-              <Typography variant="caption" color="text.secondary">
-                Range
-              </Typography>
-              <Typography variant="body2" fontWeight={500}>
-                {minDate} ~ {maxDate}
-              </Typography>
-            </Box>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>Format</Typography.Text>
+              <Typography.Text strong style={{ fontSize: 13 }}>{dateFormat}</Typography.Text>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography.Text type="secondary" style={{ fontSize: 12 }}>Range</Typography.Text>
+              <Typography.Text strong style={{ fontSize: 13 }}>{minDate} ~ {maxDate}</Typography.Text>
+            </div>
           </>
         );
       default:
@@ -275,242 +258,163 @@ export default function PropertyEditorPage() {
 
   return (
     <>
-      {/* Header */}
-      <Box
-        height={64}
-        display="flex"
-        alignItems="center"
-        justifyContent="space-between"
-        px={3}
-        borderBottom={1}
-        borderColor="divider"
-      >
-        <Breadcrumbs separator={<ChevronRight size={14} />}>
-          <Link
-            underline="hover"
-            color="text.secondary"
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
-              navigate('/properties');
-            }}
-          >
-            Properties
-          </Link>
-          <Typography color="text.primary" fontWeight={500}>
-            {isEditing ? `Edit ${existingProperty?.name}` : 'Add New Property'}
-          </Typography>
-        </Breadcrumbs>
-        <Box display="flex" gap={1.5}>
-          <Button variant="outlined" onClick={() => navigate('/properties')}>
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<Save size={16} />}
-            onClick={() => setSuccessModalOpen(true)}
-          >
-            Save Property
-          </Button>
-        </Box>
-      </Box>
-
       {/* Content */}
-      <Box flex={1} p={3} display="flex" gap={3} overflow="auto">
+      <div style={{ flex: 1, padding: 24, display: 'flex', gap: 24, overflow: 'auto' }}>
         {/* Left Column */}
-        <Box flex={1} display="flex" flexDirection="column" gap={3}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 24 }}>
           {/* Basic Info Card */}
-          <Card variant="outlined" sx={{ p: 3, borderRadius: 3 }}>
-            <Box display="flex" alignItems="center" gap={1.5} mb={2.5}>
-              <Info size={20} color="#8b5cf6" />
-              <Typography variant="h6" fontWeight={600}>
+          <Card>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+              <Info size={20} color="var(--primary-color)" />
+              <Typography.Title level={5} style={{ margin: 0, fontWeight: 600 }}>
                 Basic Information
-              </Typography>
-            </Box>
-            <Box display="flex" flexDirection="column" gap={2}>
-              <TextField
-                fullWidth
-                label="Property Name *"
-                placeholder="e.g., email, birthDate, salary"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-              <TextField
-                fullWidth
-                label="URI"
-                placeholder="http://ontology.example.com/email"
-                value={uri}
-                InputProps={{ readOnly: true }}
-                sx={{ '& .MuiInputBase-input': { color: 'text.secondary' } }}
-              />
-              <TextField
-                fullWidth
-                label="Description"
-                placeholder="Describe the purpose of this property..."
-                multiline
-                rows={3}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </Box>
+              </Typography.Title>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>Property Name *</label>
+                <Input
+                  placeholder="e.g., email, birthDate, salary"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>URI</label>
+                <Input
+                  placeholder="http://ontology.example.com/email"
+                  value={uri}
+                  readOnly
+                  style={{ color: 'rgba(255,255,255,0.45)' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>Description</label>
+                <Input.TextArea
+                  placeholder="Describe the purpose of this property..."
+                  rows={3}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
+              </div>
+            </div>
           </Card>
 
           {/* Data Type & Constraints Card */}
-          <Card variant="outlined" sx={{ p: 3, borderRadius: 3, flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            <Box display="flex" alignItems="center" gap={1.5} mb={2.5} flexShrink={0}>
-              <Type size={20} color="#8b5cf6" />
-              <Typography variant="h6" fontWeight={600}>
+          <Card style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }} styles={{ body: { flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' } }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, flexShrink: 0 }}>
+              <TypeIcon size={20} color="var(--primary-color)" />
+              <Typography.Title level={5} style={{ margin: 0, fontWeight: 600 }}>
                 Data Type & Constraints
-              </Typography>
-            </Box>
-            <Box display="flex" flexDirection="column" gap={2} flex={1} overflow="auto">
-              <FormControl fullWidth>
-                <InputLabel>Data Type *</InputLabel>
+              </Typography.Title>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, flex: 1, overflow: 'auto' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>Data Type *</label>
                 <Select
-                  label="Data Type *"
+                  style={{ width: '100%' }}
                   value={dataType}
-                  onChange={(e) => setDataType(e.target.value)}
-                >
-                  {dataTypes.map((type) => (
-                    <MenuItem key={type} value={type}>
-                      {type}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+                  onChange={(val) => setDataType(val)}
+                  options={dataTypes.map((type) => ({ value: type, label: type }))}
+                />
+              </div>
 
               {/* Constraints Section */}
-              <Box pt={2} borderTop={1} borderColor="divider">
-                <Typography variant="body2" fontWeight={500} mb={1.5}>
+              <div style={{ paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.12)' }}>
+                <Typography.Text strong style={{ fontSize: 13, display: 'block', marginBottom: 12 }}>
                   Constraints
-                </Typography>
-                <Box display="flex" gap={3} mb={2}>
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={required}
-                        onChange={(e) => setRequired(e.target.checked)}
-                      />
-                    }
-                    label="Required"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={unique}
-                        onChange={(e) => setUnique(e.target.checked)}
-                      />
-                    }
-                    label="Unique"
-                  />
-                </Box>
+                </Typography.Text>
+                <div style={{ display: 'flex', gap: 24, marginBottom: 16 }}>
+                  <Checkbox checked={required} onChange={(e) => setRequired(e.target.checked)}>
+                    Required
+                  </Checkbox>
+                  <Checkbox checked={unique} onChange={(e) => setUnique(e.target.checked)}>
+                    Unique
+                  </Checkbox>
+                </div>
 
                 {/* Data Type Specific Constraints */}
                 {renderConstraints()}
-              </Box>
-            </Box>
+              </div>
+            </div>
           </Card>
-        </Box>
+        </div>
 
         {/* Right Column */}
-        <Box width={360} display="flex" flexDirection="column" gap={3}>
+        <div style={{ width: 360, display: 'flex', flexDirection: 'column', gap: 24 }}>
           {/* Preview Card */}
-          <Card variant="outlined" sx={{ p: 3, borderRadius: 3 }}>
-            <Box display="flex" alignItems="center" gap={1.5} mb={2}>
-              <Eye size={20} color="#8b5cf6" />
-              <Typography variant="h6" fontWeight={600}>
+          <Card>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+              <Eye size={20} color="var(--primary-color)" />
+              <Typography.Title level={5} style={{ margin: 0, fontWeight: 600 }}>
                 Property Preview
-              </Typography>
-            </Box>
-            <Box bgcolor="action.hover" borderRadius={2} p={2}>
-              <Box display="flex" flexDirection="column" gap={1.5}>
-                <Box display="flex" justifyContent="space-between" alignItems="center">
-                  <Typography variant="caption" color="text.secondary">
-                    Property Name
-                  </Typography>
-                  <Typography variant="body2" fontWeight={500}>
-                    {name || 'propertyName'}
-                  </Typography>
-                </Box>
-                <Box display="flex" justifyContent="space-between" alignItems="center">
-                  <Typography variant="caption" color="text.secondary">
-                    Data Type
-                  </Typography>
-                  <Box display="flex" alignItems="center" gap={0.75}>
-                    <DataTypeIcon size={14} color="#8b5cf6" />
-                    <Typography variant="body2" fontWeight={500}>
-                      {dataType}
-                    </Typography>
-                  </Box>
-                </Box>
-                <Box display="flex" justifyContent="space-between" alignItems="center">
-                  <Typography variant="caption" color="text.secondary">
-                    Constraints
-                  </Typography>
-                  <Box display="flex" gap={0.5}>
-                    {required && (
-                      <Chip label="Required" size="small" color="primary" sx={{ height: 22, fontSize: 11 }} />
-                    )}
-                    {unique && (
-                      <Chip label="Unique" size="small" color="info" sx={{ height: 22, fontSize: 11 }} />
-                    )}
+              </Typography.Title>
+            </div>
+            <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: 16 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>Property Name</Typography.Text>
+                  <Typography.Text strong style={{ fontSize: 13 }}>{name || 'propertyName'}</Typography.Text>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>Data Type</Typography.Text>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <DataTypeIcon size={14} color="var(--primary-color)" />
+                    <Typography.Text strong style={{ fontSize: 13 }}>{dataType}</Typography.Text>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>Constraints</Typography.Text>
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    {required && <Tag color="purple">Required</Tag>}
+                    {unique && <Tag color="blue">Unique</Tag>}
                     {!required && !unique && (
-                      <Typography variant="body2" color="text.secondary">—</Typography>
+                      <Typography.Text type="secondary" style={{ fontSize: 13 }}>&mdash;</Typography.Text>
                     )}
-                  </Box>
-                </Box>
+                  </div>
+                </div>
                 {renderPreviewConstraints()}
-              </Box>
-            </Box>
+              </div>
+            </div>
           </Card>
 
           {/* Usage Examples Card */}
-          <Card variant="outlined" sx={{ p: 3, borderRadius: 3, flex: 1 }}>
-            <Box display="flex" alignItems="center" gap={1.5} mb={2}>
-              <Layers size={20} color="#8b5cf6" />
-              <Typography variant="h6" fontWeight={600}>
+          <Card style={{ flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+              <Boxes size={20} color="var(--primary-color)" />
+              <Typography.Title level={5} style={{ margin: 0, fontWeight: 600 }}>
                 Usage Examples
-              </Typography>
-            </Box>
-            <Box display="flex" flexDirection="column" gap={1}>
+              </Typography.Title>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {usageExamples.map((item) => (
-                <Box
+                <div
                   key={item.name}
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="space-between"
-                  bgcolor="action.hover"
-                  borderRadius={2}
-                  p={1.5}
-                  sx={{ cursor: 'pointer', '&:hover': { bgcolor: 'action.selected' } }}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: 12, cursor: 'pointer',
+                  }}
                 >
-                  <Box display="flex" alignItems="center" gap={1.25}>
-                    <item.icon size={16} color="#8b5cf6" />
-                    <Typography variant="body2">{item.name}</Typography>
-                  </Box>
-                  <ExternalLink size={14} color="gray" />
-                </Box>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <Boxes size={16} color="var(--primary-color)" />
+                    <Typography.Text style={{ fontSize: 13 }}>{item.name}</Typography.Text>
+                  </div>
+                  <ArrowLeftRight size={14} color="gray" />
+                </div>
               ))}
-              <Box
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                gap={1}
-                border={1}
-                borderColor="divider"
-                borderRadius={2}
-                p={1.5}
-                sx={{ cursor: 'pointer', '&:hover': { bgcolor: 'action.hover' } }}
+              <div
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: 12, cursor: 'pointer',
+                }}
               >
                 <Plus size={14} color="gray" />
-                <Typography variant="body2" color="text.secondary">
-                  Add to Class
-                </Typography>
-              </Box>
-            </Box>
+                <Typography.Text type="secondary" style={{ fontSize: 13 }}>Add to Class</Typography.Text>
+              </div>
+            </div>
           </Card>
-        </Box>
-      </Box>
+        </div>
+      </div>
 
       <SuccessModal
         open={successModalOpen}

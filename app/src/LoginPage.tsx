@@ -1,81 +1,82 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import {
-  Box,
-  Card,
-  TextField,
-  Button,
-  Typography,
-  Link,
-  Divider,
-} from '@mui/material';
+import { useNavigate, Link as RouterLink, Navigate } from 'react-router-dom';
+import { Card, Input, Button, Typography, Divider, Flex } from 'antd';
+import { login, isAuthenticated } from './utils/auth';
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
+  if (isAuthenticated()) {
+    return <Navigate to="/knowledge-graph" replace />;
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (email && password) {
+      login({ name: 'Admin User', email });
       navigate('/domain');
     }
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <Card sx={{ width: 420, p: 5 }}>
+    <Flex align="center" justify="center" style={{ minHeight: '100vh', background: '#0a0a0f' }}>
+      <Card style={{ width: 420, padding: 20, background: '#0d0d14', border: '1px solid #27273a', borderRadius: 16 }}>
         {/* Logo */}
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5, mb: 3 }}>
-          <Box sx={{ width: 48, height: 48, bgcolor: 'primary.main', borderRadius: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Typography variant="h5" fontWeight="bold" color="white">O</Typography>
-          </Box>
-          <Typography variant="h5" fontWeight="bold" color="text.secondary">Ontology</Typography>
-        </Box>
+        <Flex align="center" justify="center" gap={12} style={{ marginBottom: 24 }}>
+          <div style={{ width: 48, height: 48, background: 'var(--primary-color)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Typography.Title level={4} style={{ margin: 0, color: '#fff' }}>O</Typography.Title>
+          </div>
+          <Typography.Title level={4} style={{ margin: 0, color: '#a1a1aa' }}>Ontology</Typography.Title>
+        </Flex>
 
         {/* Title */}
-        <Box sx={{ textAlign: 'center', mb: 3 }}>
-          <Typography variant="h5" fontWeight="bold" color="text.secondary">Welcome Back</Typography>
-          <Typography variant="body2" color="text.secondary">Sign in to your account to continue</Typography>
-        </Box>
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <Typography.Title level={4} style={{ margin: 0, color: '#a1a1aa' }}>Welcome Back</Typography.Title>
+          <Typography.Text type="secondary">Sign in to your account to continue</Typography.Text>
+        </div>
 
         {/* Form */}
-        <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <TextField
-            label="Email"
-            type="email"
-            fullWidth
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Enter your email"
-          />
-          <TextField
-            label="Password"
-            type="password"
-            fullWidth
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Enter your password"
-          />
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div>
+            <Typography.Text style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>Email</Typography.Text>
+            <Input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Enter your email"
+              size="large"
+            />
+          </div>
+          <div>
+            <Typography.Text style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>Password</Typography.Text>
+            <Input.Password
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter your password"
+              size="large"
+            />
+          </div>
 
-          <Box sx={{ textAlign: 'left' }}>
-            <Link href="#" underline="hover" variant="body2">Forgot password?</Link>
-          </Box>
+          <div style={{ textAlign: 'left' }}>
+            <a href="#" style={{ fontSize: 13 }}>Forgot password?</a>
+          </div>
 
-          <Button type="submit" variant="contained" fullWidth size="large">
+          <Button type="primary" htmlType="submit" block size="large">
             Sign In
           </Button>
-        </Box>
+        </form>
 
         {/* Divider */}
-        <Divider sx={{ my: 3 }}>or</Divider>
+        <Divider>or</Divider>
 
         {/* Register Link */}
-        <Typography variant="body2" color="text.secondary" textAlign="center">
+        <Typography.Text type="secondary" style={{ display: 'block', textAlign: 'center' }}>
           Don't have an account?{' '}
-          <Link href="#" underline="hover" fontWeight={600}>Sign Up</Link>
-        </Typography>
+          <a onClick={() => navigate('/register')} style={{ fontWeight: 600 }}>Sign Up</a>
+        </Typography.Text>
       </Card>
-    </Box>
+    </Flex>
   );
 }
