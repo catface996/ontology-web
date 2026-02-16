@@ -40,7 +40,7 @@ export default function OntologyLayout() {
     ontologies: true,
     tools: true,
   });
-  const [selectedNav, setSelectedNav] = useState('Knowledge Graph');
+  const [selectedNav, setSelectedNav] = useState('Topology');
 
   const toggleSection = (section: string) => {
     setOpenSections((prev) => ({ ...prev, [section]: !prev[section] }));
@@ -54,7 +54,7 @@ export default function OntologyLayout() {
   ];
 
   const ontologyNavItems: NavItemData[] = [
-    { icon: <GitBranch size={20} />, label: 'Knowledge Graph' },
+    { icon: <GitBranch size={20} />, label: 'Topology' },
     { icon: <Boxes size={20} />, label: 'Classes' },
     { icon: <LinkIcon size={20} />, label: 'Relations' },
     { icon: <ListIcon size={20} />, label: 'Properties' },
@@ -181,7 +181,7 @@ export default function OntologyLayout() {
           <div style={{ flex: 1, padding: 20, display: 'flex', flexDirection: 'column' }}>
             <span style={{ fontSize: 16, fontWeight: 600, marginBottom: 8, display: 'block' }}>Graph Canvas</span>
             <div style={{ flex: 1, border: '1px solid #27273a', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ color: '#71717a' }}>Knowledge Graph Visualization</span>
+              <span style={{ color: '#71717a' }}>Topology Visualization</span>
             </div>
           </div>
 

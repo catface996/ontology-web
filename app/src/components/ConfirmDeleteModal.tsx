@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Modal, Typography, Button, Input, Flex } from 'antd';
 import { Trash2 } from 'lucide-react';
 
@@ -29,11 +29,24 @@ export default function ConfirmDeleteModal({
     onClose();
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = useCallback(() => {
     if (!canConfirm) return;
     setInput('');
     onConfirm();
-  };
+  }, [canConfirm, onConfirm]);
+
+  // Enter key → confirm (when allowed)
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' && canConfirm) {
+        e.preventDefault();
+        handleConfirm();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, canConfirm, handleConfirm]);
 
   return (
     <Modal
@@ -42,8 +55,24 @@ export default function ConfirmDeleteModal({
       footer={null}
       width={440}
       centered
-      styles={{ content: { background: '#111118', border: '1px solid #27273a', borderRadius: 16, boxShadow: '0 25px 60px rgba(0,0,0,0.6)' } }}
+      destroyOnHidden
+      styles={{
+        content: {
+          background: '#111118',
+          border: '1px solid #27273a',
+          borderRadius: 16,
+          boxShadow: '0 25px 60px rgba(0,0,0,0.6)',
+          animation: open ? 'modalScaleIn 0.2s ease-out' : undefined,
+        },
+      }}
     >
+      <style>{`
+        @keyframes modalScaleIn {
+          from { opacity: 0; transform: scale(0.92); }
+          to   { opacity: 1; transform: scale(1); }
+        }
+      `}</style>
+
       {/* Header */}
       <Flex vertical align="center" gap={16} style={{ padding: '16px 0' }}>
         <div
@@ -84,7 +113,7 @@ export default function ConfirmDeleteModal({
           onClick={handleClose}
           style={{
             borderColor: '#27273a', color: '#f4f4f5',
-            borderRadius: 10, height: 44, padding: '0 24px',
+            borderRadius: 8, height: 32, padding: '0 16px',
             fontWeight: 500, fontSize: 14,
           }}
         >
@@ -96,7 +125,7 @@ export default function ConfirmDeleteModal({
           disabled={!canConfirm}
           onClick={handleConfirm}
           style={{
-            borderRadius: 10, height: 44, padding: '0 24px',
+            borderRadius: 8, height: 32, padding: '0 16px',
             fontWeight: 500, fontSize: 14,
           }}
         >

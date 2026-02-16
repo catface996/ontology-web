@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Breadcrumb, Typography, Button, Tag } from 'antd';
+import { Breadcrumb, Typography, Button, Tag, Spin } from 'antd';
 import {
   HeartPulse, CircleX, TriangleAlert, CircleCheck, ChevronRight,
 } from 'lucide-react';
 import { useHeader } from '../contexts/HeaderContext';
+import { runOntologyValidation, type ValidationReport } from '../services/coreService';
 
 /* -- Types -- */
 type Severity = 'error' | 'warning' | 'passed';
@@ -24,21 +25,19 @@ const severityConfig: Record<Severity, { icon: React.ReactNode; color: string; r
   passed:  { icon: <CircleCheck size={14} />,    color: '#4ade80', rowBg: 'transparent', statusBg: '#15382A', statusColor: '#6EE7A0' },
 };
 
-/* -- Mock data -- */
-const stats = [
-  { label: 'Overall Health', value: '94%', sub: 'Good condition', color: '#4ade80', icon: <HeartPulse size={18} /> },
-  { label: 'Errors', value: '2', sub: 'Require immediate fix', color: '#f87171', icon: <CircleX size={18} /> },
-  { label: 'Warnings', value: '5', sub: 'Should be reviewed', color: '#fbbf24', icon: <TriangleAlert size={18} /> },
-  { label: 'Checks Passed', value: '38', sub: 'Out of 45 total checks', color: '#f4f4f5', icon: <CircleCheck size={18} /> },
-];
+interface StatItem {
+  label: string;
+  value: string;
+  sub: string;
+  color: string;
+  icon: React.ReactNode;
+}
 
-const results: ValidationResult[] = [
-  { severity: 'error',   check: 'Unsatisfiable Class Detected', description: 'Class has contradictory constraints making it impossible to have instances', target: 'TempEmployee', status: 'Failed' },
-  { severity: 'error',   check: 'Cyclic Dependency', description: 'Circular subclass relationship detected in class hierarchy', target: 'Manager \u2192 Employee', status: 'Failed' },
-  { severity: 'warning', check: 'Redundant Axiom', description: 'Axiom can be inferred from existing definitions', target: 'Employee \u2291 Person', status: 'Warning' },
-  { severity: 'warning', check: 'Missing Label Annotation', description: 'Entity lacks rdfs:label annotation for display purposes', target: 'hasEmployee', status: 'Warning' },
-  { severity: 'passed',  check: 'Ontology Consistency', description: 'No logical contradictions found in the overall ontology', target: 'Global', status: 'Passed' },
-  { severity: 'passed',  check: 'Property Domain/Range Validity', description: 'All property domains and ranges reference valid classes', target: 'All Properties', status: 'Passed' },
+const INITIAL_STATS: StatItem[] = [
+  { label: 'Overall Health', value: '--', sub: 'Run validation to check', color: '#a1a1aa', icon: <HeartPulse size={18} /> },
+  { label: 'Errors', value: '--', sub: 'Run validation to check', color: '#a1a1aa', icon: <CircleX size={18} /> },
+  { label: 'Warnings', value: '--', sub: 'Run validation to check', color: '#a1a1aa', icon: <TriangleAlert size={18} /> },
+  { label: 'Checks Passed', value: '--', sub: 'Run validation to check', color: '#a1a1aa', icon: <CircleCheck size={18} /> },
 ];
 
 const filters: FilterKey[] = ['All', 'Errors', 'Warnings', 'Passed'];
@@ -50,10 +49,40 @@ const filterToSeverity: Record<FilterKey, Severity | null> = {
   Passed: 'passed',
 };
 
+function reportToStats(report: ValidationReport): StatItem[] {
+  return [
+    { label: 'Overall Health', value: `${report.overallHealth}%`, sub: report.overallHealth >= 90 ? 'Good condition' : 'Needs attention', color: report.overallHealth >= 90 ? '#4ade80' : '#fbbf24', icon: <HeartPulse size={18} /> },
+    { label: 'Errors', value: String(report.errors), sub: 'Require immediate fix', color: '#f87171', icon: <CircleX size={18} /> },
+    { label: 'Warnings', value: String(report.warnings), sub: 'Should be reviewed', color: '#fbbf24', icon: <TriangleAlert size={18} /> },
+    { label: 'Checks Passed', value: String(report.passed), sub: `Out of ${report.total} total checks`, color: '#f4f4f5', icon: <CircleCheck size={18} /> },
+  ];
+}
+
 /* -- Page -- */
 export default function ValidationDashboardPage() {
   const [activeFilter, setActiveFilter] = useState<FilterKey>('All');
+  const [stats, setStats] = useState<StatItem[]>(INITIAL_STATS);
+  const [results, setResults] = useState<ValidationResult[]>([]);
+  const [loading, setLoading] = useState(true);
   const { setBreadcrumbs, setActions } = useHeader();
+
+  const doValidation = async () => {
+    setLoading(true);
+    try {
+      const res = await runOntologyValidation();
+      if (res.data) {
+        setStats(reportToStats(res.data));
+        setResults(res.data.results);
+      }
+    } catch {
+      // validation failed
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load on mount
+  useEffect(() => { void doValidation(); }, []);
 
   useEffect(() => {
     setBreadcrumbs(
@@ -63,11 +92,12 @@ export default function ValidationDashboardPage() {
       ]} />
     );
     setActions(
-      <Button type="primary" icon={<ChevronRight size={16} />}>
+      <Button type="primary" icon={<ChevronRight size={16} />} loading={loading} onClick={() => void doValidation()}>
         Run Validation
       </Button>
     );
-  }, [setBreadcrumbs, setActions]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setBreadcrumbs, setActions, loading]);
 
   const filtered = results.filter((r) => {
     const target = filterToSeverity[activeFilter];
@@ -78,6 +108,9 @@ export default function ValidationDashboardPage() {
     <>
       {/* Content */}
       <div style={{ flex: 1, overflow: 'auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 24 }}>
+        {loading ? (
+          <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}><Spin size="large" /></div>
+        ) : (<>
         {/* Stats Row */}
         <div style={{ display: 'flex', gap: 16 }}>
           {stats.map((s) => (
@@ -183,6 +216,7 @@ export default function ValidationDashboardPage() {
             })}
           </div>
         </div>
+        </>)}
       </div>
     </>
   );

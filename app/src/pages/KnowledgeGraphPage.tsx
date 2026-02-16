@@ -1,22 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Breadcrumb, Typography, Input } from 'antd';
-import { Search, X, ZoomIn, ZoomOut, Maximize, User, Landmark, MapPin, ArrowRight, ArrowLeft, ExternalLink } from 'lucide-react';
+import { Breadcrumb, Typography, Input, Spin } from 'antd';
+import { Search, X, ZoomIn, ZoomOut, Maximize } from 'lucide-react';
 import * as d3 from 'd3';
 import { useHeader } from '../contexts/HeaderContext';
+import { fetchOntologyTree, fetchOntologyGraph, getClass, type OntologyTreeNode, type OntologyGraphData, type ClassDTO } from '../services/coreService';
 
 interface SearchItem {
+  id?: number;
   name: string;
   type: 'Class' | 'Relation';
 }
-
-const searchResults: SearchItem[] = [
-  { name: 'Entity', type: 'Class' },
-  { name: 'Person', type: 'Class' },
-  { name: 'Organization', type: 'Class' },
-  { name: 'Location', type: 'Class' },
-  { name: 'worksAt', type: 'Relation' },
-  { name: 'locatedIn', type: 'Relation' },
-];
 
 interface LinkData {
   source: string;
@@ -25,40 +18,20 @@ interface LinkData {
   style: 'solid' | 'dashed';
 }
 
-const graphData = {
-  nodes: [
-    { id: 'Entity', type: 'Root Class', x: 250, y: 80 },
-    { id: 'Person', type: 'Class', x: 100, y: 220 },
-    { id: 'Organization', type: 'Class', x: 250, y: 220 },
-    { id: 'Location', type: 'Class', x: 400, y: 220 },
-  ],
-  links: [
-    { source: 'Entity', target: 'Person', label: 'subClassOf', style: 'solid' as const },
-    { source: 'Entity', target: 'Organization', label: 'subClassOf', style: 'solid' as const },
-    { source: 'Entity', target: 'Location', label: 'subClassOf', style: 'solid' as const },
-    { source: 'Person', target: 'Organization', label: 'worksAt', style: 'dashed' as const },
-    { source: 'Organization', target: 'Location', label: 'locatedIn', style: 'dashed' as const },
-  ],
-};
+interface GraphData {
+  nodes: { id: string; type: string; x: number; y: number }[];
+  links: LinkData[];
+}
 
-const subclasses = [
-  { name: 'Person', icon: User },
-  { name: 'Organization', icon: Landmark },
-  { name: 'Location', icon: MapPin },
-];
-
-const relatedOntologies = [
-  { name: 'worksAt', desc: 'Person \u2192 Organization', icon: ArrowRight, color: 'var(--primary-color)' },
-  { name: 'locatedIn', desc: 'Organization \u2192 Location', icon: ArrowRight, color: 'var(--primary-color)' },
-  { name: 'hasParent', desc: 'owl:Thing \u2192 Entity', icon: ArrowLeft, color: '#22D3EE' },
-];
+const EMPTY_GRAPH: GraphData = { nodes: [], links: [] };
 
 interface GraphCanvasProps {
   selected: string | null;
   selectedType: 'Class' | 'Relation' | null;
+  graphData: GraphData;
 }
 
-function GraphCanvas({ selected, selectedType }: GraphCanvasProps) {
+function GraphCanvas({ selected, selectedType, graphData }: GraphCanvasProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const gRef = useRef<d3.Selection<SVGGElement, unknown, null, undefined> | null>(null);
   const nodesRef = useRef<d3.Selection<SVGGElement, { id: string; type: string; x: number; y: number }, SVGGElement, unknown> | null>(null);
@@ -171,7 +144,7 @@ function GraphCanvas({ selected, selectedType }: GraphCanvasProps) {
       .attr('font-size', 12)
       .text((d) => d.type);
 
-  }, []);
+  }, [graphData]);
 
   // Update highlight when selection changes
   useEffect(() => {
@@ -233,11 +206,93 @@ function GraphCanvas({ selected, selectedType }: GraphCanvasProps) {
   return <svg ref={svgRef} width="100%" height="100%" />;
 }
 
+function flattenTree(nodes: OntologyTreeNode[]): SearchItem[] {
+  const result: SearchItem[] = [];
+  for (const node of nodes) {
+    result.push({ id: node.id, name: node.name, type: node.type });
+    if (node.children) result.push(...flattenTree(node.children));
+  }
+  return result;
+}
+
+function apiGraphToLocal(data: OntologyGraphData): GraphData {
+  const spacing = 150;
+  const cols = Math.max(3, Math.ceil(Math.sqrt(data.nodes.length)));
+  return {
+    nodes: data.nodes.map((n, i) => ({
+      id: n.label || n.id,
+      type: n.type || 'Class',
+      x: n.x ?? (i % cols) * spacing + 100,
+      y: n.y ?? Math.floor(i / cols) * spacing + 80,
+    })),
+    links: data.links.map((l) => ({
+      source: typeof l.source === 'string' ? l.source : String(l.source),
+      target: typeof l.target === 'string' ? l.target : String(l.target),
+      label: l.label,
+      style: l.style,
+    })),
+  };
+}
+
 export default function KnowledgeGraphPage() {
-  const [selected, setSelected] = useState<string>('Entity');
+  const [selected, setSelected] = useState<string>('');
+  const [searchResults, setSearchResults] = useState<SearchItem[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [loadingTree, setLoadingTree] = useState(true);
+  const [graphData, setGraphData] = useState<GraphData>(EMPTY_GRAPH);
+  const [selectedClassDetail, setSelectedClassDetail] = useState<ClassDTO | null>(null);
   const { setBreadcrumbs } = useHeader();
 
-  const selectedItem = searchResults.find((r) => r.name === selected) ?? null;
+  // Load ontology tree for search panel
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetchOntologyTree();
+        if (res.data) {
+          setSearchResults(flattenTree(res.data));
+        }
+      } catch {
+        // failed to load tree
+      } finally {
+        setLoadingTree(false);
+      }
+    })();
+  }, []);
+
+  // Load graph data
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetchOntologyGraph(0);
+        if (res.data) {
+          setGraphData(apiGraphToLocal(res.data));
+        }
+      } catch {
+        // failed to load graph
+      }
+    })();
+  }, []);
+
+  // Load class detail when selecting a class node
+  useEffect(() => {
+    if (!selected) { setSelectedClassDetail(null); return; }
+    const item = searchResults.find((r) => r.name === selected);
+    if (!item || item.type !== 'Class' || !item.id) { setSelectedClassDetail(null); return; }
+    (async () => {
+      try {
+        const res = await getClass(item.id!);
+        if (res.data) setSelectedClassDetail(res.data);
+      } catch {
+        setSelectedClassDetail(null);
+      }
+    })();
+  }, [selected, searchResults]);
+
+  const filteredResults = searchQuery
+    ? searchResults.filter(r => r.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    : searchResults;
+
+  const selectedItem = filteredResults.find((r) => r.name === selected) ?? null;
 
   const handleSelect = useCallback((name: string) => {
     setSelected((prev) => prev === name ? '' : name);
@@ -263,14 +318,18 @@ export default function KnowledgeGraphPage() {
             <Input
               placeholder="Search by name..."
               prefix={<Search size={16} />}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
           <div style={{ flex: 1, overflow: 'auto', padding: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 4px' }}>
               <Typography.Text style={{ fontSize: 12, fontWeight: 500, color: '#a1a1aa' }}>Results</Typography.Text>
-              <Typography.Text style={{ fontSize: 12, color: '#a1a1aa' }}>{searchResults.length} found</Typography.Text>
+              <Typography.Text style={{ fontSize: 12, color: '#a1a1aa' }}>{filteredResults.length} found</Typography.Text>
             </div>
-            {searchResults.map((item) => {
+            {loadingTree ? (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}><Spin /></div>
+            ) : filteredResults.map((item) => {
               const isActive = item.name === selected;
               return (
                 <div
@@ -349,7 +408,7 @@ export default function KnowledgeGraphPage() {
             </div>
           </div>
           <div style={{ flex: 1, border: '1px solid #303030', borderRadius: 12, overflow: 'hidden', backgroundColor: '#141414' }}>
-            <GraphCanvas selected={selected || null} selectedType={selectedItem?.type ?? null} />
+            <GraphCanvas selected={selected || null} selectedType={selectedItem?.type ?? null} graphData={graphData} />
           </div>
         </div>
 
@@ -372,125 +431,62 @@ export default function KnowledgeGraphPage() {
             </div>
           </div>
           <div style={{ flex: 1, overflow: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 20 }}>
-            {/* Class Header */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 10,
-                  backgroundColor: 'var(--primary-color)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 4px 12px rgba(var(--primary-rgb), 0.25)',
-                }}
-              >
-                <Typography.Text style={{ color: '#fff', fontWeight: 600 }}>E</Typography.Text>
-              </div>
-              <div>
-                <Typography.Text style={{ fontSize: 18, fontWeight: 600, display: 'block' }}>Entity</Typography.Text>
-                <Typography.Text style={{ fontSize: 12, color: '#a1a1aa' }}>owl:Thing</Typography.Text>
-              </div>
-            </div>
-
-            <div style={{ height: 1, backgroundColor: '#303030' }} />
-
-            {/* Basic Information */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <Typography.Text style={{ fontSize: 14, fontWeight: 600 }}>Basic Information</Typography.Text>
-              {[
-                { label: 'Label', value: 'Entity' },
-                { label: 'URI', value: 'http://ontology.io/Entity' },
-                { label: 'Description', value: 'The root class for all entities in the knowledge graph.' },
-              ].map((prop) => (
-                <div key={prop.label} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <Typography.Text style={{ fontSize: 12, color: '#a1a1aa' }}>{prop.label}</Typography.Text>
-                  <div style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '10px 12px' }}>
-                    <Typography.Text style={{ fontSize: 14, lineHeight: prop.label === 'Description' ? '1.4' : undefined }}>
-                      {prop.value}
-                    </Typography.Text>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div style={{ height: 1, backgroundColor: '#303030' }} />
-
-            {/* Direct Subclasses */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <Typography.Text style={{ fontSize: 14, fontWeight: 600 }}>Direct Subclasses</Typography.Text>
-              {subclasses.map((sub) => {
-                const Icon = sub.icon;
-                return (
+            {!selected ? (
+              <Typography.Text style={{ fontSize: 13, color: '#a1a1aa', textAlign: 'center', padding: '40px 0' }}>
+                Select a node to view details
+              </Typography.Text>
+            ) : selectedClassDetail ? (
+              <>
+                {/* Class Header */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <div
-                    key={sub.name}
                     style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 10,
+                      backgroundColor: 'var(--primary-color)',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 10,
-                      padding: '8px 12px',
-                      borderRadius: 8,
-                      border: '1px solid #303030',
+                      justifyContent: 'center',
+                      boxShadow: '0 4px 12px rgba(var(--primary-rgb), 0.25)',
                     }}
                   >
-                    <Icon size={16} />
-                    <Typography.Text style={{ fontSize: 14 }}>{sub.name}</Typography.Text>
+                    <Typography.Text style={{ color: '#fff', fontWeight: 600 }}>{selectedClassDetail.name.charAt(0)}</Typography.Text>
                   </div>
-                );
-              })}
-            </div>
-
-            <div style={{ height: 1, backgroundColor: '#303030' }} />
-
-            {/* Related Ontologies */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography.Text style={{ fontSize: 14, fontWeight: 600 }}>Related Ontologies</Typography.Text>
-                <div style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 10, padding: '2px 8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Typography.Text style={{ fontSize: 12, fontWeight: 500 }}>5</Typography.Text>
+                  <div>
+                    <Typography.Text style={{ fontSize: 18, fontWeight: 600, display: 'block' }}>{selectedClassDetail.name}</Typography.Text>
+                    <Typography.Text style={{ fontSize: 12, color: '#a1a1aa' }}>{selectedClassDetail.uri || 'No URI'}</Typography.Text>
+                  </div>
                 </div>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {relatedOntologies.map((rel) => {
-                  const Icon = rel.icon;
-                  return (
-                    <div
-                      key={rel.name}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 10,
-                        padding: '10px 12px',
-                        borderRadius: 8,
-                        backgroundColor: 'rgba(255,255,255,0.04)',
-                      }}
-                    >
-                      <Icon size={14} color={rel.color} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <Typography.Text style={{ fontSize: 13, fontWeight: 500, display: 'block' }}>{rel.name}</Typography.Text>
-                        <Typography.Text style={{ fontSize: 11, color: '#a1a1aa' }}>{rel.desc}</Typography.Text>
+
+                <div style={{ height: 1, backgroundColor: '#303030' }} />
+
+                {/* Basic Information */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <Typography.Text style={{ fontSize: 14, fontWeight: 600 }}>Basic Information</Typography.Text>
+                  {[
+                    { label: 'Label', value: selectedClassDetail.name },
+                    { label: 'URI', value: selectedClassDetail.uri || '--' },
+                    { label: 'Description', value: selectedClassDetail.description || 'No description' },
+                    ...(selectedClassDetail.parentClassName ? [{ label: 'Parent Class', value: selectedClassDetail.parentClassName }] : []),
+                  ].map((prop) => (
+                    <div key={prop.label} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <Typography.Text style={{ fontSize: 12, color: '#a1a1aa' }}>{prop.label}</Typography.Text>
+                      <div style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '10px 12px' }}>
+                        <Typography.Text style={{ fontSize: 14, lineHeight: prop.label === 'Description' ? '1.4' : undefined }}>
+                          {prop.value}
+                        </Typography.Text>
                       </div>
                     </div>
-                  );
-                })}
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <Typography.Text style={{ fontSize: 18, fontWeight: 600, display: 'block' }}>{selected}</Typography.Text>
+                <Typography.Text style={{ fontSize: 12, color: '#a1a1aa' }}>{selectedItem?.type ?? 'Unknown'}</Typography.Text>
               </div>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 6,
-                  padding: '8px 12px',
-                  borderRadius: 8,
-                  border: '1px solid #303030',
-                  cursor: 'pointer',
-                }}
-              >
-                <Typography.Text style={{ fontSize: 13 }}>View All Relations</Typography.Text>
-                <ExternalLink size={14} color="#a1a1aa" />
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

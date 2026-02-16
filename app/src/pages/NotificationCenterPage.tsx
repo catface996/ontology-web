@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Breadcrumb, Typography } from 'antd';
+import { Breadcrumb, Button, Card, Input, Typography, Flex } from 'antd';
 import {
-  Check, TriangleAlert, CircleCheck, Brain,
+  Check, Search, TriangleAlert, CircleCheck, Brain,
 } from 'lucide-react';
+import Pagination from '../components/Pagination';
 import { useHeader } from '../contexts/HeaderContext';
 
 /* -- Types -- */
@@ -56,9 +57,9 @@ const notifications: Notification[] = [
   },
 ];
 
-const filters: { key: FilterKey; label: string; count?: number; countBg?: string }[] = [
-  { key: 'all', label: 'All', count: 8 },
-  { key: 'unread', label: 'Unread', count: 3, countBg: '#ef4444' },
+const filterTabs: { key: FilterKey; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'unread', label: 'Unread' },
   { key: 'import', label: 'Import' },
   { key: 'reasoner', label: 'Reasoner' },
   { key: 'conflicts', label: 'Conflicts' },
@@ -66,85 +67,76 @@ const filters: { key: FilterKey; label: string; count?: number; countBg?: string
 
 /* -- Page -- */
 export default function NotificationCenterPage() {
-  const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
-
-  const filtered = notifications.filter((n) => {
-    if (activeFilter === 'all') return true;
-    if (activeFilter === 'unread') return !!n.highlighted;
-    if (activeFilter === 'import') return n.badge === 'Import';
-    if (activeFilter === 'reasoner') return n.badge === 'Reasoner';
-    if (activeFilter === 'conflicts') return n.badge === 'Conflict';
-    return true;
-  });
-
   const { setBreadcrumbs, setActions } = useHeader();
+  const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   useEffect(() => {
     setBreadcrumbs(
       <Breadcrumb items={[
         { title: 'System' },
-        { title: 'Notifications' },
+        { title: <Typography.Text strong>Notifications</Typography.Text> },
       ]} />
     );
     setActions(
-      <div
-        style={{
-          display: 'flex', alignItems: 'center', gap: 6,
-          height: 36, padding: '0 16px', borderRadius: 8, backgroundColor: '#1a1a24', cursor: 'pointer',
-        }}
-      >
-        <Check size={16} />
-        <Typography.Text style={{ fontSize: 14, fontWeight: 500 }}>Mark All Read</Typography.Text>
-      </div>
+      <Flex gap={8} align="center">
+        <div className="header-filter-toggle">
+          {filterTabs.map((f) => (
+            <div
+              key={f.key}
+              className={activeFilter === f.key ? 'active' : ''}
+              onClick={() => { setActiveFilter(f.key); setPage(0); }}
+            >
+              {f.label}
+            </div>
+          ))}
+        </div>
+        <Input
+          placeholder="Search notifications..."
+          prefix={<Search size={16} />}
+          style={{ width: 200 }}
+          value={search}
+          onChange={(e) => { setSearch(e.target.value); setPage(0); }}
+          allowClear
+        />
+        <Button icon={<Check size={16} />}>
+          Mark All Read
+        </Button>
+      </Flex>
     );
-  }, [setBreadcrumbs, setActions]);
+  }, [setBreadcrumbs, setActions, activeFilter, search]);
+
+  const filtered = notifications
+    .filter((n) => {
+      if (activeFilter === 'all') return true;
+      if (activeFilter === 'unread') return !!n.highlighted;
+      if (activeFilter === 'import') return n.badge === 'Import';
+      if (activeFilter === 'reasoner') return n.badge === 'Reasoner';
+      if (activeFilter === 'conflicts') return n.badge === 'Conflict';
+      return true;
+    })
+    .filter((n) =>
+      !search || n.title.toLowerCase().includes(search.toLowerCase()) || n.description.toLowerCase().includes(search.toLowerCase())
+    );
+
+  const paged = filtered.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
   return (
-    <>
-      {/* Content */}
-      <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 24, padding: 24 }}>
-        {/* Filter pills */}
-        <div style={{ display: 'flex', gap: 8 }}>
-          {filters.map((f) => {
-            const isActive = f.key === activeFilter;
-            return (
-              <div
-                key={f.key}
-                onClick={() => setActiveFilter(f.key)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  padding: '6px 14px', borderRadius: 100, cursor: 'pointer',
-                  backgroundColor: isActive ? 'var(--primary-color)' : 'transparent',
-                  border: isActive ? 'none' : '1px solid #303030',
-                }}
-              >
-                <Typography.Text style={{ fontSize: 13, fontWeight: isActive ? 500 : 400, color: isActive ? '#fff' : undefined }}>
-                  {f.label}
-                </Typography.Text>
-                {f.count !== undefined && (
-                  <span style={{
-                    padding: '1px 6px', borderRadius: 100,
-                    backgroundColor: isActive ? '#fff' : (f.countBg || '#ef4444'),
-                  }}>
-                    <Typography.Text style={{ fontSize: 11, fontWeight: 600, color: isActive ? 'var(--primary-color)' : '#fff' }}>
-                      {f.count}
-                    </Typography.Text>
-                  </span>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Notification list */}
-        <div style={{ borderRadius: 12, border: '1px solid #303030', overflow: 'hidden' }}>
-          {filtered.map((n, i) => (
+    <div className="list-page">
+      <Card
+        style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+        styles={{ body: { padding: 0, flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' } }}
+      >
+        <div style={{ flex: 1, overflow: 'auto' }}>
+          {paged.map((n, i) => (
             <div
               key={n.id}
               style={{
                 display: 'flex', gap: 12, padding: '16px 24px',
-                backgroundColor: n.highlighted ? '#1a1a24' : 'transparent',
-                borderBottom: i < filtered.length - 1 ? '1px solid #303030' : 'none',
+                backgroundColor: n.highlighted ? 'rgba(255,255,255,0.03)' : 'transparent',
+                borderBottom: i < paged.length - 1 ? '1px solid var(--border-color, #27273a)' : 'none',
               }}
             >
               {/* Icon circle */}
@@ -161,17 +153,17 @@ export default function NotificationCenterPage() {
               {/* Body */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div
+                  <Flex align="center" gap={8}>
+                    <span
                       style={{
                         padding: '2px 8px', borderRadius: 6,
                         backgroundColor: n.badgeBg, flexShrink: 0,
                       }}
                     >
                       <Typography.Text style={{ fontSize: 11, fontWeight: 500, color: n.badgeColor }}>{n.badge}</Typography.Text>
-                    </div>
+                    </span>
                     <Typography.Text style={{ fontSize: 14, fontWeight: n.highlighted ? 600 : 500 }}>{n.title}</Typography.Text>
-                  </div>
+                  </Flex>
                   <Typography.Text style={{ fontSize: 12, color: '#a1a1aa', flexShrink: 0 }}>{n.time}</Typography.Text>
                 </div>
                 <Typography.Text style={{ fontSize: 13, color: '#a1a1aa', lineHeight: '1.5' }}>{n.description}</Typography.Text>
@@ -179,7 +171,16 @@ export default function NotificationCenterPage() {
             </div>
           ))}
         </div>
-      </div>
-    </>
+
+        <Pagination
+          count={filtered.length}
+          page={page}
+          rowsPerPage={rowsPerPage}
+          onPageChange={setPage}
+          onRowsPerPageChange={setRowsPerPage}
+          label="notifications"
+        />
+      </Card>
+    </div>
   );
 }

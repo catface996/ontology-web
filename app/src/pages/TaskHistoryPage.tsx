@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Breadcrumb, Button, Typography, Flex } from 'antd';
+import { Breadcrumb, Button, Input, Typography, Flex } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import {
-  SlidersHorizontal, Search, Square,
+  Search, Square,
   Database, Upload, Boxes, Link as LinkIcon,
   Eye, Redo,
 } from 'lucide-react';
-import Pagination from '../components/Pagination';
+import TableCard from '../components/TableCard';
 import { useHeader } from '../contexts/HeaderContext';
 
 /* -- Types -- */
@@ -65,7 +66,7 @@ const allTasks: TaskItem[] = [
 ];
 
 const filterTabs: { value: FilterTab; label: string }[] = [
-  { value: 'all', label: 'All Tasks' },
+  { value: 'all', label: 'All' },
   { value: 'completed', label: 'Completed' },
   { value: 'in_progress', label: 'In Progress' },
   { value: 'failed', label: 'Failed' },
@@ -75,6 +76,7 @@ const filterTabs: { value: FilterTab; label: string }[] = [
 export default function TaskHistoryPage() {
   const { setBreadcrumbs, setActions } = useHeader();
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
+  const [search, setSearch] = useState('');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
@@ -88,197 +90,151 @@ export default function TaskHistoryPage() {
       />
     );
     setActions(
-      <Button icon={<SlidersHorizontal size={16} />}>
-        Filter
-      </Button>
+      <Flex gap={8} align="center">
+        <div className="header-filter-toggle">
+          {filterTabs.map((tab) => (
+            <div
+              key={tab.value}
+              className={activeFilter === tab.value ? 'active' : ''}
+              onClick={() => { setActiveFilter(tab.value); setPage(0); }}
+            >
+              {tab.label}
+            </div>
+          ))}
+        </div>
+        <Input
+          placeholder="Search tasks..."
+          prefix={<Search size={16} />}
+          style={{ width: 200 }}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          allowClear
+        />
+      </Flex>
     );
-  }, [setBreadcrumbs, setActions]);
+  }, [setBreadcrumbs, setActions, activeFilter, search]);
 
-  const filteredTasks =
-    activeFilter === 'all'
-      ? allTasks
-      : allTasks.filter((t) => t.status === activeFilter);
+  const filteredTasks = allTasks
+    .filter((t) => activeFilter === 'all' || t.status === activeFilter)
+    .filter((t) =>
+      !search || t.title.toLowerCase().includes(search.toLowerCase()) || t.description.toLowerCase().includes(search.toLowerCase())
+    );
+
+  const columns: ColumnsType<TaskItem> = [
+    {
+      title: <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', letterSpacing: 0.5 }}>Task</Typography.Text>,
+      dataIndex: 'title',
+      key: 'title',
+      render: (_: unknown, record: TaskItem) => {
+        const Icon = record.icon;
+        return (
+          <Flex align="center" gap={10}>
+            <div
+              style={{
+                width: 32, height: 32, borderRadius: 8,
+                background: `${record.iconColor}20`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              }}
+            >
+              <Icon size={16} color={record.iconColor} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Typography.Text strong style={{ fontSize: 14 }}>
+                {record.title}
+              </Typography.Text>
+              <Typography.Text style={{ fontSize: 12, color: '#a1a1aa' }}>
+                {record.description}
+              </Typography.Text>
+            </div>
+          </Flex>
+        );
+      },
+    },
+    {
+      title: <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', letterSpacing: 0.5 }}>Status</Typography.Text>,
+      dataIndex: 'status',
+      key: 'status',
+      width: 130,
+      render: (status: TaskStatus) => {
+        const st = statusConfig[status];
+        return (
+          <span
+            style={{
+              display: 'inline-block',
+              padding: '4px 10px',
+              borderRadius: 100,
+              background: st.bg,
+              color: st.color,
+              fontSize: 12,
+              fontWeight: 500,
+              lineHeight: 1,
+            }}
+          >
+            {st.label}
+          </span>
+        );
+      },
+    },
+    {
+      title: <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', letterSpacing: 0.5 }}>Started</Typography.Text>,
+      dataIndex: 'started',
+      key: 'started',
+      width: 160,
+      render: (text: string) => (
+        <Typography.Text style={{ fontSize: 13 }}>{text}</Typography.Text>
+      ),
+    },
+    {
+      title: <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', letterSpacing: 0.5 }}>Duration</Typography.Text>,
+      dataIndex: 'duration',
+      key: 'duration',
+      width: 100,
+      render: (text: string) => (
+        <Typography.Text style={{ fontSize: 13 }}>{text}</Typography.Text>
+      ),
+    },
+    {
+      title: <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', letterSpacing: 0.5 }}>Actions</Typography.Text>,
+      key: 'actions',
+      width: 100,
+      align: 'center',
+      render: (_: unknown, record: TaskItem) => (
+        <Flex justify="center" gap={4}>
+          <Button type="text" size="small" icon={<Eye size={16} />} />
+          {record.status === 'in_progress' ? (
+            <Button type="text" size="small" icon={<Square size={18} color="#EF4444" />} />
+          ) : (
+            <Button
+              type="text"
+              size="small"
+              icon={
+                <Redo
+                  size={16}
+                  color={record.status === 'failed' ? 'var(--primary-color)' : undefined}
+                />
+              }
+            />
+          )}
+        </Flex>
+      ),
+    },
+  ];
 
   return (
-    <>
-      <div style={{ flex: 1, padding: 24, display: 'flex', flexDirection: 'column', gap: 16, overflow: 'hidden' }}>
-        {/* Toolbar */}
-        <Flex align="center" justify="space-between">
-          {/* Filter Tabs */}
-          <Flex gap={8}>
-            {filterTabs.map((tab) => {
-              const active = activeFilter === tab.value;
-              return (
-                <div
-                  key={tab.value}
-                  onClick={() => setActiveFilter(tab.value)}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: 100,
-                    background: active ? 'var(--primary-color)' : 'rgba(255,255,255,0.06)',
-                    color: active ? '#fff' : undefined,
-                    cursor: 'pointer',
-                    transition: 'all 0.15s',
-                  }}
-                >
-                  <Typography.Text style={{ fontSize: 13, fontWeight: 500, color: 'inherit' }}>
-                    {tab.label}
-                  </Typography.Text>
-                </div>
-              );
-            })}
-          </Flex>
-
-          {/* Search */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '8px 12px',
-              borderRadius: 8,
-              background: 'rgba(255,255,255,0.06)',
-            }}
-          >
-            <Search size={16} color="#a1a1aa" />
-            <Typography.Text style={{ fontSize: 13, color: '#a1a1aa' }}>
-              Search tasks...
-            </Typography.Text>
-          </div>
-        </Flex>
-
-        {/* Task List Card */}
-        <div
-          style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            borderRadius: 12,
-            border: '1px solid #27273a',
-            overflow: 'hidden',
-          }}
-        >
-          {/* Table Header */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              padding: '16px 20px',
-              background: 'rgba(255,255,255,0.06)',
-              borderRadius: '12px 12px 0 0',
-            }}
-          >
-            <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', width: 350 }}>
-              Task
-            </Typography.Text>
-            <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', width: 120 }}>
-              Status
-            </Typography.Text>
-            <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', width: 150 }}>
-              Started
-            </Typography.Text>
-            <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', width: 100 }}>
-              Duration
-            </Typography.Text>
-            <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', width: 100 }}>
-              Actions
-            </Typography.Text>
-          </div>
-
-          {/* Table Body */}
-          <div style={{ flex: 1, overflow: 'auto' }}>
-            {filteredTasks.map((task, idx) => {
-              const st = statusConfig[task.status];
-              const Icon = task.icon;
-              const isLast = idx === filteredTasks.length - 1;
-              return (
-                <div
-                  key={task.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    padding: '16px 20px',
-                    ...(!isLast && {
-                      borderBottom: '1px solid #27273a',
-                    }),
-                    transition: 'background 0.15s',
-                  }}
-                >
-                  {/* Task */}
-                  <div style={{ width: 350, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    <Flex align="center" gap={8}>
-                      <Icon size={16} color={task.iconColor} />
-                      <Typography.Text style={{ fontSize: 14, fontWeight: 500 }}>
-                        {task.title}
-                      </Typography.Text>
-                    </Flex>
-                    <Typography.Text style={{ fontSize: 12, color: '#a1a1aa' }}>
-                      {task.description}
-                    </Typography.Text>
-                  </div>
-
-                  {/* Status */}
-                  <div style={{ width: 120, display: 'flex', alignItems: 'center' }}>
-                    <span
-                      style={{
-                        display: 'inline-block',
-                        padding: '4px 10px',
-                        borderRadius: 100,
-                        background: st.bg,
-                        color: st.color,
-                        fontSize: 12,
-                        fontWeight: 500,
-                        lineHeight: 1,
-                      }}
-                    >
-                      {st.label}
-                    </span>
-                  </div>
-
-                  {/* Started */}
-                  <Typography.Text style={{ fontSize: 13, width: 150 }}>
-                    {task.started}
-                  </Typography.Text>
-
-                  {/* Duration */}
-                  <Typography.Text style={{ fontSize: 13, width: 100 }}>
-                    {task.duration}
-                  </Typography.Text>
-
-                  {/* Actions */}
-                  <Flex style={{ width: 100 }} align="center" gap={8}>
-                    <Button type="text" size="small" icon={<Eye size={16} color="#a1a1aa" />} />
-                    {task.status === 'in_progress' ? (
-                      <Button type="text" size="small" icon={<Square size={18} color="#EF4444" />} />
-                    ) : (
-                      <Button
-                        type="text"
-                        size="small"
-                        icon={
-                          <Redo
-                            size={16}
-                            color={task.status === 'failed' ? 'var(--primary-color)' : '#a1a1aa'}
-                          />
-                        }
-                      />
-                    )}
-                  </Flex>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Pagination */}
-          <Pagination
-            count={24}
-            page={page}
-            rowsPerPage={rowsPerPage}
-            onPageChange={setPage}
-            onRowsPerPageChange={setRowsPerPage}
-            label="tasks"
-          />
-        </div>
-      </div>
-    </>
+    <div className="list-page">
+      <TableCard<TaskItem>
+        columns={columns}
+        dataSource={filteredTasks.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)}
+        rowKey="id"
+        pagination={{
+          count: filteredTasks.length,
+          page,
+          rowsPerPage,
+          onPageChange: setPage,
+          onRowsPerPageChange: setRowsPerPage,
+          label: 'tasks',
+        }}
+      />
+    </div>
   );
 }

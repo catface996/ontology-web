@@ -1,31 +1,56 @@
 import { useState, useEffect } from 'react';
-import { Breadcrumb, Typography, Button, Input } from 'antd';
+import { Breadcrumb, Typography, Button, Input, Spin, App } from 'antd';
 import { Plus, Search, Pencil, Trash2, Lock, Globe } from 'lucide-react';
 import { useHeader } from '../contexts/HeaderContext';
+import { listNamespaces, deleteNamespace, type NamespaceDTO } from '../services/coreService';
 
 /* -- Types -- */
 type NamespaceType = 'Standard' | 'Custom';
 
 interface NamespaceItem {
+  id: number;
   prefix: string;
   uri: string;
   type: NamespaceType;
 }
 
-/* -- Mock data -- */
-const namespaces: NamespaceItem[] = [
-  { prefix: 'owl:', uri: 'http://www.w3.org/2002/07/owl#', type: 'Standard' },
-  { prefix: 'rdf:', uri: 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', type: 'Standard' },
-  { prefix: 'rdfs:', uri: 'http://www.w3.org/2000/01/rdf-schema#', type: 'Standard' },
-  { prefix: 'ent:', uri: 'https://enterprise.ontology.io/schema#', type: 'Custom' },
-  { prefix: 'health:', uri: 'https://health.ontology.io/vocab#', type: 'Custom' },
-  { prefix: 'geo:', uri: 'https://geo.ontology.io/spatial#', type: 'Custom' },
-];
+function dtoToNamespaceItem(dto: NamespaceDTO): NamespaceItem {
+  return { id: dto.id, prefix: dto.prefix, uri: dto.uri, type: dto.type };
+}
 
 /* -- Page -- */
 export default function NamespaceManagementPage() {
   const [search, setSearch] = useState('');
+  const [namespaces, setNamespaces] = useState<NamespaceItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { message } = App.useApp();
   const { setBreadcrumbs, setActions } = useHeader();
+
+  const loadNamespaces = async () => {
+    setLoading(true);
+    try {
+      const res = await listNamespaces();
+      if (res.data) {
+        setNamespaces(res.data.map(dtoToNamespaceItem));
+      }
+    } catch {
+      message.error('Failed to load namespaces');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { void loadNamespaces(); }, []);
+
+  const handleDelete = async (id: number) => {
+    try {
+      await deleteNamespace(id);
+      message.success('Namespace deleted');
+      void loadNamespaces();
+    } catch {
+      message.error('Failed to delete namespace');
+    }
+  };
 
   useEffect(() => {
     setBreadcrumbs(
@@ -80,7 +105,13 @@ export default function NamespaceManagementPage() {
 
           {/* Rows */}
           <div style={{ flex: 1, overflow: 'auto' }}>
-            {filtered.map((ns) => (
+            {loading ? (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}><Spin /></div>
+            ) : filtered.length === 0 ? (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
+                <Typography.Text style={{ color: '#a1a1aa' }}>No namespaces found</Typography.Text>
+              </div>
+            ) : filtered.map((ns) => (
               <div
                 key={ns.prefix}
                 style={{
@@ -131,7 +162,7 @@ export default function NamespaceManagementPage() {
                   ) : (
                     <>
                       <Button type="text" size="small" icon={<Pencil size={16} />} />
-                      <Button type="text" size="small" danger icon={<Trash2 size={16} />} />
+                      <Button type="text" size="small" danger icon={<Trash2 size={16} />} onClick={() => void handleDelete(ns.id)} />
                     </>
                   )}
                 </div>

@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { Layout, Typography, Divider, Flex } from 'antd';
 import { Bell, Globe, Check, LogOut, ChevronDown, ChevronUp } from 'lucide-react';
 import { Outlet, useNavigate } from 'react-router-dom';
-import { logout, getAuth } from './utils/auth';
+import { logout, getUser } from './utils/auth';
 import Sidebar from './components/Sidebar';
 import { HeaderProvider, useHeader } from './contexts/HeaderContext';
 
 function GlobalHeader() {
   const navigate = useNavigate();
-  const auth = getAuth();
+  const user = getUser();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState('English');
   const { breadcrumbs, actions } = useHeader();
@@ -58,11 +58,11 @@ function GlobalHeader() {
               }}
             >
               <Typography.Text style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>
-                {auth?.user?.name?.[0] || 'A'}
+                {user?.nickname?.[0] || 'A'}
               </Typography.Text>
             </div>
             <Typography.Text style={{ fontSize: 14, fontWeight: 500 }}>
-              {auth?.user?.name || 'Admin User'}
+              {user?.nickname || 'Admin User'}
             </Typography.Text>
             {userMenuOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
           </Flex>
@@ -89,15 +89,15 @@ function GlobalHeader() {
                 }}
               >
                 <Typography.Text style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>
-                  {auth?.user?.name?.[0] || 'A'}
+                  {user?.nickname?.[0] || 'A'}
                 </Typography.Text>
               </div>
               <div>
                 <Typography.Text style={{ fontSize: 14, fontWeight: 500, display: 'block' }}>
-                  {auth?.user?.name || 'Admin User'}
+                  {user?.nickname || 'Admin User'}
                 </Typography.Text>
                 <Typography.Text style={{ fontSize: 12, color: '#a1a1aa', display: 'block' }}>
-                  {auth?.user?.email || 'admin@ontology.io'}
+                  {user?.username || 'admin@ontology.io'}
                 </Typography.Text>
               </div>
             </Flex>
@@ -134,7 +134,7 @@ function GlobalHeader() {
             <Flex
               align="center"
               gap={12}
-              onClick={() => { logout(); navigate('/login'); }}
+              onClick={() => { void logout().then(() => navigate('/login')); }}
               style={{
                 padding: '8px 16px', margin: '0 8px', borderRadius: 8, cursor: 'pointer',
               }}
@@ -157,7 +157,7 @@ export default function MainLayout() {
         <HeaderProvider>
           <GlobalHeader />
           {/* Page Content */}
-          <Layout.Content style={{ flex: 1, overflow: 'auto' }}>
+          <Layout.Content style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
             <Outlet />
           </Layout.Content>
         </HeaderProvider>

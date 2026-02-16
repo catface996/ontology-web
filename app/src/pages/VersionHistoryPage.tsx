@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Breadcrumb, Typography, Button, Tag } from 'antd';
+import { Breadcrumb, Typography, Button, Tag, Spin } from 'antd';
 import { Download, Undo, Plus, Minus, Pencil, GitCompareArrows } from 'lucide-react';
 import { useHeader } from '../contexts/HeaderContext';
+import { fetchOntologyVersions, type OntologyVersion } from '../services/coreService';
 
 /* -- Types -- */
 interface VersionItem {
@@ -19,13 +20,18 @@ interface Change {
   detail: string;
 }
 
-/* -- Mock data -- */
-const versions: VersionItem[] = [
-  { tag: 'v3.4.0', label: 'Latest', description: 'Added disjoint axiom between Person and Organization classes', author: 'Admin User', date: '2 hours ago', changes: '+3 / -1 changes' },
-  { tag: 'v3.3.6', label: '', description: 'Updated hasEmployee relation with cardinality constraint', author: 'Admin User', date: '3 days ago', changes: '+2 / -0 changes' },
-  { tag: 'v3.2.4', label: '', description: 'Fixed URI namespace conflict in Healthcare domain', author: 'Editor User', date: '1 week ago', changes: '+1 / -1 changes' },
-  { tag: 'v3.1.0', label: '', description: 'Added Employee and Student as subclasses of Person', author: 'Admin User', date: '2 weeks ago', changes: '+5 / -0 changes' },
-];
+function dtoToVersionItem(dto: OntologyVersion, index: number): VersionItem {
+  const d = new Date(dto.createdAt);
+  const date = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return {
+    tag: dto.tag,
+    label: index === 0 ? 'Latest' : '',
+    description: dto.description,
+    author: dto.author,
+    date,
+    changes: `+${dto.additions} / -${dto.deletions} changes`,
+  };
+}
 
 const detailStats = [
   { label: 'Classes Modified', value: '2', color: '#f4f4f5' },
@@ -50,7 +56,25 @@ const changeConfig = {
 /* -- Page -- */
 export default function VersionHistoryPage() {
   const [selected, setSelected] = useState(0);
+  const [versions, setVersions] = useState<VersionItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const { setBreadcrumbs, setActions } = useHeader();
+
+  // Load versions from API
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetchOntologyVersions();
+        if (res.data) {
+          setVersions(res.data.map(dtoToVersionItem));
+        }
+      } catch {
+        // failed to load versions
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     setBreadcrumbs(
@@ -77,7 +101,13 @@ export default function VersionHistoryPage() {
             <Tag>{versions.length} versions</Tag>
           </div>
           <div style={{ flex: 1, overflow: 'auto' }}>
-            {versions.map((v, i) => (
+            {loading ? (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}><Spin /></div>
+            ) : versions.length === 0 ? (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
+                <Typography.Text style={{ color: '#a1a1aa' }}>No version history available</Typography.Text>
+              </div>
+            ) : versions.map((v, i) => (
               <div
                 key={v.tag}
                 onClick={() => setSelected(i)}
@@ -107,6 +137,11 @@ export default function VersionHistoryPage() {
 
         {/* Right -- Version Detail */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {versions.length === 0 ? (
+            <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <Typography.Text style={{ color: '#a1a1aa' }}>Select a version to view details</Typography.Text>
+            </div>
+          ) : (<>
           <div style={{ padding: '0 24px', height: 56, flexShrink: 0, borderBottom: '1px solid #303030', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <Tag color="blue">{versions[selected].tag}</Tag>
@@ -154,6 +189,7 @@ export default function VersionHistoryPage() {
               })}
             </div>
           </div>
+        </>)}
         </div>
       </div>
     </>

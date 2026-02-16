@@ -1,18 +1,22 @@
 import React, { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
-import { Card, Input, Button, Typography, Divider, Flex } from 'antd';
+import { Card, Input, Button, Typography, Divider, Flex, App } from 'antd';
 import { isAuthenticated } from './utils/auth';
+import { register } from './services/authService';
+import { RequestError } from './utils/request';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
+  const { message } = App.useApp();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(false);
 
   if (isAuthenticated()) {
-    return <Navigate to="/knowledge-graph" replace />;
+    return <Navigate to="/topology" replace />;
   }
 
   const validate = () => {
@@ -28,10 +32,23 @@ export default function RegisterPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validate()) {
+    if (!validate()) return;
+
+    setLoading(true);
+    try {
+      await register({ username: email, password, nickname: fullName });
+      message.success('Account created! Please sign in.');
       navigate('/login');
+    } catch (err) {
+      const msg =
+        err instanceof RequestError
+          ? err.message
+          : 'Registration failed. Please try again.';
+      message.error(msg);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -62,6 +79,7 @@ export default function RegisterPage() {
               placeholder="Enter your full name"
               status={errors.fullName ? 'error' : undefined}
               size="large"
+              disabled={loading}
             />
             {errors.fullName && <Typography.Text type="danger" style={{ fontSize: 12 }}>{errors.fullName}</Typography.Text>}
           </div>
@@ -74,6 +92,7 @@ export default function RegisterPage() {
               placeholder="Enter your email"
               status={errors.email ? 'error' : undefined}
               size="large"
+              disabled={loading}
             />
             {errors.email && <Typography.Text type="danger" style={{ fontSize: 12 }}>{errors.email}</Typography.Text>}
           </div>
@@ -85,6 +104,7 @@ export default function RegisterPage() {
               placeholder="Create a password"
               status={errors.password ? 'error' : undefined}
               size="large"
+              disabled={loading}
             />
             {errors.password && <Typography.Text type="danger" style={{ fontSize: 12 }}>{errors.password}</Typography.Text>}
           </div>
@@ -96,11 +116,12 @@ export default function RegisterPage() {
               placeholder="Confirm your password"
               status={errors.confirmPassword ? 'error' : undefined}
               size="large"
+              disabled={loading}
             />
             {errors.confirmPassword && <Typography.Text type="danger" style={{ fontSize: 12 }}>{errors.confirmPassword}</Typography.Text>}
           </div>
 
-          <Button type="primary" htmlType="submit" block size="large">
+          <Button type="primary" htmlType="submit" block size="large" loading={loading}>
             Create Account
           </Button>
         </form>

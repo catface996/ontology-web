@@ -5,10 +5,9 @@ import {
   Share2,
   ChevronDown,
   ChevronRight,
+  ChevronsUpDown,
   Check,
   Globe,
-  Landmark,
-  Wallet,
   Plug,
   GitFork,
   GitMerge,
@@ -37,8 +36,10 @@ import {
   ShieldCheck,
   GitCompare,
   ScanLine,
+  Building2,
 } from 'lucide-react';
 import { useThemeColor, THEME_COLORS } from '../contexts/ThemeColorContext';
+import { useCurrentOntology } from '../contexts/OntologyContext';
 
 const drawerWidth = 280;
 
@@ -50,40 +51,27 @@ interface NavItem {
   openInNewTab?: boolean;
 }
 
-interface Domain {
-  icon: React.ReactNode;
-  label: string;
-  color: string;
-}
-
-const domains: Domain[] = [
-  { icon: <Globe size={20} />, label: 'Enterprise', color: 'inherit' },
-  { icon: <Landmark size={20} />, label: 'Healthcare', color: '#22D3EE' },
-  { icon: <Wallet size={20} />, label: 'Finance', color: '#F472B6' },
-  { icon: <Plug size={20} />, label: 'IoT & Sensors', color: '#4ADE80' },
-];
-
 const ontologyItems: NavItem[] = [
-  { icon: <GitFork size={20} />, label: 'Knowledge Graph', path: '/knowledge-graph' },
-  { icon: <Boxes size={20} />, label: 'Classes', path: '/classes' },
-  { icon: <ArrowLeftRight size={20} />, label: 'Relations', path: '/relations' },
-  { icon: <List size={20} />, label: 'Properties', path: '/properties' },
-  { icon: <Database size={20} />, label: 'Instances', path: '/instances' },
+  { icon: <GitFork size={20} />, label: 'Topology', path: '/topology', iconColor: '#a78bfa' },
+  { icon: <Boxes size={20} />, label: 'Classes', path: '/classes', iconColor: '#818cf8' },
+  { icon: <ArrowLeftRight size={20} />, label: 'Relations', path: '/relations', iconColor: '#22d3ee' },
+  { icon: <List size={20} />, label: 'Properties', path: '/properties', iconColor: '#f59e0b' },
+  { icon: <Database size={20} />, label: 'Instances', path: '/instances', iconColor: '#4ade80' },
 ];
 
 const toolsItems: NavItem[] = [
-  { icon: <Search size={20} />, label: 'Global Search', path: '/search' },
-  { icon: <Search size={20} />, label: 'SPARQL Query', path: '/sparql-query' },
-  { icon: <Brain size={20} />, label: 'Reasoning', path: '/reasoning' },
-  { icon: <GitFork size={20} />, label: 'Reasoning Graph', path: '/reasoning-graph' },
-  { icon: <CircleCheck size={20} />, label: 'Validation', path: '/validation' },
-  { icon: <FileText size={20} />, label: 'Reports', path: '/report-management' },
-  { icon: <History size={20} />, label: 'Version History', path: '/version-history' },
+  { icon: <Search size={20} />, label: 'Global Search', path: '/search', iconColor: '#60a5fa' },
+  { icon: <Search size={20} />, label: 'SPARQL Query', path: '/sparql-query', iconColor: '#c4b5fd' },
+  { icon: <Brain size={20} />, label: 'Reasoning', path: '/reasoning', iconColor: '#f472b6' },
+  { icon: <GitFork size={20} />, label: 'Reasoning Graph', path: '/reasoning-graph', iconColor: '#a78bfa' },
+  { icon: <CircleCheck size={20} />, label: 'Validation', path: '/validation', iconColor: '#4ade80' },
+  { icon: <FileText size={20} />, label: 'Reports', path: '/report-management', iconColor: '#fbbf24' },
+  { icon: <History size={20} />, label: 'Version History', path: '/version-history', iconColor: '#94a3b8' },
 ];
 
 const aiAgentItems: NavItem[] = [
-  { icon: <MessageCircle size={20} />, label: 'Agent Chat', path: '/agent-chat' },
-  { icon: <ListChecks size={20} />, label: 'Task History', path: '/task-history' },
+  { icon: <MessageCircle size={20} />, label: 'Agent Chat', path: '/agent-chat', iconColor: '#22d3ee' },
+  { icon: <ListChecks size={20} />, label: 'Task History', path: '/task-history', iconColor: '#94a3b8' },
 ];
 
 const aiAgentFlowItems: NavItem[] = [
@@ -97,31 +85,30 @@ const aiAgentFlowItems: NavItem[] = [
 ];
 
 const dataItems: NavItem[] = [
-  { icon: <Database size={20} />, label: 'Data Sources', path: '/data-sources' },
-  { icon: <Plug size={20} />, label: 'Connectors', path: '/connectors' },
-  { icon: <GitMerge size={20} />, label: 'Field Mapping', path: '/field-mapping' },
-  { icon: <Upload size={20} />, label: 'Import/Export', path: '/import-export' },
+  { icon: <Database size={20} />, label: 'Data Sources', path: '/data-sources', iconColor: '#60a5fa' },
+  { icon: <Plug size={20} />, label: 'Connectors', path: '/connectors', iconColor: '#4ade80' },
+  { icon: <GitMerge size={20} />, label: 'Field Mapping', path: '/field-mapping', iconColor: '#c4b5fd' },
+  { icon: <Upload size={20} />, label: 'Import/Export', path: '/import-export', iconColor: '#fbbf24' },
 ];
 
 const adminItems: NavItem[] = [
-  { icon: <Users size={20} />, label: 'User Management', path: '/user-management' },
-  { icon: <Shield size={20} />, label: 'Roles', path: '/roles-permissions' },
-  { icon: <Globe size={20} />, label: 'Namespaces', path: '/namespaces' },
-  { icon: <Settings size={20} />, label: 'System Settings', path: '/system-settings' },
-  { icon: <ScrollText size={20} />, label: 'Change Log', path: '/change-log' },
-  { icon: <Key size={20} />, label: 'API Keys', path: '/api-keys' },
-  { icon: <Activity size={20} />, label: 'Audit Logs', path: '/audit-logs' },
+  { icon: <Users size={20} />, label: 'User Management', path: '/user-management', iconColor: '#60a5fa' },
+  { icon: <Shield size={20} />, label: 'Roles', path: '/roles-permissions', iconColor: '#f59e0b' },
+  { icon: <Globe size={20} />, label: 'Namespaces', path: '/namespaces', iconColor: '#22d3ee' },
+  { icon: <Settings size={20} />, label: 'System Settings', path: '/system-settings', iconColor: '#94a3b8' },
+  { icon: <ScrollText size={20} />, label: 'Change Log', path: '/change-log', iconColor: '#a78bfa' },
+  { icon: <Key size={20} />, label: 'API Keys', path: '/api-keys', iconColor: '#fbbf24' },
+  { icon: <Activity size={20} />, label: 'Audit Logs', path: '/audit-logs', iconColor: '#4ade80' },
 ];
 
-type SectionKey = 'domains' | 'ontology' | 'tools' | 'aiAgent' | 'data' | 'admin';
+type SectionKey = 'ontology' | 'tools' | 'aiAgent' | 'data' | 'admin';
 
 export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { primaryColor, setPrimaryColor } = useThemeColor();
-  const [activeDomain, setActiveDomain] = useState('Enterprise');
+  const { currentOntology } = useCurrentOntology();
   const [openSections, setOpenSections] = useState<Record<SectionKey, boolean>>({
-    domains: true,
     ontology: true,
     tools: true,
     aiAgent: false,
@@ -154,7 +141,7 @@ export default function Sidebar() {
             marginBottom: 2,
           }}
         >
-          <span style={{ fontSize: 18, display: 'flex', alignItems: 'center', color: item.iconColor || 'inherit' }}>
+          <span style={{ fontSize: 18, display: 'flex', alignItems: 'center', color: item.iconColor || 'inherit', filter: isSelected(item.path) ? 'brightness(1.4) drop-shadow(0 0 4px currentColor)' : 'none' }}>
             {item.icon}
           </span>
           <Typography.Text style={{ fontSize: 14, color: 'inherit' }}>{item.label}</Typography.Text>
@@ -196,46 +183,43 @@ export default function Sidebar() {
         <Typography.Text style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#e4e4e7' }}>Ontology</Typography.Text>
       </Flex>
 
-      {/* Content */}
-      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '0 8px' }}>
-        {/* Domains */}
-        <div style={{ padding: '8px 0' }}>
+      {/* Ontology Selector */}
+      {currentOntology && currentOntology.name && (
+        <div style={{ padding: '16px 16px 12px 16px', borderBottom: '1px solid #1e1e2a', flexShrink: 0 }}>
+          <Typography.Text style={{ fontSize: 10, fontWeight: 600, color: '#a1a1aa', letterSpacing: 1, display: 'block', marginBottom: 8 }}>
+            CURRENT ONTOLOGY
+          </Typography.Text>
           <Flex
             align="center"
-            onClick={() => toggleSection('domains')}
-            style={{ padding: '8px 8px', cursor: 'pointer' }}
+            justify="space-between"
+            onClick={() => navigate('/select-ontology')}
+            style={{
+              padding: '10px 12px',
+              borderRadius: 8,
+              background: 'rgba(255,255,255,0.06)',
+              cursor: 'pointer',
+            }}
           >
-            <Typography.Text style={{ flex: 1, fontSize: 12, color: '#a1a1aa', letterSpacing: 0.5 }}>
-              DOMAINS
-            </Typography.Text>
-            {openSections.domains ? <ChevronDown size={14} color="#a1a1aa" /> : <ChevronRight size={14} color="#a1a1aa" />}
+            <Flex align="center" gap={10}>
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: '#8b5cf620', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Building2 size={16} color="var(--primary-color)" />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Typography.Text style={{ fontSize: 13, fontWeight: 600, color: '#f4f4f5' }}>
+                  {currentOntology.name}
+                </Typography.Text>
+                <Typography.Text style={{ fontSize: 10, color: '#a1a1aa' }}>
+                  {[currentOntology.version, currentOntology.status].filter(Boolean).join(' · ')}
+                </Typography.Text>
+              </div>
+            </Flex>
+            <ChevronsUpDown size={16} color="#a1a1aa" />
           </Flex>
-          {openSections.domains && (
-            <div>
-              {domains.map((d) => (
-                <Flex
-                  key={d.label}
-                  align="center"
-                  gap={12}
-                  onClick={() => setActiveDomain(d.label)}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: 8,
-                    cursor: 'pointer',
-                    background: activeDomain === d.label ? 'rgba(var(--primary-rgb), 0.12)' : 'transparent',
-                  }}
-                >
-                  <span style={{ fontSize: 16, color: activeDomain === d.label ? 'inherit' : d.color }}>
-                    {d.icon}
-                  </span>
-                  <Typography.Text style={{ fontSize: 14 }}>{d.label}</Typography.Text>
-                </Flex>
-              ))}
-            </div>
-          )}
         </div>
-        <Divider style={{ margin: '0' }} />
+      )}
 
+      {/* Content */}
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '0 8px' }}>
         {renderSection('ONTOLOGY', 'ontology', ontologyItems)}
         {renderSection('TOOLS', 'tools', toolsItems)}
 

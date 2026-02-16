@@ -7,3 +7,77 @@
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
+
+/* ── Header actions: enforce consistent height (32px = antd middle button) ── */
+.ant-layout-header .ant-input-affix-wrapper,
+.ant-layout-header .ant-btn,
+.ant-layout-header .ant-select .ant-select-selector {
+  height: 32px !important;
+}
+.ant-layout-header .ant-input-affix-wrapper .ant-input {
+  height: auto !important;
+}
+
+/* ── View toggle group in header ── */
+.header-view-toggle {
+  display: flex;
+  align-items: center;
+  border: 1px solid #27273a;
+  border-radius: 8px;
+  height: 32px;
+  overflow: hidden;
+}
+.header-view-toggle > div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 100%;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.header-view-toggle > div:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+.header-view-toggle > div.active {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* ── Header filter toggle group ── */
+.header-filter-toggle {
+  display: flex;
+  align-items: center;
+  border: 1px solid #27273a;
+  border-radius: 8px;
+  height: 32px;
+  overflow: hidden;
+}
+.header-filter-toggle > div {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+  padding: 0 12px;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  color: #a1a1aa;
+  transition: all 0.15s;
+}
+.header-filter-toggle > div:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+.header-filter-toggle > div.active {
+  background: var(--primary-color);
+  color: #fff;
+}
+
+/* ── List page root: constrain height so inner scroll containers work ── */
+.list-page {
+  flex: 1;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow: hidden;
+}

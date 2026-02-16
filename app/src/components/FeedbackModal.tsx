@@ -1,3 +1,4 @@
+import { useEffect, useCallback } from 'react';
 import { Modal, Typography, Button, Flex } from 'antd';
 import type { LucideIcon } from 'lucide-react';
 
@@ -30,6 +31,26 @@ export default function FeedbackModal({
 }: FeedbackModalProps) {
   const iconBgColor = `${iconColor}20`;
 
+  // The last (rightmost) non-outlined action is treated as the "primary" action
+  // triggered by Enter.
+  const primaryAction = [...actions].reverse().find((a) => a.variant !== 'outlined');
+
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === 'Enter' && primaryAction) {
+        e.preventDefault();
+        primaryAction.onClick();
+      }
+    },
+    [primaryAction],
+  );
+
+  useEffect(() => {
+    if (!open) return;
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open, handleKeyDown]);
+
   return (
     <Modal
       open={open}
@@ -37,15 +58,25 @@ export default function FeedbackModal({
       footer={null}
       width={440}
       centered
+      destroyOnHidden
       styles={{
         content: {
           background: '#111118',
           border: '1px solid #27273a',
           borderRadius: 16,
           boxShadow: '0 25px 60px rgba(0,0,0,0.6)',
+          animation: open ? 'modalScaleIn 0.2s ease-out' : undefined,
         },
       }}
     >
+      {/* Inject scale animation keyframes */}
+      <style>{`
+        @keyframes modalScaleIn {
+          from { opacity: 0; transform: scale(0.92); }
+          to   { opacity: 1; transform: scale(1); }
+        }
+      `}</style>
+
       {/* Header */}
       <Flex vertical align="center" gap={16} style={{ padding: '16px 0 8px' }}>
         <div

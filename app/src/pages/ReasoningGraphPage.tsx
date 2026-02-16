@@ -115,29 +115,54 @@ function FlowGraphCanvas() {
       ],
     };
 
-    // Draw edges with per-edge color
-    flowEdges.forEach((e) => {
+    // Helper: compute edge endpoints from current positions
+    const edgeEndpoints = (e: typeof flowEdges[0]) => {
       const fromNode = nodeMap[e.from];
       const toNode = nodeMap[e.to];
       const from = positions[e.from];
       const to = positions[e.to];
-      if (!from || !to || !fromNode || !toNode) return;
-      g.append('line')
-        .attr('x1', from.x)
-        .attr('y1', from.y + fromNode.h / 2)
-        .attr('x2', to.x)
-        .attr('y2', to.y - toNode.h / 2)
-        .attr('stroke', e.color)
-        .attr('stroke-width', 2)
-        .attr('stroke-opacity', 0.6);
-    });
+      if (!from || !to || !fromNode || !toNode) return null;
+      return {
+        x1: from.x, y1: from.y + fromNode.h / 2,
+        x2: to.x, y2: to.y - toNode.h / 2,
+      };
+    };
 
-    // Draw nodes with per-node dimensions and icons
+    // Draw edges with D3 data binding
+    const edgeSelection = g.selectAll<SVGLineElement, typeof flowEdges[0]>('.edge')
+      .data(flowEdges)
+      .join('line')
+      .attr('class', 'edge')
+      .each(function (e) {
+        const ep = edgeEndpoints(e);
+        if (!ep) return;
+        d3.select(this)
+          .attr('x1', ep.x1).attr('y1', ep.y1)
+          .attr('x2', ep.x2).attr('y2', ep.y2);
+      })
+      .attr('stroke', (e) => e.color)
+      .attr('stroke-width', 2)
+      .attr('stroke-opacity', 0.6);
+
+    // Update all edges from current positions
+    const updateEdges = () => {
+      edgeSelection.each(function (e) {
+        const ep = edgeEndpoints(e);
+        if (!ep) return;
+        d3.select(this)
+          .attr('x1', ep.x1).attr('y1', ep.y1)
+          .attr('x2', ep.x2).attr('y2', ep.y2);
+      });
+    };
+
+    // Draw nodes with per-node dimensions, icons, and drag support
     flowNodes.forEach((n) => {
       const pos = positions[n.id];
       if (!pos) return;
       const nodeG = g.append('g')
-        .attr('transform', `translate(${pos.x - n.w / 2},${pos.y - n.h / 2})`);
+        .datum(n)
+        .attr('transform', `translate(${pos.x - n.w / 2},${pos.y - n.h / 2})`)
+        .style('cursor', 'grab');
 
       // Node rect
       nodeG.append('rect')
@@ -164,11 +189,7 @@ function FlowGraphCanvas() {
           .attr('stroke-linecap', 'round')
           .attr('stroke-linejoin', 'round');
         paths.forEach((p) => {
-          if (p.startsWith('M') && p.includes('a')) {
-            iconG.append('path').attr('d', p);
-          } else {
-            iconG.append('path').attr('d', p);
-          }
+          iconG.append('path').attr('d', p);
         });
       }
 
@@ -195,6 +216,24 @@ function FlowGraphCanvas() {
           .attr('font-family', 'Inter, sans-serif')
           .text(n.sublabel);
       }
+
+      // Drag behavior
+      nodeG.call(
+        d3.drag<SVGGElement, FlowNode>()
+          .on('start', function () {
+            d3.select(this).raise().style('cursor', 'grabbing');
+          })
+          .on('drag', function (event, d) {
+            const p = positions[d.id];
+            p.x += event.dx;
+            p.y += event.dy;
+            d3.select(this).attr('transform', `translate(${p.x - d.w / 2},${p.y - d.h / 2})`);
+            updateEdges();
+          })
+          .on('end', function () {
+            d3.select(this).style('cursor', 'grab');
+          }),
+      );
     });
 
     // Center view

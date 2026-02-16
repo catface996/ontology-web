@@ -1,13 +1,16 @@
 import { useMemo } from 'react';
-import { ConfigProvider } from 'antd';
+import { ConfigProvider, App as AntApp } from 'antd';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import createTheme from './theme';
 import { ThemeColorProvider, useThemeColor } from './contexts/ThemeColorContext';
+import { ModalProvider } from './contexts/ModalContext';
+import { OntologyProvider } from './contexts/OntologyContext';
 import LoginPage from './LoginPage';
 import RegisterPage from './RegisterPage';
-import DomainSelection from './DomainSelection';
 import MainLayout from './MainLayout';
-import KnowledgeGraphPage from './pages/KnowledgeGraphPage';
+import TopologyListPage from './pages/TopologyListPage';
+import TopologyEditorPage from './pages/TopologyEditorPage';
+import TopologyViewPage from './pages/TopologyViewPage';
 import ClassesPage from './pages/ClassesPage';
 import ClassEditorPage from './pages/ClassEditorPage';
 import RelationsPage from './pages/RelationsPage';
@@ -45,11 +48,13 @@ import NamespaceManagementPage from './pages/NamespaceManagementPage';
 import ClassLogicPage from './pages/ClassLogicPage';
 import RelationLogicPage from './pages/RelationLogicPage';
 import ReasoningGraphPage from './pages/ReasoningGraphPage';
-import AddDomainPage from './pages/AddDomainPage';
-import RemoveDomainPage from './pages/RemoveDomainPage';
 import SystemSettingsPage from './pages/SystemSettingsPage';
 import NotificationCenterPage from './pages/NotificationCenterPage';
 import ChangeLogPage from './pages/ChangeLogPage';
+import OntologySelectionPage from './pages/OntologySelectionPage';
+import OntologyManagementPage from './pages/OntologyManagementPage';
+import OntologyDetailPage from './pages/OntologyDetailPage';
+import OntologyFormPage from './pages/OntologyFormPage';
 import PagePlaceholder from './components/PagePlaceholder';
 import RequireAuth from './components/RequireAuth';
 
@@ -59,11 +64,13 @@ function ThemedApp() {
 
   return (
     <ConfigProvider theme={appTheme}>
+      <AntApp>
+      <ModalProvider>
+      <OntologyProvider>
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-          <Route path="/domain" element={<RequireAuth><DomainSelection /></RequireAuth>} />
           <Route path="/agent-chat/bottleneck" element={<RequireAuth><AgentConversationFlowPage /></RequireAuth>} />
           <Route path="/agent-chat/what-if" element={<RequireAuth><WhatIfAgentPage /></RequireAuth>} />
           <Route path="/agent-chat/forward" element={<RequireAuth><ForwardAgentPage /></RequireAuth>} />
@@ -71,9 +78,17 @@ function ThemedApp() {
           <Route path="/agent-chat/constraint" element={<RequireAuth><ConstraintAgentPage /></RequireAuth>} />
           <Route path="/agent-chat/diff" element={<RequireAuth><DiffAgentPage /></RequireAuth>} />
           <Route path="/agent-chat/pattern" element={<RequireAuth><PatternAgentPage /></RequireAuth>} />
+          <Route path="/select-ontology" element={<RequireAuth><OntologySelectionPage /></RequireAuth>} />
+          <Route path="/ontologies/new" element={<RequireAuth><OntologyFormPage /></RequireAuth>} />
+          <Route path="/ontologies/:id/edit" element={<RequireAuth><OntologyFormPage /></RequireAuth>} />
+          <Route path="/ontologies/:id" element={<RequireAuth><OntologyDetailPage /></RequireAuth>} />
           <Route path="/" element={<RequireAuth><MainLayout /></RequireAuth>}>
-            <Route index element={<Navigate to="/knowledge-graph" replace />} />
-            <Route path="knowledge-graph" element={<KnowledgeGraphPage />} />
+            <Route index element={<Navigate to="/ontologies" replace />} />
+            <Route path="ontologies" element={<OntologyManagementPage />} />
+            <Route path="topology" element={<TopologyListPage />} />
+            <Route path="topology/new" element={<TopologyEditorPage />} />
+            <Route path="topology/:topologyId/edit" element={<TopologyEditorPage />} />
+            <Route path="topology/:topologyId/view" element={<TopologyViewPage />} />
             <Route path="classes" element={<ClassesPage />} />
             <Route path="classes/:classId/edit" element={<ClassEditorPage />} />
             <Route path="relations" element={<RelationsPage />} />
@@ -96,8 +111,6 @@ function ThemedApp() {
             <Route path="report-management/:reportId" element={<ReportDetailPage />} />
             <Route path="user-management" element={<UserManagementPage />} />
             <Route path="user-management/:userId" element={<UserDetailPage />} />
-            <Route path="user-management/:userId/add-domain" element={<AddDomainPage />} />
-            <Route path="user-management/:userId/remove-domain" element={<RemoveDomainPage />} />
             <Route path="search" element={<GlobalSearchPage />} />
             <Route path="version-history" element={<VersionHistoryPage />} />
             <Route path="validation" element={<ValidationDashboardPage />} />
@@ -114,6 +127,9 @@ function ThemedApp() {
           </Route>
         </Routes>
       </BrowserRouter>
+      </OntologyProvider>
+      </ModalProvider>
+      </AntApp>
     </ConfigProvider>
   );
 }

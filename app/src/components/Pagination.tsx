@@ -90,7 +90,7 @@ export default function Pagination({
     <Flex
       align="center"
       justify="space-between"
-      style={{ height: 56, padding: '0 20px', borderTop: '1px solid #27273a' }}
+      style={{ height: 56, padding: '0 20px', borderTop: '1px solid #27273a', marginTop: 'auto', flexShrink: 0 }}
     >
       {/* Left — info text */}
       <Typography.Text style={{ fontSize: 13, color: '#a1a1aa' }}>

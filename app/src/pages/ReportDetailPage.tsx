@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
+import { useModal } from '../contexts/ModalContext';
 import { Breadcrumb, Typography, Button } from 'antd';
 import {
   ChevronRight, ChevronLeft, Activity, DollarSign,
@@ -329,7 +329,7 @@ export default function ReportDetailPage() {
   const navigate = useNavigate();
   const { reportId } = useParams();
   const [tablePage, setTablePage] = useState(1);
-  const [deleteOpen, setDeleteOpen] = useState(false);
+  const confirmModal = useModal();
   const totalPages = 3;
 
   return (
@@ -358,7 +358,15 @@ export default function ReportDetailPage() {
           <Button icon={<Pencil size={16} />}>Edit</Button>
           <Button icon={<Download size={16} />}>Export</Button>
           <Button icon={<Share2 size={16} />}>Share</Button>
-          <Button danger icon={<Trash2 size={16} />} onClick={() => setDeleteOpen(true)}>Delete</Button>
+          <Button danger icon={<Trash2 size={16} />} onClick={() => {
+            confirmModal.confirm.delete({
+              title: 'Delete Report?',
+              description: 'This action cannot be undone. All data and configurations in this report will be permanently deleted.',
+              confirmName: 'Sales Overview',
+              confirmLabel: 'the report name',
+              onConfirm: () => navigate('/report-management'),
+            });
+          }}>Delete</Button>
         </div>
       </div>
 
@@ -575,15 +583,6 @@ export default function ReportDetailPage() {
         </div>
       </div>
 
-      <ConfirmDeleteModal
-        open={deleteOpen}
-        title="Delete Report?"
-        description="This action cannot be undone. All data and configurations in this report will be permanently deleted."
-        confirmName="Sales Overview"
-        confirmLabel="the report name"
-        onClose={() => setDeleteOpen(false)}
-        onConfirm={() => { setDeleteOpen(false); navigate('/report-management'); }}
-      />
     </>
   );
 }

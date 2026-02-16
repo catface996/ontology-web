@@ -1,22 +1,36 @@
 import React, { useState } from 'react';
-import { useNavigate, Link as RouterLink, Navigate } from 'react-router-dom';
-import { Card, Input, Button, Typography, Divider, Flex } from 'antd';
+import { useNavigate, Navigate } from 'react-router-dom';
+import { Card, Input, Button, Typography, Divider, Flex, App } from 'antd';
 import { login, isAuthenticated } from './utils/auth';
+import { RequestError } from './utils/request';
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
+  const { message } = App.useApp();
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
   if (isAuthenticated()) {
-    return <Navigate to="/knowledge-graph" replace />;
+    return <Navigate to="/select-ontology" replace />;
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email && password) {
-      login({ name: 'Admin User', email });
-      navigate('/domain');
+    if (!username || !password) return;
+
+    setLoading(true);
+    try {
+      await login({ username, password });
+      navigate('/select-ontology');
+    } catch (err) {
+      const msg =
+        err instanceof RequestError
+          ? err.message
+          : 'Login failed. Please try again.';
+      message.error(msg);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -40,13 +54,13 @@ export default function LoginPage() {
         {/* Form */}
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div>
-            <Typography.Text style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>Email</Typography.Text>
+            <Typography.Text style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>Username</Typography.Text>
             <Input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Enter your username"
               size="large"
+              disabled={loading}
             />
           </div>
           <div>
@@ -56,6 +70,7 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter your password"
               size="large"
+              disabled={loading}
             />
           </div>
 
@@ -63,7 +78,7 @@ export default function LoginPage() {
             <a href="#" style={{ fontSize: 13 }}>Forgot password?</a>
           </div>
 
-          <Button type="primary" htmlType="submit" block size="large">
+          <Button type="primary" htmlType="submit" block size="large" loading={loading}>
             Sign In
           </Button>
         </form>
