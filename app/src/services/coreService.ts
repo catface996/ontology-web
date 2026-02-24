@@ -778,6 +778,39 @@ export interface MultiClassTopologyRequest {
   classIds: number[];
 }
 
+export interface InstanceNode {
+  instanceId: number;
+  instanceName: string;
+  instanceUri?: string | null;
+  instanceDescription?: string | null;
+  classId: number;
+  className: string;
+  classColor?: string | null;
+  classIcon?: string | null;
+}
+
+export interface InstanceEdge {
+  sourceInstanceId: number;
+  targetInstanceId: number;
+  relationId: number;
+  relationName: string;
+}
+
+export interface InstanceSubgraph {
+  nodes: InstanceNode[];
+  edges: InstanceEdge[];
+}
+
+export interface InstanceGroup {
+  centralInstance: InstanceNode;
+  subgraph: InstanceSubgraph;
+}
+
+export interface GroupedInstanceTopologyDTO {
+  groups: InstanceGroup[];
+  unrelatedInstances: InstanceSubgraph;
+}
+
 // ---------------------------------------------------------------------------
 // Instance APIs
 // ---------------------------------------------------------------------------
@@ -842,6 +875,11 @@ export function fetchMultiClassInstanceTopology(params: MultiClassTopologyReques
   return post<InstanceTopologyDTO>('/core/api/v1/instance/multi-topology', params);
 }
 
+/** Get grouped instance topology by central class */
+export function fetchGroupedInstanceTopology(topologyId: number): Promise<ApiResponse<GroupedInstanceTopologyDTO>> {
+  return post<GroupedInstanceTopologyDTO>('/core/api/v1/instance/grouped-topology', { topologyId });
+}
+
 // ---------------------------------------------------------------------------
 // Topology types
 // ---------------------------------------------------------------------------
@@ -851,6 +889,7 @@ export interface TopologyDTO {
   ontologyId: number;
   name: string;
   description: string;
+  centralClassId: number | null;
   classIds: number[];
   classCount: number;
   instanceCount: number;
@@ -868,6 +907,7 @@ export interface CreateTopologyRequest {
   name: string;
   description?: string;
   classIds: number[];
+  centralClassId?: number | null;
 }
 
 export interface UpdateTopologyRequest {
@@ -875,6 +915,7 @@ export interface UpdateTopologyRequest {
   name?: string;
   description?: string;
   classIds?: number[];
+  centralClassId?: number | null;
 }
 
 // ---------------------------------------------------------------------------

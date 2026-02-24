@@ -1,16 +1,19 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Breadcrumb, Typography, Spin, Collapse, Badge, Button, Flex, message } from 'antd';
+import { Breadcrumb, Typography, Spin, Select, Badge, Button, Flex, message } from 'antd';
 import { ChevronRight, Download, Pencil, Save, RotateCcw } from 'lucide-react';
 import { useHeader } from '../contexts/HeaderContext';
+import SuccessModal from '../components/SuccessModal';
 import {
   getTopology,
   getClassTopology,
   fetchMultiClassInstanceTopology,
+  fetchGroupedInstanceTopology,
   saveTopologyPositions,
   resetTopologyPositions,
   type TopologyDTO,
   type InstanceTopologyDTO,
+  type GroupedInstanceTopologyDTO,
 } from '../services/coreService';
 import ForceTopologyGraph, { type ForceGraphNode, type ForceGraphEdge } from '../components/ForceTopologyGraph';
 
@@ -23,6 +26,25 @@ const CLASS_COLORS = [
  *  classColorMap maps classId → color sourced from the Class Topology graph to ensure consistency. */
 function mapInstanceSubgraph(
   sg: InstanceTopologyDTO,
+  classColorMap: Map<number, string>,
+): { nodes: ForceGraphNode[]; edges: ForceGraphEdge[] } {
+  const nodes: ForceGraphNode[] = sg.nodes.map((n) => ({
+    id: n.instanceId,
+    name: n.instanceName,
+    sublabel: n.className,
+    color: classColorMap.get(n.classId) || n.classColor || '#a1a1aa',
+  }));
+  const edges: ForceGraphEdge[] = sg.edges.map((e) => ({
+    source: e.sourceInstanceId,
+    target: e.targetInstanceId,
+    label: e.relationName,
+  }));
+  return { nodes, edges };
+}
+
+/** Map a grouped InstanceSubgraph into ForceTopologyGraph props */
+function mapGroupedSubgraph(
+  sg: GroupedInstanceTopologyDTO['unrelatedInstances'],
   classColorMap: Map<number, string>,
 ): { nodes: ForceGraphNode[]; edges: ForceGraphEdge[] } {
   const nodes: ForceGraphNode[] = sg.nodes.map((n) => ({
@@ -114,11 +136,12 @@ export default function TopologyViewPage() {
 
   // Instance topology state
   const [instanceData, setInstanceData] = useState<InstanceTopologyDTO | null>(null);
+  const [groupedData, setGroupedData] = useState<GroupedInstanceTopologyDTO | null>(null);
   const [loadingInstance, setLoadingInstance] = useState(false);
   const [selectedInstanceIds, setSelectedInstanceIds] = useState<Set<number>>(new Set());
 
   // Accordion active keys
-  const [activeKeys, setActiveKeys] = useState<string[]>([]);
+  const [selectedGroupKeys, setSelectedGroupKeys] = useState<string[]>([]);
 
   // Divider drag state
   const [leftWidthPercent, setLeftWidthPercent] = useState(50);
@@ -137,6 +160,7 @@ export default function TopologyViewPage() {
   // Saving/resetting state
   const [saving, setSaving] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [successModal, setSuccessModal] = useState<{ open: boolean; title?: string; description?: string }>({ open: false });
 
   // Debounce timer
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -255,7 +279,7 @@ export default function TopologyViewPage() {
         positionY: pos.y,
       }));
       await saveTopologyPositions({ topologyId: topology.id, positions });
-      message.success('Positions saved successfully');
+      setSuccessModal({ open: true, title: 'Positions Saved', description: 'Node positions have been saved successfully.' });
     } catch {
       message.error('Failed to save positions');
     } finally {
@@ -269,7 +293,7 @@ export default function TopologyViewPage() {
     setResetting(true);
     try {
       await resetTopologyPositions(topology.id);
-      message.success('Layout reset successfully');
+      setSuccessModal({ open: true, title: 'Layout Reset', description: 'Layout has been reset to default. Nodes will be repositioned automatically.' });
       // Clear local positions and reload topology
       nodePositionsRef.current.clear();
       setInitialPositions(new Map());
@@ -329,26 +353,44 @@ export default function TopologyViewPage() {
   useEffect(() => {
     if (selectedClassIds.size === 0) {
       setInstanceData(null);
-      setActiveKeys([]);
+      setGroupedData(null);
+      setSelectedGroupKeys([]);
       setSelectedInstanceIds(new Set());
       return;
     }
+
+    // Wait for topology entity to be loaded before deciding the fetch mode
+    if (!topology) return;
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       setLoadingInstance(true);
       try {
-        const res = await fetchMultiClassInstanceTopology({
-          classIds: Array.from(selectedClassIds),
-        });
-        if (res.data) {
-          setInstanceData(res.data);
-          setSelectedInstanceIds(new Set());
-          const groups = splitByConnectedComponents(res.data);
-          setActiveKeys(groups.length > 0 ? [String(groups[0].index)] : []);
+        if (topology?.centralClassId && topologyId) {
+          // Central class grouping mode
+          const res = await fetchGroupedInstanceTopology(Number(topologyId));
+          if (res.data) {
+            setGroupedData(res.data);
+            setInstanceData(null);
+            setSelectedInstanceIds(new Set());
+            setSelectedGroupKeys(res.data.groups.length > 0 ? ['group-0'] : []);
+          }
+        } else {
+          // Fallback: connected-component grouping
+          const res = await fetchMultiClassInstanceTopology({
+            classIds: Array.from(selectedClassIds),
+          });
+          if (res.data) {
+            setInstanceData(res.data);
+            setGroupedData(null);
+            setSelectedInstanceIds(new Set());
+            const groups = splitByConnectedComponents(res.data);
+            setSelectedGroupKeys(groups.length > 0 ? [String(groups[0].index)] : []);
+          }
         }
       } catch {
         setInstanceData(null);
+        setGroupedData(null);
       } finally {
         setLoadingInstance(false);
       }
@@ -357,7 +399,7 @@ export default function TopologyViewPage() {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [selectedClassIds]);
+  }, [selectedClassIds, topology, topologyId]);
 
   // Split instance data into connected-component subgraphs and pre-map ForceGraph props
   // classColorMapRef is populated when class topology loads, so instance colors match exactly
@@ -368,6 +410,83 @@ export default function TopologyViewPage() {
       mapped: mapInstanceSubgraph(sg.data, classColorMapRef.current),
     }));
   }, [instanceData]);
+
+  // Map grouped data for central-class grouping mode
+  const groupedSubgraphs = useMemo(() => {
+    if (!groupedData) return null;
+    const groups = groupedData.groups.map((g, idx) => ({
+      key: `group-${idx}`,
+      label: g.centralInstance.instanceName || `Instance ${g.centralInstance.instanceId}`,
+      nodeCount: g.subgraph.nodes.length,
+      mapped: mapGroupedSubgraph(g.subgraph, classColorMapRef.current),
+    }));
+    const unrelated = groupedData.unrelatedInstances.nodes.length > 0
+      ? {
+          key: 'unrelated',
+          label: '未关联实例',
+          nodeCount: groupedData.unrelatedInstances.nodes.length,
+          mapped: mapGroupedSubgraph(groupedData.unrelatedInstances, classColorMapRef.current),
+        }
+      : null;
+    return { groups, unrelated };
+  }, [groupedData]);
+
+  // Build select options and merged graph for the selected groups
+  const groupSelectOptions = useMemo(() => {
+    if (groupedSubgraphs) {
+      const opts = groupedSubgraphs.groups.map((sg) => ({
+        label: `${sg.label} (${sg.nodeCount} nodes)`,
+        value: sg.key,
+      }));
+      if (groupedSubgraphs.unrelated) {
+        opts.push({
+          label: `${groupedSubgraphs.unrelated.label} (${groupedSubgraphs.unrelated.nodeCount} nodes)`,
+          value: groupedSubgraphs.unrelated.key,
+        });
+      }
+      return opts;
+    }
+    if (subgraphs.length > 0) {
+      return subgraphs.map((sg) => ({
+        label: `Graph ${sg.index}: ${sg.label} (${sg.nodeCount} nodes)`,
+        value: String(sg.index),
+      }));
+    }
+    return [];
+  }, [groupedSubgraphs, subgraphs]);
+
+  const mergedSelectedGraph = useMemo(() => {
+    const selectedKeys = new Set(selectedGroupKeys);
+    const allNodes: ForceGraphNode[] = [];
+    const allEdges: ForceGraphEdge[] = [];
+    const nodeIdSet = new Set<number>();
+
+    if (groupedSubgraphs) {
+      for (const sg of groupedSubgraphs.groups) {
+        if (!selectedKeys.has(sg.key)) continue;
+        for (const n of sg.mapped.nodes) {
+          if (!nodeIdSet.has(n.id)) { nodeIdSet.add(n.id); allNodes.push(n); }
+        }
+        allEdges.push(...sg.mapped.edges);
+      }
+      if (groupedSubgraphs.unrelated && selectedKeys.has('unrelated')) {
+        for (const n of groupedSubgraphs.unrelated.mapped.nodes) {
+          if (!nodeIdSet.has(n.id)) { nodeIdSet.add(n.id); allNodes.push(n); }
+        }
+        allEdges.push(...groupedSubgraphs.unrelated.mapped.edges);
+      }
+    } else {
+      for (const sg of subgraphs) {
+        if (!selectedKeys.has(String(sg.index))) continue;
+        for (const n of sg.mapped.nodes) {
+          if (!nodeIdSet.has(n.id)) { nodeIdSet.add(n.id); allNodes.push(n); }
+        }
+        allEdges.push(...sg.mapped.edges);
+      }
+    }
+
+    return { nodes: allNodes, edges: allEdges };
+  }, [selectedGroupKeys, groupedSubgraphs, subgraphs]);
 
   // Compute three class-level states from the Class Topology:
   //   focused (highlighted), connected (normal), rest (dimmed)
@@ -452,14 +571,22 @@ export default function TopologyViewPage() {
     setActions(
       <Flex gap={8}>
         {topology && (
-          <Button icon={<Pencil size={16} />} onClick={() => navigate(`/topology/${topologyId}/edit`)}>
-            Edit
-          </Button>
+          <>
+            <Button icon={<Save size={16} />} loading={saving} onClick={handleSavePositions}>
+              Save Position
+            </Button>
+            <Button icon={<RotateCcw size={16} />} loading={resetting} onClick={handleResetLayout}>
+              Reset Layout
+            </Button>
+            <Button icon={<Pencil size={16} />} onClick={() => navigate(`/topology/${topologyId}/edit`)}>
+              Edit
+            </Button>
+          </>
         )}
         <Button icon={<Download size={16} />}>Export</Button>
       </Flex>,
     );
-  }, [setBreadcrumbs, setActions, navigate, topology, topologyId]);
+  }, [setBreadcrumbs, setActions, navigate, topology, topologyId, saving, resetting, handleSavePositions, handleResetLayout]);
 
   if (loadingTopology) {
     return <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Spin size="large" /></div>;
@@ -501,36 +628,19 @@ export default function TopologyViewPage() {
         >
           <div
             style={{
-              height: 36,
               display: 'flex',
               alignItems: 'center',
-              padding: '0 16px',
+              padding: '8px 16px',
               borderBottom: '1px solid #303030',
+              flexShrink: 0,
+              gap: 8,
+              minHeight: 40,
             }}
           >
             <Typography.Text style={{ fontSize: 13, fontWeight: 600 }}>Class Topology</Typography.Text>
             <Typography.Text style={{ fontSize: 11, color: '#71717a', marginLeft: 8 }}>
               — dashed = subClassOf, solid = Relation
             </Typography.Text>
-            <div style={{ flex: 1 }} />
-            <Flex gap={4}>
-              <Button
-                size="small"
-                icon={<Save size={14} />}
-                loading={saving}
-                onClick={handleSavePositions}
-              >
-                Save Position
-              </Button>
-              <Button
-                size="small"
-                icon={<RotateCcw size={14} />}
-                loading={resetting}
-                onClick={handleResetLayout}
-              >
-                Reset Layout
-              </Button>
-            </Flex>
           </div>
           <div style={{ flex: 1, overflow: 'hidden' }}>
             {loadingClass ? (
@@ -576,7 +686,7 @@ export default function TopologyViewPage() {
           />
         </div>
 
-        {/* Right: Instance Topology Accordion */}
+        {/* Right: Instance Topology */}
         <div
           style={{
             flex: 1,
@@ -587,107 +697,67 @@ export default function TopologyViewPage() {
         >
           <div
             style={{
-              height: 36,
               display: 'flex',
               alignItems: 'center',
-              padding: '0 16px',
+              padding: '8px 16px',
               borderBottom: '1px solid #303030',
               flexShrink: 0,
+              gap: 8,
+              minHeight: 40,
             }}
           >
-            <Typography.Text style={{ fontSize: 13, fontWeight: 600 }}>Instance Topology</Typography.Text>
-            {subgraphs.length > 0 && (
-              <Typography.Text style={{ fontSize: 11, color: '#71717a', marginLeft: 8 }}>
-                — {subgraphs.length} graph{subgraphs.length > 1 ? 's' : ''}
-              </Typography.Text>
+            <Typography.Text style={{ fontSize: 13, fontWeight: 600, flexShrink: 0 }}>Instance Topology</Typography.Text>
+            {groupSelectOptions.length > 0 && (
+              <Select
+                mode="multiple"
+                size="small"
+                placeholder="Select groups..."
+                value={selectedGroupKeys}
+                onChange={setSelectedGroupKeys}
+                options={groupSelectOptions}
+                style={{ flex: 1, minWidth: 0 }}
+                maxTagCount="responsive"
+                allowClear
+              />
             )}
           </div>
 
-          <div
-            className="instance-topology-accordion"
-            style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
-          >
-            <style>{`
-              .instance-topology-accordion .ant-collapse {
-                flex: 1;
-                display: flex;
-                flex-direction: column;
-                overflow: hidden;
-              }
-              .instance-topology-accordion .ant-collapse-item-active {
-                flex: 1;
-                display: flex;
-                flex-direction: column;
-                overflow: hidden;
-              }
-              .instance-topology-accordion .ant-collapse-item-active > .ant-collapse-panel {
-                flex: 1;
-                display: flex;
-                flex-direction: column;
-                overflow: hidden;
-              }
-              .instance-topology-accordion .ant-collapse-item-active > .ant-collapse-panel > .ant-collapse-body {
-                flex: 1;
-                display: flex;
-                flex-direction: column;
-                overflow: hidden;
-              }
-            `}</style>
+          <div style={{ flex: 1, overflow: 'hidden', background: '#0a0a0f' }}>
             {loadingInstance ? (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
                 <Spin />
               </div>
-            ) : subgraphs.length === 0 ? (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', background: '#0a0a0f' }}>
+            ) : groupSelectOptions.length === 0 ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
                 <Typography.Text style={{ color: '#71717a', fontSize: 13 }}>
-                  Click classes on the left to view instance topology
+                  {groupedSubgraphs ? 'Central class has no instances' : 'Click classes on the left to view instance topology'}
+                </Typography.Text>
+              </div>
+            ) : selectedGroupKeys.length === 0 ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                <Typography.Text style={{ color: '#71717a', fontSize: 13 }}>
+                  Select groups from the dropdown to view instance topology
                 </Typography.Text>
               </div>
             ) : (
-              <Collapse
-                activeKey={activeKeys}
-                onChange={(keys) => setActiveKeys(keys as string[])}
-                ghost
-                style={{ background: '#0a0a0f' }}
-                items={subgraphs.map((sg) => ({
-                  key: String(sg.index),
-                  label: (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-                      <Typography.Text style={{ fontSize: 13, fontWeight: 600, flexShrink: 0 }}>
-                        Graph {sg.index}
-                      </Typography.Text>
-                      <Typography.Text
-                        style={{ fontSize: 12, color: '#a1a1aa', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}
-                      >
-                        {sg.label}
-                      </Typography.Text>
-                      <Badge
-                        count={`${sg.nodeCount} nodes`}
-                        style={{ backgroundColor: '#27273a', color: '#a1a1aa', fontSize: 11, boxShadow: 'none', flexShrink: 0 }}
-                        overflowCount={999}
-                      />
-                    </span>
-                  ),
-                  children: (
-                    <div style={{ flex: 1, border: '1px solid #27273a', borderRadius: 8, overflow: 'hidden', minHeight: 200 }}>
-                      <ForceTopologyGraph
-                        nodes={sg.mapped.nodes}
-                        edges={sg.mapped.edges}
-                        selectedNodeIds={highlightedInstanceIds}
-                        connectedNodeIds={connectedInstanceIds}
-                        onNodeClick={handleInstanceNodeClick}
-                      />
-                    </div>
-                  ),
-                  style: {
-                    borderBottom: '1px solid #1a1a24',
-                  },
-                }))}
+              <ForceTopologyGraph
+                nodes={mergedSelectedGraph.nodes}
+                edges={mergedSelectedGraph.edges}
+                selectedNodeIds={highlightedInstanceIds}
+                connectedNodeIds={connectedInstanceIds}
+                onNodeClick={handleInstanceNodeClick}
               />
             )}
           </div>
         </div>
       </div>
+
+      <SuccessModal
+        open={successModal.open}
+        title={successModal.title}
+        description={successModal.description}
+        onClose={() => setSuccessModal({ open: false })}
+      />
     </div>
   );
 }

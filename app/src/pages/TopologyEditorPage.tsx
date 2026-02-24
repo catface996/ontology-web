@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Breadcrumb, Typography, Input, Button, Card, Tag, Spin, App } from 'antd';
 import {
-  ChevronRight, Save, Eye, Search, Plus, Trash2, Network, Boxes, ArrowLeftRight,
+  ChevronRight, Save, Eye, Search, Plus, Trash2, Network, Boxes, ArrowLeftRight, Star,
 } from 'lucide-react';
 import SuccessModal from '../components/SuccessModal';
 import { useHeader } from '../contexts/HeaderContext';
@@ -29,6 +29,7 @@ export default function TopologyEditorPage() {
   const [description, setDescription] = useState('');
   const [includedClassIds, setIncludedClassIds] = useState<Set<number>>(new Set());
   const [apiTopology, setApiTopology] = useState<TopologyDTO | null>(null);
+  const [centralClassId, setCentralClassId] = useState<number | null>(null);
 
   // Available classes
   const [allClasses, setAllClasses] = useState<ClassDTO[]>([]);
@@ -48,6 +49,7 @@ export default function TopologyEditorPage() {
           setName(res.data.name);
           setDescription(res.data.description ?? '');
           setIncludedClassIds(new Set(res.data.classIds));
+          setCentralClassId(res.data.centralClassId ?? null);
         }
       } catch {
         // fields stay empty
@@ -88,6 +90,11 @@ export default function TopologyEditorPage() {
       next.delete(classId);
       return next;
     });
+    setCentralClassId(prev => prev === classId ? null : prev);
+  }, []);
+
+  const handleSetCentralClass = useCallback((classId: number) => {
+    setCentralClassId(prev => prev === classId ? null : classId);
   }, []);
 
   const handleSave = async () => {
@@ -103,6 +110,7 @@ export default function TopologyEditorPage() {
           name,
           description,
           classIds: Array.from(includedClassIds),
+          centralClassId,
         });
       } else {
         await createTopology({
@@ -110,6 +118,7 @@ export default function TopologyEditorPage() {
           name,
           description,
           classIds: Array.from(includedClassIds),
+          centralClassId,
         });
       }
       setSuccessModalOpen(true);
@@ -299,7 +308,22 @@ export default function TopologyEditorPage() {
                   >
                     <Network size={14} color="var(--primary-color)" />
                     <Typography.Text strong style={{ fontSize: 13, flex: 1 }}>{cls.name}</Typography.Text>
-                    <Tag color="green" style={{ fontSize: 11, lineHeight: '18px', margin: 0 }}>Active</Tag>
+                    {centralClassId === cls.id && (
+                      <Tag color="gold" style={{ fontSize: 11, lineHeight: '18px', margin: 0 }}>Central</Tag>
+                    )}
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={
+                        <Star
+                          size={14}
+                          fill={centralClassId === cls.id ? '#facc15' : 'none'}
+                          color={centralClassId === cls.id ? '#facc15' : '#a1a1aa'}
+                        />
+                      }
+                      onClick={() => handleSetCentralClass(cls.id)}
+                      title={centralClassId === cls.id ? 'Unset central class' : 'Set as central class'}
+                    />
                     <Button
                       type="text"
                       size="small"
