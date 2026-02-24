@@ -12,7 +12,20 @@ import {
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
+import MermaidBlock from '../components/MermaidBlock';
+import EChartsBlock from '../components/EChartsBlock';
 import { getReportDetail, deleteReport, type ReportDetailDTO } from '../services/coreService';
+
+/* -- Extract plain text from React children (handles rehype-highlight spans) -- */
+function extractText(node: React.ReactNode): string {
+  if (typeof node === 'string') return node;
+  if (typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return node.map(extractText).join('');
+  if (node && typeof node === 'object' && 'props' in node) {
+    return extractText((node as React.ReactElement<{ children?: React.ReactNode }>).props.children);
+  }
+  return '';
+}
 
 /* -- Icon map -- */
 const iconMap: Record<string, React.ComponentType<{ size?: number; color?: string }>> = {
@@ -103,7 +116,7 @@ export default function ReportDetailPage() {
   };
 
   return (
-    <>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
       {/* -- Header -- */}
       <div
         style={{
@@ -113,6 +126,7 @@ export default function ReportDetailPage() {
           justifyContent: 'space-between',
           padding: '0 24px',
           borderBottom: '1px solid rgba(255,255,255,0.12)',
+          flexShrink: 0,
         }}
       >
         <Breadcrumb
@@ -133,7 +147,7 @@ export default function ReportDetailPage() {
       </div>
 
       {/* -- Content -- */}
-      <div style={{ flex: 1, overflow: 'auto', padding: 24, display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 24 }}>
 
         {/* -- Title Section -- */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -193,7 +207,23 @@ export default function ReportDetailPage() {
             }}
           >
             {report.content ? (
-              <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
+              <Markdown
+                remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeHighlight]}
+                components={{
+                  pre({ children, ...props }) {
+                    const child = children as React.ReactElement<{ className?: string; children?: React.ReactNode }>;
+                    const cls = child?.props?.className || '';
+                    if (cls.includes('language-mermaid')) {
+                      return <MermaidBlock>{extractText(child.props.children)}</MermaidBlock>;
+                    }
+                    if (cls.includes('language-echarts')) {
+                      return <EChartsBlock>{extractText(child.props.children)}</EChartsBlock>;
+                    }
+                    return <pre {...props}>{children}</pre>;
+                  },
+                }}
+              >
                 {report.content}
               </Markdown>
             ) : (
@@ -204,6 +234,6 @@ export default function ReportDetailPage() {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
