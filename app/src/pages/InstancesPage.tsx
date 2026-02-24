@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Breadcrumb, Input, Button, Checkbox, Typography, Flex, App, Select } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
-  User, Building2, MapPin, Calendar,
   Search, Plus, LayoutGrid, List,
   Pencil, Share2, Trash2,
   Database, ArrowUpDown,
@@ -14,8 +13,9 @@ import { useHeader } from '../contexts/HeaderContext';
 import { useCurrentOntology } from '../contexts/OntologyContext';
 import {
   listInstances, listClasses, deleteInstance,
-  type InstanceDTO, type ClassDTO,
+  type InstanceDTO,
 } from '../services/coreService';
+import { resolveClassIcon, DEFAULT_CLASS_COLOR } from '../utils/classIconMap';
 
 /* -- Types -- */
 interface InstanceRow {
@@ -30,23 +30,9 @@ interface InstanceRow {
   color: string;
 }
 
-/* -- Icon palette -- */
-const CLASS_ICONS: Record<string, { icon: React.ComponentType<{ size?: number; color?: string }>; color: string }> = {
-  person:       { icon: User, color: 'var(--primary-color)' },
-  organization: { icon: Building2, color: '#22D3EE' },
-  location:     { icon: MapPin, color: '#F472B6' },
-  event:        { icon: Calendar, color: '#FBBF24' },
-};
-const PALETTE_COLORS = ['var(--primary-color)', '#22D3EE', '#F472B6', '#4ADE80', '#FBBF24', '#EC4899'];
-const DEFAULT_ICON = { icon: Database, color: 'var(--primary-color)' };
-
-function getClassVisual(className: string, index: number) {
-  const key = className.toLowerCase();
-  return CLASS_ICONS[key] ?? { ...DEFAULT_ICON, color: PALETTE_COLORS[index % PALETTE_COLORS.length] };
-}
-
-function dtoToRow(dto: InstanceDTO & Record<string, unknown>, classIndex: number): InstanceRow {
-  const visual = getClassVisual(dto.className ?? '', classIndex);
+function dtoToRow(dto: InstanceDTO & Record<string, unknown>): InstanceRow {
+  const icon = resolveClassIcon(dto.classIcon);
+  const color = dto.classColor || DEFAULT_CLASS_COLOR;
   const relationCount = (dto.relationCount ?? dto.relation_count ?? 0) as number;
   const createdAt = (dto.createdAt ?? dto.created_at ?? '') as string;
   return {
@@ -54,11 +40,11 @@ function dtoToRow(dto: InstanceDTO & Record<string, unknown>, classIndex: number
     name: dto.name,
     description: dto.description ?? '',
     className: dto.className ?? '',
-    classIcon: visual.icon,
+    classIcon: icon,
     relations: relationCount,
     created: createdAt ? new Date(createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '',
-    icon: visual.icon,
-    color: visual.color,
+    icon,
+    color,
   };
 }
 
@@ -81,12 +67,12 @@ export default function InstancesPage() {
   const [loading, setLoading] = useState(true);
   const confirmModal = useModal();
 
-  // Build class options from API
+  // Build class options for filter dropdown
   const loadClassOptions = useCallback(async () => {
     if (!currentOntologyId) return;
     try {
       const res = await listClasses({ ontologyId: currentOntologyId });
-      const classes: ClassDTO[] = res.data ?? [];
+      const classes = res.data ?? [];
       setClassOptions([
         { value: 'all', label: 'All Instances' },
         ...classes.map((c) => ({ value: String(c.id), label: c.name })),
@@ -116,7 +102,7 @@ export default function InstancesPage() {
       const res = await listInstances(params);
       const pageResult = res.data;
       if (pageResult && pageResult.records) {
-        setPageData(pageResult.records.map((dto, i) => dtoToRow(dto as InstanceDTO & Record<string, unknown>, i)));
+        setPageData(pageResult.records.map((dto) => dtoToRow(dto as InstanceDTO & Record<string, unknown>)));
         setTotal(pageResult.total);
       } else {
         setPageData([]);
@@ -293,9 +279,8 @@ export default function InstancesPage() {
       title: <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', letterSpacing: 0.5 }}>Class</Typography.Text>,
       dataIndex: 'className',
       key: 'className',
-      width: 140,
       render: (_: string, record: InstanceRow) => (
-        <Flex align="center" gap={6} style={{ color: 'var(--primary-color)' }}>
+        <Flex align="center" gap={6} style={{ color: 'var(--primary-color)', whiteSpace: 'nowrap' }}>
           <record.classIcon size={12} />
           <Typography.Text style={{ fontSize: 13, fontWeight: 500, color: 'var(--primary-color)' }}>
             {record.className}

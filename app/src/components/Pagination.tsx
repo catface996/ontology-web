@@ -109,7 +109,6 @@ export default function Pagination({
               value={rowsPerPage}
               onChange={(val) => onRowsPerPageChange(val)}
               style={{ minWidth: 56 }}
-              size="small"
               options={rowsPerPageOptions.map((opt) => ({ label: opt, value: opt }))}
             />
           </>

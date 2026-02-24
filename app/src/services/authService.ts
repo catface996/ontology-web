@@ -1,7 +1,8 @@
 /**
  * Auth-service API calls.
  *
- * All paths use the `/auth/` gateway prefix → StripPrefix=1 → auth-service.
+ * All paths go through the Gateway at /auth/api/v1/... (with /auth/ service prefix).
+ * The gateway strips the first path segment (/auth/) before forwarding to the auth service.
  */
 
 import { get, post, type ApiResponse } from '../utils/request';
@@ -66,7 +67,7 @@ export function register(params: RegisterRequest): Promise<ApiResponse<null>> {
 
 /** Fetch current user profile */
 export function fetchCurrentUser(): Promise<ApiResponse<UserInfoDTO>> {
-  return get<UserInfoDTO>('/auth/api/v1/auth/me');
+  return get<UserInfoDTO>('/auth/api/v1/me');
 }
 
 // ---------------------------------------------------------------------------

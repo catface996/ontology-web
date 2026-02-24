@@ -1,12 +1,208 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Breadcrumb, Typography, Input, Button, Card, Select, Checkbox, Tag, Spin, App } from 'antd';
+import { Breadcrumb, Typography, Input, Button, Card, Select, Checkbox, Tag, Spin, App, ColorPicker, Popover } from 'antd';
 import {
   ChevronRight, Save, Info, List, Plus, Trash2, Eye,
-  Boxes, Brain, ArrowLeftRight,
+  Boxes, Brain, ArrowLeftRight, Palette,
+  // Building / Facility
+  Factory, Building2, Warehouse, Home, Store, Hospital, School, Church, Landmark,
+  // People / Org
+  User, Users, UserCheck, UserPlus, Contact, PersonStanding, Briefcase, BadgeCheck,
+  // Transport / Logistics
+  Truck, Car, Plane, Ship, Train, Package, Box, Container, ShoppingCart,
+  // Food / Dining
+  Utensils, ChefHat, Apple, Beef, Egg, Milk, Wheat, Cookie, Cake, Coffee, Wine, Pizza,
+  // Industry / Production
+  Wrench, Settings, Cog, Hammer, HardHat, Zap, Gauge, Thermometer, FlaskConical, Atom,
+  // Document / Data
+  File, FileText, Folder, Database, Server, Cloud, Clipboard, BookOpen, Notebook,
+  // Time / Schedule
+  Calendar, Clock, Timer, AlarmClock, Hourglass,
+  // Status / Mark
+  CheckCircle, AlertTriangle, CircleAlert, Star, Heart, Flag, Tag as TagIcon, Bookmark,
+  // Communication
+  Mail, Phone, MessageCircle, Bell, Megaphone,
+  // Nature / Location
+  MapPin, Globe, Mountain, TreePine, Sun, Moon, Droplet,
+  // Tech
+  Cpu, Monitor, Smartphone, Wifi, Bluetooth, Code, Terminal,
+  // Other
+  Link, Share2, GitBranch, Layers, Grid3x3, ListIcon, Shield, Lock, Key, EyeIcon,
+  Network,
 } from 'lucide-react';
 import SuccessModal from '../components/SuccessModal';
 import { useHeader } from '../contexts/HeaderContext';
+
+/* ── Icon options for class nodes — grouped by category ── */
+type IconOption = { name: string; label: string; Icon: React.FC<{ size?: number; color?: string }> };
+interface IconCategory { category: string; icons: IconOption[] }
+
+const ICON_CATEGORIES: IconCategory[] = [
+  {
+    category: 'Building / Facility',
+    icons: [
+      { name: 'factory', label: 'Factory', Icon: Factory },
+      { name: 'building-2', label: 'Building', Icon: Building2 },
+      { name: 'warehouse', label: 'Warehouse', Icon: Warehouse },
+      { name: 'home', label: 'Home', Icon: Home },
+      { name: 'store', label: 'Store', Icon: Store },
+      { name: 'hospital', label: 'Hospital', Icon: Hospital },
+      { name: 'school', label: 'School', Icon: School },
+      { name: 'church', label: 'Church', Icon: Church },
+      { name: 'landmark', label: 'Landmark', Icon: Landmark },
+    ],
+  },
+  {
+    category: 'People / Org',
+    icons: [
+      { name: 'user', label: 'User', Icon: User },
+      { name: 'users', label: 'Users', Icon: Users },
+      { name: 'user-check', label: 'User Check', Icon: UserCheck },
+      { name: 'user-plus', label: 'User Plus', Icon: UserPlus },
+      { name: 'contact', label: 'Contact', Icon: Contact },
+      { name: 'person-standing', label: 'Person', Icon: PersonStanding },
+      { name: 'briefcase', label: 'Briefcase', Icon: Briefcase },
+      { name: 'badge-check', label: 'Badge', Icon: BadgeCheck },
+    ],
+  },
+  {
+    category: 'Transport / Logistics',
+    icons: [
+      { name: 'truck', label: 'Truck', Icon: Truck },
+      { name: 'car', label: 'Car', Icon: Car },
+      { name: 'plane', label: 'Plane', Icon: Plane },
+      { name: 'ship', label: 'Ship', Icon: Ship },
+      { name: 'train', label: 'Train', Icon: Train },
+      { name: 'package', label: 'Package', Icon: Package },
+      { name: 'box', label: 'Box', Icon: Box },
+      { name: 'container', label: 'Container', Icon: Container },
+      { name: 'shopping-cart', label: 'Cart', Icon: ShoppingCart },
+    ],
+  },
+  {
+    category: 'Food / Dining',
+    icons: [
+      { name: 'utensils', label: 'Utensils', Icon: Utensils },
+      { name: 'chef-hat', label: 'Chef Hat', Icon: ChefHat },
+      { name: 'apple', label: 'Apple', Icon: Apple },
+      { name: 'beef', label: 'Beef', Icon: Beef },
+      { name: 'egg', label: 'Egg', Icon: Egg },
+      { name: 'milk', label: 'Milk', Icon: Milk },
+      { name: 'wheat', label: 'Wheat', Icon: Wheat },
+      { name: 'cookie', label: 'Cookie', Icon: Cookie },
+      { name: 'cake', label: 'Cake', Icon: Cake },
+      { name: 'coffee', label: 'Coffee', Icon: Coffee },
+      { name: 'wine', label: 'Wine', Icon: Wine },
+      { name: 'pizza', label: 'Pizza', Icon: Pizza },
+    ],
+  },
+  {
+    category: 'Industry / Production',
+    icons: [
+      { name: 'wrench', label: 'Wrench', Icon: Wrench },
+      { name: 'settings', label: 'Settings', Icon: Settings },
+      { name: 'cog', label: 'Cog', Icon: Cog },
+      { name: 'hammer', label: 'Hammer', Icon: Hammer },
+      { name: 'hard-hat', label: 'Hard Hat', Icon: HardHat },
+      { name: 'zap', label: 'Zap', Icon: Zap },
+      { name: 'gauge', label: 'Gauge', Icon: Gauge },
+      { name: 'thermometer', label: 'Thermo', Icon: Thermometer },
+      { name: 'flask-conical', label: 'Flask', Icon: FlaskConical },
+      { name: 'atom', label: 'Atom', Icon: Atom },
+    ],
+  },
+  {
+    category: 'Document / Data',
+    icons: [
+      { name: 'file', label: 'File', Icon: File },
+      { name: 'file-text', label: 'File Text', Icon: FileText },
+      { name: 'folder', label: 'Folder', Icon: Folder },
+      { name: 'database', label: 'Database', Icon: Database },
+      { name: 'server', label: 'Server', Icon: Server },
+      { name: 'cloud', label: 'Cloud', Icon: Cloud },
+      { name: 'clipboard', label: 'Clipboard', Icon: Clipboard },
+      { name: 'book-open', label: 'Book', Icon: BookOpen },
+      { name: 'notebook', label: 'Notebook', Icon: Notebook },
+    ],
+  },
+  {
+    category: 'Time / Schedule',
+    icons: [
+      { name: 'calendar', label: 'Calendar', Icon: Calendar },
+      { name: 'clock', label: 'Clock', Icon: Clock },
+      { name: 'timer', label: 'Timer', Icon: Timer },
+      { name: 'alarm-clock', label: 'Alarm', Icon: AlarmClock },
+      { name: 'hourglass', label: 'Hourglass', Icon: Hourglass },
+    ],
+  },
+  {
+    category: 'Status / Mark',
+    icons: [
+      { name: 'check-circle', label: 'Check', Icon: CheckCircle },
+      { name: 'alert-triangle', label: 'Warning', Icon: AlertTriangle },
+      { name: 'circle-alert', label: 'Info', Icon: CircleAlert },
+      { name: 'star', label: 'Star', Icon: Star },
+      { name: 'heart', label: 'Heart', Icon: Heart },
+      { name: 'flag', label: 'Flag', Icon: Flag },
+      { name: 'tag', label: 'Tag', Icon: TagIcon },
+      { name: 'bookmark', label: 'Bookmark', Icon: Bookmark },
+    ],
+  },
+  {
+    category: 'Communication',
+    icons: [
+      { name: 'mail', label: 'Mail', Icon: Mail },
+      { name: 'phone', label: 'Phone', Icon: Phone },
+      { name: 'message-circle', label: 'Message', Icon: MessageCircle },
+      { name: 'bell', label: 'Bell', Icon: Bell },
+      { name: 'megaphone', label: 'Megaphone', Icon: Megaphone },
+    ],
+  },
+  {
+    category: 'Nature / Location',
+    icons: [
+      { name: 'map-pin', label: 'Map Pin', Icon: MapPin },
+      { name: 'globe', label: 'Globe', Icon: Globe },
+      { name: 'mountain', label: 'Mountain', Icon: Mountain },
+      { name: 'tree-pine', label: 'Tree', Icon: TreePine },
+      { name: 'sun', label: 'Sun', Icon: Sun },
+      { name: 'moon', label: 'Moon', Icon: Moon },
+      { name: 'droplet', label: 'Droplet', Icon: Droplet },
+    ],
+  },
+  {
+    category: 'Tech',
+    icons: [
+      { name: 'cpu', label: 'CPU', Icon: Cpu },
+      { name: 'monitor', label: 'Monitor', Icon: Monitor },
+      { name: 'smartphone', label: 'Phone', Icon: Smartphone },
+      { name: 'wifi', label: 'WiFi', Icon: Wifi },
+      { name: 'bluetooth', label: 'Bluetooth', Icon: Bluetooth },
+      { name: 'code', label: 'Code', Icon: Code },
+      { name: 'terminal', label: 'Terminal', Icon: Terminal },
+    ],
+  },
+  {
+    category: 'Other',
+    icons: [
+      { name: 'boxes', label: 'Boxes', Icon: Boxes },
+      { name: 'link', label: 'Link', Icon: Link },
+      { name: 'share-2', label: 'Share', Icon: Share2 },
+      { name: 'git-branch', label: 'Branch', Icon: GitBranch },
+      { name: 'layers', label: 'Layers', Icon: Layers },
+      { name: 'grid-3x3', label: 'Grid', Icon: Grid3x3 },
+      { name: 'list', label: 'List', Icon: ListIcon },
+      { name: 'shield', label: 'Shield', Icon: Shield },
+      { name: 'lock', label: 'Lock', Icon: Lock },
+      { name: 'key', label: 'Key', Icon: Key },
+      { name: 'eye', label: 'Eye', Icon: EyeIcon },
+      { name: 'network', label: 'Network', Icon: Network },
+    ],
+  },
+];
+
+/** Flat list for quick lookup */
+const ALL_ICONS: IconOption[] = ICON_CATEGORIES.flatMap((c) => c.icons);
 import { useCurrentOntology } from '../contexts/OntologyContext';
 import {
   getClass, createClass, updateClass, listClasses,
@@ -30,6 +226,9 @@ export default function ClassEditorPage() {
   const [uri, setUri] = useState('');
   const [description, setDescription] = useState('');
   const [parentClassId, setParentClassId] = useState<number | null>(null);
+  const [color, setColor] = useState<string>('#8B5CF6');
+  const [icon, setIcon] = useState<string>('boxes');
+  const [iconPopoverOpen, setIconPopoverOpen] = useState(false);
   const [parentOptions, setParentOptions] = useState<{ value: number; label: string }[]>([]);
   const [successModalOpen, setSuccessModalOpen] = useState(false);
 
@@ -57,6 +256,8 @@ export default function ClassEditorPage() {
           setUri(res.data.uri ?? '');
           setDescription(res.data.description ?? '');
           setParentClassId(res.data.parentClassId ?? null);
+          if (res.data.color) setColor(res.data.color);
+          if (res.data.icon) setIcon(res.data.icon);
         }
       } catch {
         // fields stay empty
@@ -145,9 +346,9 @@ export default function ClassEditorPage() {
     setSaving(true);
     try {
       if (isEditing && apiClass) {
-        await updateClass({ id: apiClass.id, name, uri, description, parentClassId: parentClassId ?? undefined });
+        await updateClass({ id: apiClass.id, name, uri, description, parentClassId: parentClassId ?? undefined, color, icon });
       } else {
-        await createClass({ ontologyId, name, uri, description, parentClassId: parentClassId ?? undefined });
+        await createClass({ ontologyId, name, uri, description, parentClassId: parentClassId ?? undefined, color, icon });
       }
       setSuccessModalOpen(true);
     } catch (err) {
@@ -232,6 +433,72 @@ export default function ClassEditorPage() {
                   onClear={() => setParentClassId(null)}
                   options={parentOptions}
                 />
+              </div>
+              <div style={{ display: 'flex', gap: 16 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>Node Color</label>
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'center', height: 32 }}>
+                    <ColorPicker
+                      value={color}
+                      onChange={(_, hex) => setColor(hex)}
+                      size="small"
+                    />
+                    <Input value={color} onChange={(e) => setColor(e.target.value)} style={{ flex: 1 }} size="middle" />
+                  </div>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>Node Icon</label>
+                  <Popover
+                    open={iconPopoverOpen}
+                    onOpenChange={setIconPopoverOpen}
+                    trigger="click"
+                    placement="bottomLeft"
+                    content={
+                      <div style={{ width: 340, maxHeight: 400, overflowY: 'auto' }}>
+                        {ICON_CATEGORIES.map((cat) => (
+                          <div key={cat.category} style={{ marginBottom: 8 }}>
+                            <div style={{ fontSize: 11, color: '#71717a', padding: '4px 4px 2px', fontWeight: 600 }}>
+                              {cat.category}
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 2 }}>
+                              {cat.icons.map((opt) => (
+                                <div
+                                  key={opt.name}
+                                  onClick={() => { setIcon(opt.name); setIconPopoverOpen(false); }}
+                                  style={{
+                                    width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    borderRadius: 6, cursor: 'pointer',
+                                    border: icon === opt.name ? `2px solid ${color}` : '1px solid transparent',
+                                    background: icon === opt.name ? 'rgba(139,92,246,0.1)' : 'transparent',
+                                  }}
+                                  title={opt.label}
+                                >
+                                  <opt.Icon size={18} color={icon === opt.name ? color : '#a1a1aa'} />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    }
+                  >
+                    <div
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 8, padding: '0 11px',
+                        height: 32, borderRadius: 6, border: '1px solid #424242', cursor: 'pointer',
+                        background: 'var(--background-color)',
+                      }}
+                    >
+                      {(() => {
+                        const sel = ALL_ICONS.find((o) => o.name === icon);
+                        return sel ? <sel.Icon size={16} color={color} /> : <Boxes size={16} color={color} />;
+                      })()}
+                      <Typography.Text style={{ fontSize: 13 }}>
+                        {ALL_ICONS.find((o) => o.name === icon)?.label ?? 'Boxes'}
+                      </Typography.Text>
+                    </div>
+                  </Popover>
+                </div>
               </div>
             </div>
           </Card>
@@ -332,7 +599,10 @@ export default function ClassEditorPage() {
             </div>
             <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <Boxes size={18} color="var(--primary-color)" />
+                {(() => {
+                  const sel = ALL_ICONS.find((o) => o.name === icon);
+                  return sel ? <sel.Icon size={18} color={color} /> : <Boxes size={18} color={color} />;
+                })()}
                 <Typography.Text strong style={{ fontSize: 15 }}>{name || 'ClassName'}</Typography.Text>
               </div>
               <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 12 }}>

@@ -5,6 +5,8 @@ export interface ClassNode {
   id: number;
   name: string;
   type: string; // 'class'
+  color?: string | null;
+  icon?: string | null;
 }
 
 export interface ClassEdge {
@@ -22,15 +24,38 @@ interface Props {
   onToggleClass: (classId: number, className: string) => void;
 }
 
+/* -- Node dimensions -- */
+const NODE_W = 120;
+const NODE_H = 56;
+const NODE_RX = 12;
+
 interface SimNode extends d3.SimulationNodeDatum {
   id: number;
   name: string;
   type: string;
+  color?: string | null;
+  icon?: string | null;
 }
 
 interface SimLink extends d3.SimulationLinkDatum<SimNode> {
   edgeType: string;
   relationName?: string;
+}
+
+/** Compute the point where a line from the rectangle center to (tx, ty) intersects the rectangle edge. */
+function rectEdgePoint(cx: number, cy: number, tx: number, ty: number, hw: number, hh: number): [number, number] {
+  const dx = tx - cx;
+  const dy = ty - cy;
+  if (dx === 0 && dy === 0) return [cx, cy];
+  const absDx = Math.abs(dx);
+  const absDy = Math.abs(dy);
+  if (absDx * hh > absDy * hw) {
+    const sign = dx > 0 ? 1 : -1;
+    return [cx + sign * hw, cy + (dy * hw) / absDx];
+  } else {
+    const sign = dy > 0 ? 1 : -1;
+    return [cx + (dx * hh) / absDy, cy + sign * hh];
+  }
 }
 
 export default function ClassTopologyGraph({ nodes, edges, selectedClassIds, onToggleClass }: Props) {
@@ -77,12 +102,12 @@ export default function ClassTopologyGraph({ nodes, edges, selectedClassIds, onT
     feMerge.append('feMergeNode').attr('in', 'coloredBlur');
     feMerge.append('feMergeNode').attr('in', 'SourceGraphic');
 
-    // Arrow markers
-    defs.append('marker').attr('id', 'arrow-subclass').attr('viewBox', '0 0 10 6').attr('refX', 28).attr('refY', 3)
+    // Arrow markers — refX at tip since link endpoints are already at rect edges
+    defs.append('marker').attr('id', 'arrow-subclass').attr('viewBox', '0 0 10 6').attr('refX', 10).attr('refY', 3)
       .attr('markerWidth', 8).attr('markerHeight', 6).attr('orient', 'auto')
       .append('path').attr('d', 'M0,0 L10,3 L0,6 Z').attr('fill', '#22D3EE');
 
-    defs.append('marker').attr('id', 'arrow-relation').attr('viewBox', '0 0 10 6').attr('refX', 28).attr('refY', 3)
+    defs.append('marker').attr('id', 'arrow-relation').attr('viewBox', '0 0 10 6').attr('refX', 10).attr('refY', 3)
       .attr('markerWidth', 8).attr('markerHeight', 6).attr('orient', 'auto')
       .append('path').attr('d', 'M0,0 L10,3 L0,6 Z').attr('fill', 'var(--primary-color)');
 
@@ -108,12 +133,15 @@ export default function ClassTopologyGraph({ nodes, edges, selectedClassIds, onT
         relationName: e.relationName,
       }));
 
+    const hw = NODE_W / 2;
+    const hh = NODE_H / 2;
+
     // Force simulation
     const simulation = d3.forceSimulation<SimNode>(simNodes)
-      .force('link', d3.forceLink<SimNode, SimLink>(simLinks).id((d) => d.id).distance(120))
-      .force('charge', d3.forceManyBody().strength(-300))
+      .force('link', d3.forceLink<SimNode, SimLink>(simLinks).id((d) => d.id).distance(160))
+      .force('charge', d3.forceManyBody().strength(-400))
       .force('center', d3.forceCenter(0, 0))
-      .force('collide', d3.forceCollide(50));
+      .force('collide', d3.forceCollide(Math.max(hw, hh) + 10));
     simulationRef.current = simulation;
 
     // Draw links
@@ -154,37 +182,68 @@ export default function ClassTopologyGraph({ nodes, edges, selectedClassIds, onT
         }),
       );
 
-    // Node circles
-    node.append('circle')
-      .attr('r', 24)
-      .attr('fill', (d) => selectedClassIds.has(d.id) ? 'var(--primary-color)' : '#1a1a24')
-      .attr('stroke', (d) => selectedClassIds.has(d.id) ? 'var(--primary-color)' : '#a78bfa')
+    // Node rounded rectangles — transparent fill, border-only
+    node.append('rect')
+      .attr('x', -hw)
+      .attr('y', -hh)
+      .attr('width', NODE_W)
+      .attr('height', NODE_H)
+      .attr('rx', NODE_RX)
+      .attr('ry', NODE_RX)
+      .attr('fill', 'transparent')
+      .attr('stroke', (d) => selectedClassIds.has(d.id) ? (d.color || 'var(--primary-color)') : (d.color || '#a78bfa'))
       .attr('stroke-width', 2)
       .attr('filter', (d) => selectedClassIds.has(d.id) ? 'url(#class-glow)' : 'none');
 
-    // Node labels
+    // Node icon (top-left corner, using lucide icon font)
+    node.filter((d) => !!d.icon)
+      .append('text')
+      .attr('font-family', 'lucide')
+      .attr('font-size', 12)
+      .attr('fill', (d) => d.color || '#a78bfa')
+      .attr('x', -hw + 8)
+      .attr('y', -hh + 16);
+
+    // Node name labels (inside rect)
     node.append('text')
       .attr('text-anchor', 'middle')
-      .attr('dy', 4)
-      .attr('fill', (d) => selectedClassIds.has(d.id) ? '#fff' : '#e4e4e7')
+      .attr('dy', -2)
+      .attr('fill', '#e4e4e7')
       .attr('font-size', 11)
       .attr('font-weight', 500)
-      .text((d) => d.name.length > 10 ? d.name.slice(0, 9) + '…' : d.name);
+      .text((d) => d.name.length > 14 ? d.name.slice(0, 13) + '…' : d.name);
 
-    // subClassOf label below circle
+    // "Class" label below name (inside rect)
     node.append('text')
       .attr('text-anchor', 'middle')
-      .attr('dy', 38)
-      .attr('fill', '#71717a')
+      .attr('dy', 14)
+      .attr('fill', (d) => d.color || '#71717a')
       .attr('font-size', 9)
       .text('Class');
 
     simulation.on('tick', () => {
+      // Compute link endpoints snapped to rectangle edges
       link
-        .attr('x1', (d) => (d.source as SimNode).x!)
-        .attr('y1', (d) => (d.source as SimNode).y!)
-        .attr('x2', (d) => (d.target as SimNode).x!)
-        .attr('y2', (d) => (d.target as SimNode).y!);
+        .attr('x1', (d) => {
+          const s = d.source as SimNode;
+          const t = d.target as SimNode;
+          return rectEdgePoint(s.x!, s.y!, t.x!, t.y!, hw, hh)[0];
+        })
+        .attr('y1', (d) => {
+          const s = d.source as SimNode;
+          const t = d.target as SimNode;
+          return rectEdgePoint(s.x!, s.y!, t.x!, t.y!, hw, hh)[1];
+        })
+        .attr('x2', (d) => {
+          const s = d.source as SimNode;
+          const t = d.target as SimNode;
+          return rectEdgePoint(t.x!, t.y!, s.x!, s.y!, hw, hh)[0];
+        })
+        .attr('y2', (d) => {
+          const s = d.source as SimNode;
+          const t = d.target as SimNode;
+          return rectEdgePoint(t.x!, t.y!, s.x!, s.y!, hw, hh)[1];
+        });
 
       linkLabel
         .attr('x', (d) => ((d.source as SimNode).x! + (d.target as SimNode).x!) / 2)

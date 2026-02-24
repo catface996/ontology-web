@@ -1,8 +1,9 @@
 /**
  * Core-service API calls.
  *
- * All paths use the `/core/` gateway prefix → StripPrefix=1 → core-service.
- * Backend is under active development; callers should use mock fallback.
+ * All paths go through the Gateway at /core/api/v1/... (with /core/ service prefix).
+ * The gateway strips the first path segment (/core/) before forwarding to the core service.
+ * Gateway injects operatorId automatically; auth via Bearer JWT token.
  */
 
 import { get, post, type ApiResponse } from '../utils/request';
@@ -89,8 +90,11 @@ export interface ClassDTO {
   ontologyId?: number;
   parentClassId?: number | null;
   parentClassName?: string | null;
+  color?: string | null;
+  icon?: string | null;
   status?: string;
   childCount?: number;
+  instanceCount?: number;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -107,6 +111,8 @@ export interface CreateClassRequest {
   uri: string;
   description?: string;
   parentClassId?: number | null;
+  color?: string | null;
+  icon?: string | null;
 }
 
 export interface UpdateClassRequest {
@@ -115,6 +121,8 @@ export interface UpdateClassRequest {
   uri?: string;
   description?: string;
   parentClassId?: number | null;
+  color?: string | null;
+  icon?: string | null;
   status?: string;
 }
 
@@ -254,47 +262,47 @@ export interface UpdateOntologyRequest {
 
 /** List ontologies */
 export function listOntologies(params: { keyword?: string; status?: string } = {}): Promise<ApiResponse<OntologyDTO[]>> {
-  return post<OntologyDTO[]>('/core/api/v1/core/ontology/list', params);
+  return post<OntologyDTO[]>('/core/api/v1/ontology/list', params);
 }
 
 /** Get a single ontology by id */
 export function getOntology(id: number): Promise<ApiResponse<OntologyDTO>> {
-  return post<OntologyDTO>('/core/api/v1/core/ontology/get', { id });
+  return post<OntologyDTO>('/core/api/v1/ontology/get', { id });
 }
 
 /** Create a new ontology */
 export function createOntology(params: CreateOntologyRequest): Promise<ApiResponse<OntologyDTO>> {
-  return post<OntologyDTO>('/core/api/v1/core/ontology/create', params);
+  return post<OntologyDTO>('/core/api/v1/ontology/create', params);
 }
 
 /** Update an existing ontology */
 export function updateOntology(params: UpdateOntologyRequest): Promise<ApiResponse<OntologyDTO>> {
-  return post<OntologyDTO>('/core/api/v1/core/ontology/update', params);
+  return post<OntologyDTO>('/core/api/v1/ontology/update', params);
 }
 
 /** Delete an ontology by id */
 export function deleteOntology(id: number): Promise<ApiResponse<null>> {
-  return post<null>('/core/api/v1/core/ontology/delete', { id });
+  return post<null>('/core/api/v1/ontology/delete', { id });
 }
 
 /** Fetch the ontology tree (left panel search/browse) */
 export function fetchOntologyTree(keyword?: string): Promise<ApiResponse<OntologyTreeNode[]>> {
-  return post<OntologyTreeNode[]>('/core/api/v1/core/ontology/tree', { keyword });
+  return post<OntologyTreeNode[]>('/core/api/v1/ontology/tree', { keyword });
 }
 
 /** Fetch the knowledge graph visualisation data */
 export function fetchOntologyGraph(ontologyId: number): Promise<ApiResponse<OntologyGraphData>> {
-  return post<OntologyGraphData>('/core/api/v1/core/ontology/graph', { ontologyId });
+  return post<OntologyGraphData>('/core/api/v1/ontology/graph', { ontologyId });
 }
 
 /** Fetch ontology version history */
 export function fetchOntologyVersions(): Promise<ApiResponse<OntologyVersion[]>> {
-  return post<OntologyVersion[]>('/core/api/v1/core/ontology/versions');
+  return post<OntologyVersion[]>('/core/api/v1/ontology/versions');
 }
 
 /** Run ontology validation */
 export function runOntologyValidation(): Promise<ApiResponse<ValidationReport>> {
-  return post<ValidationReport>('/core/api/v1/core/ontology/validate');
+  return post<ValidationReport>('/core/api/v1/ontology/validate');
 }
 
 // ---------------------------------------------------------------------------
@@ -303,27 +311,27 @@ export function runOntologyValidation(): Promise<ApiResponse<ValidationReport>> 
 
 /** List classes (filtered) */
 export function listClasses(params: ClassListRequest = {}): Promise<ApiResponse<ClassDTO[]>> {
-  return post<ClassDTO[]>('/core/api/v1/core/class/list', params);
+  return post<ClassDTO[]>('/core/api/v1/class/list', params);
 }
 
 /** Get a single class by id */
 export function getClass(id: number): Promise<ApiResponse<ClassDTO>> {
-  return post<ClassDTO>('/core/api/v1/core/class/get', { id });
+  return post<ClassDTO>('/core/api/v1/class/get', { id });
 }
 
 /** Create a new class */
 export function createClass(params: CreateClassRequest): Promise<ApiResponse<ClassDTO>> {
-  return post<ClassDTO>('/core/api/v1/core/class/create', params);
+  return post<ClassDTO>('/core/api/v1/class/create', params);
 }
 
 /** Update an existing class */
 export function updateClass(params: UpdateClassRequest): Promise<ApiResponse<ClassDTO>> {
-  return post<ClassDTO>('/core/api/v1/core/class/update', params);
+  return post<ClassDTO>('/core/api/v1/class/update', params);
 }
 
 /** Delete a class by id */
 export function deleteClass(id: number): Promise<ApiResponse<null>> {
-  return post<null>('/core/api/v1/core/class/delete', { id });
+  return post<null>('/core/api/v1/class/delete', { id });
 }
 
 // ---------------------------------------------------------------------------
@@ -332,17 +340,17 @@ export function deleteClass(id: number): Promise<ApiResponse<null>> {
 
 /** Get logic axioms for a class */
 export function getClassLogic(classId: number): Promise<ApiResponse<ClassLogicDTO[]>> {
-  return post<ClassLogicDTO[]>('/core/api/v1/core/class/logic/get', { classId });
+  return post<ClassLogicDTO[]>('/core/api/v1/class/logic/get', { classId });
 }
 
 /** Update logic axioms for a class */
 export function updateClassLogic(params: UpdateClassLogicRequest): Promise<ApiResponse<ClassLogicDTO[]>> {
-  return post<ClassLogicDTO[]>('/core/api/v1/core/class/logic/update', params);
+  return post<ClassLogicDTO[]>('/core/api/v1/class/logic/update', params);
 }
 
 /** Analyze a class axiom from natural language */
 export function analyzeClassAxiom(params: AnalyzeClassAxiomRequest): Promise<ApiResponse<AxiomAnalysisResult>> {
-  return post<AxiomAnalysisResult>('/core/api/v1/core/class/logic/analyze', params);
+  return post<AxiomAnalysisResult>('/core/api/v1/class/logic/analyze', params);
 }
 
 // ---------------------------------------------------------------------------
@@ -363,17 +371,17 @@ export interface UpdateRelationLogicRequest {
 
 /** Get logic rules for a relation */
 export function getRelationLogic(relationId: number): Promise<ApiResponse<RelationLogicDTO[]>> {
-  return post<RelationLogicDTO[]>('/core/api/v1/core/relation/logic/get', { relationId });
+  return post<RelationLogicDTO[]>('/core/api/v1/relation/logic/get', { relationId });
 }
 
 /** Update logic rules for a relation */
 export function updateRelationLogic(params: UpdateRelationLogicRequest): Promise<ApiResponse<RelationLogicDTO[]>> {
-  return post<RelationLogicDTO[]>('/core/api/v1/core/relation/logic/update', params);
+  return post<RelationLogicDTO[]>('/core/api/v1/relation/logic/update', params);
 }
 
 /** Analyze a relation rule from natural language */
 export function analyzeRelationRule(params: AnalyzeRelationRuleRequest): Promise<ApiResponse<RuleAnalysisResult>> {
-  return post<RuleAnalysisResult>('/core/api/v1/core/relation/logic/analyze', params);
+  return post<RuleAnalysisResult>('/core/api/v1/relation/logic/analyze', params);
 }
 
 // ---------------------------------------------------------------------------
@@ -382,22 +390,22 @@ export function analyzeRelationRule(params: AnalyzeRelationRuleRequest): Promise
 
 /** List all namespaces */
 export function listNamespaces(): Promise<ApiResponse<NamespaceDTO[]>> {
-  return get<NamespaceDTO[]>('/core/api/v1/core/namespace/list');
+  return get<NamespaceDTO[]>('/core/api/v1/namespace/list');
 }
 
 /** Create a new namespace */
 export function createNamespace(params: CreateNamespaceRequest): Promise<ApiResponse<NamespaceDTO>> {
-  return post<NamespaceDTO>('/core/api/v1/core/namespace/create', params);
+  return post<NamespaceDTO>('/core/api/v1/namespace/create', params);
 }
 
 /** Update a namespace */
 export function updateNamespace(params: UpdateNamespaceRequest): Promise<ApiResponse<NamespaceDTO>> {
-  return post<NamespaceDTO>('/core/api/v1/core/namespace/update', params);
+  return post<NamespaceDTO>('/core/api/v1/namespace/update', params);
 }
 
 /** Delete a namespace by id */
 export function deleteNamespace(id: number): Promise<ApiResponse<null>> {
-  return post<null>('/core/api/v1/core/namespace/delete', { id });
+  return post<null>('/core/api/v1/namespace/delete', { id });
 }
 
 // ---------------------------------------------------------------------------
@@ -446,27 +454,27 @@ export interface UpdatePropertyRequest {
 
 /** List properties filtered by ontology */
 export function listProperties(params: ListPropertyRequest): Promise<ApiResponse<PropertyDTO[]>> {
-  return post<PropertyDTO[]>('/core/api/v1/core/property/list', params);
+  return post<PropertyDTO[]>('/core/api/v1/property/list', params);
 }
 
 /** Get a single property by id */
 export function getProperty(id: number): Promise<ApiResponse<PropertyDTO>> {
-  return post<PropertyDTO>('/core/api/v1/core/property/get', { id });
+  return post<PropertyDTO>('/core/api/v1/property/get', { id });
 }
 
 /** Create a new property */
 export function createProperty(params: CreatePropertyRequest): Promise<ApiResponse<PropertyDTO>> {
-  return post<PropertyDTO>('/core/api/v1/core/property/create', params);
+  return post<PropertyDTO>('/core/api/v1/property/create', params);
 }
 
 /** Update an existing property */
 export function updateProperty(params: UpdatePropertyRequest): Promise<ApiResponse<PropertyDTO>> {
-  return post<PropertyDTO>('/core/api/v1/core/property/update', params);
+  return post<PropertyDTO>('/core/api/v1/property/update', params);
 }
 
 /** Delete a property by id */
 export function deleteProperty(id: number): Promise<ApiResponse<null>> {
-  return post<null>('/core/api/v1/core/property/delete', { id });
+  return post<null>('/core/api/v1/property/delete', { id });
 }
 
 // ---------------------------------------------------------------------------
@@ -532,27 +540,27 @@ export interface UpdateRelationRequest {
 
 /** List relations filtered by ontology */
 export function listRelations(params: ListRelationRequest): Promise<ApiResponse<RelationDTO[]>> {
-  return post<RelationDTO[]>('/core/api/v1/core/relation/list', params);
+  return post<RelationDTO[]>('/core/api/v1/relation/list', params);
 }
 
 /** Get a single relation by id */
 export function getRelation(id: number): Promise<ApiResponse<RelationDTO>> {
-  return post<RelationDTO>('/core/api/v1/core/relation/get', { id });
+  return post<RelationDTO>('/core/api/v1/relation/get', { id });
 }
 
 /** Create a new relation */
 export function createRelation(params: CreateRelationRequest): Promise<ApiResponse<RelationDTO>> {
-  return post<RelationDTO>('/core/api/v1/core/relation/create', params);
+  return post<RelationDTO>('/core/api/v1/relation/create', params);
 }
 
 /** Update an existing relation */
 export function updateRelation(params: UpdateRelationRequest): Promise<ApiResponse<RelationDTO>> {
-  return post<RelationDTO>('/core/api/v1/core/relation/update', params);
+  return post<RelationDTO>('/core/api/v1/relation/update', params);
 }
 
 /** Delete a relation by id */
 export function deleteRelation(id: number): Promise<ApiResponse<null>> {
-  return post<null>('/core/api/v1/core/relation/delete', { id });
+  return post<null>('/core/api/v1/relation/delete', { id });
 }
 
 // ---------------------------------------------------------------------------
@@ -582,17 +590,17 @@ export interface ClassPropertyBinding {
 
 /** List properties bound to a class */
 export function listClassProperties(classId: number): Promise<ApiResponse<ClassPropertyDTO[]>> {
-  return post<ClassPropertyDTO[]>('/core/api/v1/core/class/property/list', { classId });
+  return post<ClassPropertyDTO[]>('/core/api/v1/class/property/list', { classId });
 }
 
 /** Bind properties to a class */
 export function bindClassProperties(classId: number, bindings: ClassPropertyBinding[]): Promise<ApiResponse<null>> {
-  return post<null>('/core/api/v1/core/class/property/bindList', { classId, bindings });
+  return post<null>('/core/api/v1/class/property/bindList', { classId, bindings });
 }
 
 /** Unbind a property from a class */
 export function unbindClassProperty(classId: number, propertyId: number): Promise<ApiResponse<null>> {
-  return post<null>('/core/api/v1/core/class/property/unbind', { classId, propertyId });
+  return post<null>('/core/api/v1/class/property/unbind', { classId, propertyId });
 }
 
 // ---------------------------------------------------------------------------
@@ -604,9 +612,13 @@ export interface ClassRelationDTO {
   classId: number;
   relationId: number;
   relationName: string;
+  relationUri: string;
+  domainClassId: number;
   domainClassName: string;
+  rangeClassId: number;
   rangeClassName: string;
   sortOrder: number;
+  createdAt: string;
 }
 
 export interface ClassRelationBinding {
@@ -616,17 +628,57 @@ export interface ClassRelationBinding {
 
 /** List relations bound to a class */
 export function listClassRelations(classId: number): Promise<ApiResponse<ClassRelationDTO[]>> {
-  return post<ClassRelationDTO[]>('/core/api/v1/core/class/relation/list', { classId });
+  return post<ClassRelationDTO[]>('/core/api/v1/class/relation/list', { classId });
 }
 
 /** Bind relations to a class */
 export function bindClassRelations(classId: number, bindings: ClassRelationBinding[]): Promise<ApiResponse<null>> {
-  return post<null>('/core/api/v1/core/class/relation/bindList', { classId, bindings });
+  return post<null>('/core/api/v1/class/relation/bindList', { classId, bindings });
 }
 
 /** Unbind a relation from a class */
 export function unbindClassRelation(classId: number, relationId: number): Promise<ApiResponse<null>> {
-  return post<null>('/core/api/v1/core/class/relation/unbind', { classId, relationId });
+  return post<null>('/core/api/v1/class/relation/unbind', { classId, relationId });
+}
+
+// ---------------------------------------------------------------------------
+// ClassTopology types & API
+// ---------------------------------------------------------------------------
+
+export interface ClassTopologyNode {
+  id: number;
+  name: string;
+  uri: string;
+  description: string;
+  parentClassId: number | null;
+  parentClassName: string | null;
+  color: string | null;
+  icon: string | null;
+  status: string;
+  propertyCount: number;
+  center: boolean;
+}
+
+export interface ClassTopologyEdge {
+  id: number;
+  name: string;
+  uri: string;
+  description: string;
+  sourceClassId: number;
+  sourceClassName: string;
+  targetClassId: number;
+  targetClassName: string;
+  cardinality: string;
+}
+
+export interface ClassTopologyData {
+  nodes: ClassTopologyNode[];
+  edges: ClassTopologyEdge[];
+}
+
+/** Get topology data for a class (nodes + edges in one call) */
+export function getClassTopology(classId: number, ontologyId?: number): Promise<ApiResponse<ClassTopologyData>> {
+  return post<ClassTopologyData>('/core/api/v1/class/topology', { classId, ontologyId });
 }
 
 // ---------------------------------------------------------------------------
@@ -638,6 +690,8 @@ export interface InstanceDTO {
   ontologyId: number;
   classId: number;
   className: string;
+  classColor?: string | null;
+  classIcon?: string | null;
   name: string;
   description: string;
   domain?: string;
@@ -712,6 +766,8 @@ export interface InstanceTopologyDTO {
     instanceName: string;
     classId: number;
     className: string;
+    classColor?: string | null;
+    classIcon?: string | null;
   }[];
   edges: {
     sourceInstanceId: number;
@@ -733,62 +789,62 @@ export interface MultiClassTopologyRequest {
 
 /** List instances (paginated) */
 export function listInstances(params: ListInstanceRequest = {}): Promise<ApiResponse<PageResult<InstanceDTO>>> {
-  return post<PageResult<InstanceDTO>>('/core/api/v1/core/instance/list', params);
+  return post<PageResult<InstanceDTO>>('/core/api/v1/instance/list', params);
 }
 
 /** Get a single instance by id */
 export function getInstance(id: number): Promise<ApiResponse<InstanceDTO>> {
-  return post<InstanceDTO>('/core/api/v1/core/instance/get', { id });
+  return post<InstanceDTO>('/core/api/v1/instance/get', { id });
 }
 
 /** Create a new instance */
 export function createInstance(params: CreateInstanceRequest): Promise<ApiResponse<InstanceDTO>> {
-  return post<InstanceDTO>('/core/api/v1/core/instance/create', params);
+  return post<InstanceDTO>('/core/api/v1/instance/create', params);
 }
 
 /** Update an existing instance */
 export function updateInstance(params: UpdateInstanceRequest): Promise<ApiResponse<InstanceDTO>> {
-  return post<InstanceDTO>('/core/api/v1/core/instance/update', params);
+  return post<InstanceDTO>('/core/api/v1/instance/update', params);
 }
 
 /** Delete an instance by id */
 export function deleteInstance(id: number): Promise<ApiResponse<null>> {
-  return post<null>('/core/api/v1/core/instance/delete', { id });
+  return post<null>('/core/api/v1/instance/delete', { id });
 }
 
 /** Get property values for an instance */
 export function listInstancePropertyValues(instanceId: number): Promise<ApiResponse<InstancePropertyValueDTO[]>> {
-  return post<InstancePropertyValueDTO[]>('/core/api/v1/core/instance/property/get', { instanceId });
+  return post<InstancePropertyValueDTO[]>('/core/api/v1/instance/property/get', { instanceId });
 }
 
 /** Save property values for an instance */
 export function saveInstancePropertyValues(params: SaveInstancePropertyValueRequest): Promise<ApiResponse<InstancePropertyValueDTO[]>> {
-  return post<InstancePropertyValueDTO[]>('/core/api/v1/core/instance/property/update', params);
+  return post<InstancePropertyValueDTO[]>('/core/api/v1/instance/property/update', params);
 }
 
 /** List relations for an instance */
 export function listInstanceRelations(instanceId: number): Promise<ApiResponse<InstanceRelationDTO[]>> {
-  return post<InstanceRelationDTO[]>('/core/api/v1/core/instance/relation/list', { id: instanceId });
+  return post<InstanceRelationDTO[]>('/core/api/v1/instance/relation/list', { id: instanceId });
 }
 
 /** Bind a relation to an instance */
 export function bindInstanceRelation(params: BindInstanceRelationRequest): Promise<ApiResponse<null>> {
-  return post<null>('/core/api/v1/core/instance/relation/add', params);
+  return post<null>('/core/api/v1/instance/relation/add', params);
 }
 
 /** Unbind a relation from an instance */
 export function unbindInstanceRelation(id: number): Promise<ApiResponse<null>> {
-  return post<null>('/core/api/v1/core/instance/relation/remove', { id });
+  return post<null>('/core/api/v1/instance/relation/remove', { id });
 }
 
 /** Get topology data for an instance */
 export function getInstanceTopology(instanceId: number): Promise<ApiResponse<InstanceTopologyDTO>> {
-  return post<InstanceTopologyDTO>('/core/api/v1/core/instance/topology', { instanceId });
+  return post<InstanceTopologyDTO>('/core/api/v1/instance/topology', { instanceId });
 }
 
 /** Get multi-class instance topology */
 export function fetchMultiClassInstanceTopology(params: MultiClassTopologyRequest): Promise<ApiResponse<InstanceTopologyDTO>> {
-  return post<InstanceTopologyDTO>('/core/api/v1/core/instance/multi-topology', params);
+  return post<InstanceTopologyDTO>('/core/api/v1/instance/multi-topology', params);
 }
 
 // ---------------------------------------------------------------------------
@@ -827,25 +883,25 @@ export interface UpdateTopologyRequest {
 
 /** List topologies for the current ontology */
 export async function listTopologies(params: { ontologyId?: number; keyword?: string } = {}): Promise<ApiResponse<TopologyDTO[]>> {
-  return await post<TopologyDTO[]>('/core/api/v1/core/topology/list', params);
+  return await post<TopologyDTO[]>('/core/api/v1/topology/list', params);
 }
 
 /** Get a single topology by id */
 export async function getTopology(id: number): Promise<ApiResponse<TopologyDTO>> {
-  return await post<TopologyDTO>('/core/api/v1/core/topology/get', { id });
+  return await post<TopologyDTO>('/core/api/v1/topology/get', { id });
 }
 
 /** Create a new topology */
 export async function createTopology(params: CreateTopologyRequest): Promise<ApiResponse<TopologyDTO>> {
-  return await post<TopologyDTO>('/core/api/v1/core/topology/create', params);
+  return await post<TopologyDTO>('/core/api/v1/topology/create', params);
 }
 
 /** Update an existing topology */
 export async function updateTopology(params: UpdateTopologyRequest): Promise<ApiResponse<TopologyDTO>> {
-  return await post<TopologyDTO>('/core/api/v1/core/topology/update', params);
+  return await post<TopologyDTO>('/core/api/v1/topology/update', params);
 }
 
 /** Delete a topology by id */
 export async function deleteTopology(id: number): Promise<ApiResponse<null>> {
-  return await post<null>('/core/api/v1/core/topology/delete', { id });
+  return await post<null>('/core/api/v1/topology/delete', { id });
 }

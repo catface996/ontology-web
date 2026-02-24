@@ -133,6 +133,8 @@ export default function TopologyViewPage() {
             id: n.id,
             name: n.name || n.label || String(n.id),
             type: n.type || 'class',
+            color: n.color || null,
+            icon: n.icon || null,
           }));
           const edges: ClassEdge[] = (rawData.edges || rawData.links || []).map((e: any) => ({
             source: typeof e.source === 'string' ? parseInt(e.source, 10) : e.source,
@@ -394,7 +396,36 @@ export default function TopologyViewPage() {
             )}
           </div>
 
-          <div style={{ flex: 1, overflow: 'auto' }}>
+          <div
+            className="instance-topology-accordion"
+            style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+          >
+            <style>{`
+              .instance-topology-accordion .ant-collapse {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+              }
+              .instance-topology-accordion .ant-collapse-item-active {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+              }
+              .instance-topology-accordion .ant-collapse-item-active > .ant-collapse-panel {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+              }
+              .instance-topology-accordion .ant-collapse-item-active > .ant-collapse-panel > .ant-collapse-body {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+              }
+            `}</style>
             {loadingInstance ? (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
                 <Spin />
@@ -429,7 +460,7 @@ export default function TopologyViewPage() {
                     </span>
                   ),
                   children: (
-                    <div style={{ height: 360, border: '1px solid #27273a', borderRadius: 8, overflow: 'hidden' }}>
+                    <div style={{ flex: 1, border: '1px solid #27273a', borderRadius: 8, overflow: 'hidden', minHeight: 200 }}>
                       <InstanceTopologyGraph data={sg.data} />
                     </div>
                   ),

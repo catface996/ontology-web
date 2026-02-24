@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Breadcrumb, Input, Button, Checkbox, Tag, Typography, Flex, App } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
-  Box as BoxIcon, User, Building2, MapPin, Calendar, FileText, CornerDownRight,
-  Search, Plus, Boxes, List, Pencil, Brain, Trash2,
+  CornerDownRight,
+  Search, Plus, Boxes, List, Pencil, Brain, Trash2, Share2,
   GitFork, File, ArrowLeftRight,
 } from 'lucide-react';
 import TableCard from '../components/TableCard';
@@ -12,6 +12,7 @@ import { useModal } from '../contexts/ModalContext';
 import { useHeader } from '../contexts/HeaderContext';
 import { useCurrentOntology } from '../contexts/OntologyContext';
 import { listClasses, deleteClass, type ClassDTO } from '../services/coreService';
+import { resolveClassIcon, DEFAULT_CLASS_COLOR } from '../utils/classIconMap';
 
 interface ClassData {
   id: string;
@@ -19,34 +20,23 @@ interface ClassData {
   description: string;
   parent: string | null;
   childCount: number;
+  instanceCount: number;
   status: string;
   icon: React.ComponentType<{ size?: number; color?: string }>;
   color: string;
 }
 
-/* -- Icon palette for API-sourced classes -- */
-const CLASS_ICONS: Record<string, { icon: React.ComponentType<{ size?: number; color?: string }>; color: string }> = {
-  entity:       { icon: BoxIcon, color: 'var(--primary-color)' },
-  person:       { icon: User, color: '#22D3EE' },
-  organization: { icon: Building2, color: '#F472B6' },
-  location:     { icon: MapPin, color: '#4ADE80' },
-  event:        { icon: Calendar, color: '#FBBF24' },
-  document:     { icon: FileText, color: '#EC4899' },
-};
-const PALETTE_COLORS = ['var(--primary-color)', '#22D3EE', '#F472B6', '#4ADE80', '#FBBF24', '#EC4899'];
-const DEFAULT_CLASS_ICON = { icon: Boxes, color: 'var(--primary-color)' };
-
-function dtoToClassData(dto: ClassDTO, index: number): ClassData {
-  const key = dto.name.toLowerCase();
-  const visual = CLASS_ICONS[key] ?? { ...DEFAULT_CLASS_ICON, color: PALETTE_COLORS[index % PALETTE_COLORS.length] };
+function dtoToClassData(dto: ClassDTO): ClassData {
   return {
     id: String(dto.id),
     name: dto.name,
     description: dto.description ?? '',
     parent: dto.parentClassName ?? null,
     childCount: dto.childCount ?? 0,
+    instanceCount: dto.instanceCount ?? 0,
     status: dto.status ?? 'ACTIVE',
-    ...visual,
+    icon: resolveClassIcon(dto.icon),
+    color: dto.color || DEFAULT_CLASS_COLOR,
   };
 }
 
@@ -289,6 +279,14 @@ export default function ClassesPage() {
       render: (val: number) => <Tag>{val}</Tag>,
     },
     {
+      title: <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', letterSpacing: 0.5 }}>Instances</Typography.Text>,
+      dataIndex: 'instanceCount',
+      key: 'instanceCount',
+      width: 100,
+      align: 'center',
+      render: (val: number) => <Tag>{val}</Tag>,
+    },
+    {
       title: <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', letterSpacing: 0.5 }}>Status</Typography.Text>,
       dataIndex: 'status',
       key: 'status',
@@ -301,10 +299,16 @@ export default function ClassesPage() {
     {
       title: <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', letterSpacing: 0.5 }}>Actions</Typography.Text>,
       key: 'actions',
-      width: 80,
+      width: 110,
       align: 'center',
       render: (_: unknown, record: ClassData) => (
         <Flex justify="center" gap={4}>
+          <Button
+            type="text"
+            size="small"
+            icon={<Share2 size={16} />}
+            onClick={() => navigate(`/classes/${record.id}/topology`)}
+          />
           <Button
             type="text"
             size="small"

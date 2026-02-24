@@ -7,12 +7,36 @@ const CLASS_COLORS = [
   '#A78BFA', '#FB923C', '#38BDF8', '#FBBF24',
 ];
 
+/* -- Node dimensions -- */
+const NODE_W = 120;
+const NODE_H = 56;
+const NODE_RX = 12;
+
 interface SimNode extends d3.SimulationNodeDatum {
   id: number;
   name: string;
   classId: number;
   className: string;
   color: string;
+}
+
+/** Compute the point where a line from the rectangle center to (tx, ty) intersects the rectangle edge. */
+function rectEdgePoint(cx: number, cy: number, tx: number, ty: number, hw: number, hh: number): [number, number] {
+  const dx = tx - cx;
+  const dy = ty - cy;
+  if (dx === 0 && dy === 0) return [cx, cy];
+  const absDx = Math.abs(dx);
+  const absDy = Math.abs(dy);
+  // Determine if intersection is on vertical or horizontal edge
+  if (absDx * hh > absDy * hw) {
+    // hits left or right edge
+    const sign = dx > 0 ? 1 : -1;
+    return [cx + sign * hw, cy + (dy * hw) / absDx];
+  } else {
+    // hits top or bottom edge
+    const sign = dy > 0 ? 1 : -1;
+    return [cx + (dx * hh) / absDy, cy + sign * hh];
+  }
 }
 
 interface SimLink extends d3.SimulationLinkDatum<SimNode> {
@@ -28,16 +52,20 @@ export default function InstanceTopologyGraph({ data }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [size, setSize] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
 
-  // Track container size with ResizeObserver
+  // Track container size with ResizeObserver (debounced to avoid re-renders during Collapse animation)
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
+    let timer: ReturnType<typeof setTimeout>;
     const ro = new ResizeObserver((entries) => {
       const { width, height } = entries[0].contentRect;
-      if (width > 0 && height > 0) setSize({ width, height });
+      if (width > 0 && height > 0) {
+        clearTimeout(timer);
+        timer = setTimeout(() => setSize({ width, height }), 150);
+      }
     });
     ro.observe(el);
-    return () => ro.disconnect();
+    return () => { clearTimeout(timer); ro.disconnect(); };
   }, []);
 
   useEffect(() => {
@@ -49,10 +77,14 @@ export default function InstanceTopologyGraph({ data }: Props) {
     const width = size.width;
     const height = size.height;
 
-    // Build class color map
+    // Build class color map — use class-defined color if available, fallback to auto-assigned
     const classIds = [...new Set(data.nodes.map((n) => n.classId))];
     const classColorMap = new Map<number, string>();
-    classIds.forEach((cid, i) => classColorMap.set(cid, CLASS_COLORS[i % CLASS_COLORS.length]));
+    let autoIdx = 0;
+    classIds.forEach((cid) => {
+      const node = data.nodes.find((n) => n.classId === cid);
+      classColorMap.set(cid, node?.classColor || CLASS_COLORS[autoIdx++ % CLASS_COLORS.length]);
+    });
 
     // Defs
     const defs = svg.append('defs');
@@ -62,8 +94,8 @@ export default function InstanceTopologyGraph({ data }: Props) {
     feMerge.append('feMergeNode').attr('in', 'coloredBlur');
     feMerge.append('feMergeNode').attr('in', 'SourceGraphic');
 
-    // Arrow marker (consistent with ClassTopologyGraph relation style)
-    defs.append('marker').attr('id', 'arrow-inst-relation').attr('viewBox', '0 0 10 6').attr('refX', 22).attr('refY', 3)
+    // Arrow marker — refX pushed out so arrowhead sits at rectangle edge
+    defs.append('marker').attr('id', 'arrow-inst-relation').attr('viewBox', '0 0 10 6').attr('refX', 10).attr('refY', 3)
       .attr('markerWidth', 8).attr('markerHeight', 6).attr('orient', 'auto')
       .append('path').attr('d', 'M0,0 L10,3 L0,6 Z').attr('fill', 'var(--primary-color)');
 
@@ -94,14 +126,17 @@ export default function InstanceTopologyGraph({ data }: Props) {
         relationName: e.relationName || '',
       }));
 
+    const hw = NODE_W / 2;
+    const hh = NODE_H / 2;
+
     // Force simulation
     const simulation = d3.forceSimulation<SimNode>(simNodes)
-      .force('link', d3.forceLink<SimNode, SimLink>(simLinks).id((d) => d.id).distance(100))
-      .force('charge', d3.forceManyBody().strength(-200))
+      .force('link', d3.forceLink<SimNode, SimLink>(simLinks).id((d) => d.id).distance(160))
+      .force('charge', d3.forceManyBody().strength(-400))
       .force('center', d3.forceCenter(0, 0))
-      .force('collide', d3.forceCollide(30));
+      .force('collide', d3.forceCollide(Math.max(hw, hh) + 10));
 
-    // Draw links (consistent with ClassTopologyGraph relation style)
+    // Draw links
     const link = g.selectAll<SVGLineElement, SimLink>('.link')
       .data(simLinks).enter().append('line')
       .attr('class', 'link')
@@ -139,36 +174,58 @@ export default function InstanceTopologyGraph({ data }: Props) {
         }),
       );
 
-    // Node circles
-    node.append('circle')
-      .attr('r', 18)
-      .attr('fill', '#1a1a24')
+    // Node rounded rectangles — transparent fill, border-only
+    node.append('rect')
+      .attr('x', -hw)
+      .attr('y', -hh)
+      .attr('width', NODE_W)
+      .attr('height', NODE_H)
+      .attr('rx', NODE_RX)
+      .attr('ry', NODE_RX)
+      .attr('fill', 'transparent')
       .attr('stroke', (d) => d.color)
       .attr('stroke-width', 2);
 
-    // Node labels (inside)
+    // Node name labels (inside rect)
     node.append('text')
       .attr('text-anchor', 'middle')
-      .attr('dy', 4)
+      .attr('dy', -2)
       .attr('fill', '#e4e4e7')
-      .attr('font-size', 9)
+      .attr('font-size', 11)
       .attr('font-weight', 500)
-      .text((d) => d.name.length > 6 ? d.name.slice(0, 5) + '…' : d.name);
+      .text((d) => d.name.length > 14 ? d.name.slice(0, 13) + '…' : d.name);
 
-    // Class label below
+    // Class label below name (inside rect)
     node.append('text')
       .attr('text-anchor', 'middle')
-      .attr('dy', 32)
+      .attr('dy', 14)
       .attr('fill', (d) => d.color)
-      .attr('font-size', 8)
+      .attr('font-size', 9)
       .text((d) => d.className);
 
     simulation.on('tick', () => {
+      // Compute link endpoints snapped to rectangle edges
       link
-        .attr('x1', (d) => (d.source as SimNode).x!)
-        .attr('y1', (d) => (d.source as SimNode).y!)
-        .attr('x2', (d) => (d.target as SimNode).x!)
-        .attr('y2', (d) => (d.target as SimNode).y!);
+        .attr('x1', (d) => {
+          const s = d.source as SimNode;
+          const t = d.target as SimNode;
+          return rectEdgePoint(s.x!, s.y!, t.x!, t.y!, hw, hh)[0];
+        })
+        .attr('y1', (d) => {
+          const s = d.source as SimNode;
+          const t = d.target as SimNode;
+          return rectEdgePoint(s.x!, s.y!, t.x!, t.y!, hw, hh)[1];
+        })
+        .attr('x2', (d) => {
+          const s = d.source as SimNode;
+          const t = d.target as SimNode;
+          return rectEdgePoint(t.x!, t.y!, s.x!, s.y!, hw, hh)[0];
+        })
+        .attr('y2', (d) => {
+          const s = d.source as SimNode;
+          const t = d.target as SimNode;
+          return rectEdgePoint(t.x!, t.y!, s.x!, s.y!, hw, hh)[1];
+        });
 
       linkLabel
         .attr('x', (d) => ((d.source as SimNode).x! + (d.target as SimNode).x!) / 2)
@@ -184,7 +241,7 @@ export default function InstanceTopologyGraph({ data }: Props) {
 
   return (
     <div ref={containerRef} style={{ width: '100%', height: '100%', background: '#0a0a0f' }}>
-      <svg ref={svgRef} width={size.width} height={size.height} />
+      <svg ref={svgRef} style={{ width: '100%', height: '100%', display: 'block' }} />
     </div>
   );
 }

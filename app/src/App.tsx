@@ -13,6 +13,7 @@ import TopologyEditorPage from './pages/TopologyEditorPage';
 import TopologyViewPage from './pages/TopologyViewPage';
 import ClassesPage from './pages/ClassesPage';
 import ClassEditorPage from './pages/ClassEditorPage';
+import ClassTopologyPage from './pages/ClassTopologyPage';
 import RelationsPage from './pages/RelationsPage';
 import RelationEditorPage from './pages/RelationEditorPage';
 import PropertiesPage from './pages/PropertiesPage';
@@ -90,6 +91,7 @@ function ThemedApp() {
             <Route path="topology/:topologyId/edit" element={<TopologyEditorPage />} />
             <Route path="topology/:topologyId/view" element={<TopologyViewPage />} />
             <Route path="classes" element={<ClassesPage />} />
+            <Route path="classes/:classId/topology" element={<ClassTopologyPage />} />
             <Route path="classes/:classId/edit" element={<ClassEditorPage />} />
             <Route path="relations" element={<RelationsPage />} />
             <Route path="relations/:relationId/edit" element={<RelationEditorPage />} />
