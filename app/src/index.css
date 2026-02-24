@@ -82,3 +82,89 @@ body {
   gap: 20px;
   overflow: hidden;
 }
+
+/* ── Markdown rendering styles (dark theme) ── */
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+  color: #e4e4e7;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  font-weight: 600;
+}
+.markdown-body h1 { font-size: 1.8em; border-bottom: 1px solid #27273a; padding-bottom: 0.3em; }
+.markdown-body h2 { font-size: 1.4em; border-bottom: 1px solid #27273a; padding-bottom: 0.3em; }
+.markdown-body h3 { font-size: 1.2em; }
+.markdown-body p { margin: 0.8em 0; }
+.markdown-body ul, .markdown-body ol { padding-left: 2em; margin: 0.5em 0; }
+.markdown-body li { margin: 0.3em 0; }
+.markdown-body strong { color: #e4e4e7; }
+.markdown-body a { color: var(--primary-color); text-decoration: none; }
+.markdown-body a:hover { text-decoration: underline; }
+.markdown-body blockquote {
+  border-left: 3px solid #27273a;
+  padding: 0.5em 1em;
+  margin: 1em 0;
+  color: #a1a1aa;
+  background: rgba(255,255,255,0.02);
+  border-radius: 0 6px 6px 0;
+}
+.markdown-body code {
+  background: #1a1a24;
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  font-size: 0.9em;
+  font-family: 'JetBrains Mono', monospace;
+  color: #e4e4e7;
+}
+.markdown-body pre {
+  background: #0a0a0f;
+  border: 1px solid #27273a;
+  border-radius: 8px;
+  padding: 16px;
+  overflow-x: auto;
+  margin: 1em 0;
+}
+.markdown-body pre code {
+  background: transparent;
+  padding: 0;
+  font-size: 0.85em;
+  line-height: 1.6;
+}
+.markdown-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1em 0;
+}
+.markdown-body th {
+  background: #1a1a24;
+  color: #a1a1aa;
+  font-weight: 500;
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid #27273a;
+  font-size: 0.85em;
+}
+.markdown-body td {
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  font-size: 0.9em;
+}
+.markdown-body tr:hover td {
+  background: rgba(255,255,255,0.02);
+}
+.markdown-body hr {
+  border: none;
+  border-top: 1px solid #27273a;
+  margin: 1.5em 0;
+}
+.markdown-body img {
+  max-width: 100%;
+  border-radius: 8px;
+}
+.markdown-body input[type="checkbox"] {
+  margin-right: 0.5em;
+}
