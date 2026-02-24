@@ -956,3 +956,72 @@ export async function saveTopologyPositions(params: SaveTopologyPositionsRequest
 export async function resetTopologyPositions(topologyId: number): Promise<ApiResponse<null>> {
   return await post<null>('/core/api/v1/topology/reset-positions', { id: topologyId });
 }
+
+// ---------------------------------------------------------------------------
+// Report types
+// ---------------------------------------------------------------------------
+
+export interface ReportDTO {
+  id: number;
+  title: string;
+  description: string;
+  icon: string;
+  iconColor: string;
+  status: string;
+  updatedAt: string;
+}
+
+export interface ReportDetailDTO {
+  id: number;
+  title: string;
+  description: string;
+  icon: string;
+  iconColor: string;
+  status: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: number;
+  updatedBy: number;
+}
+
+export interface ListReportRequest {
+  keyword?: string;
+  status?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface UpdateReportRequest {
+  id: number;
+  title?: string;
+  description?: string;
+  icon?: string;
+  iconColor?: string;
+  status?: string;
+  content?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Report APIs
+// ---------------------------------------------------------------------------
+
+/** List reports (paginated) */
+export function listReports(params: ListReportRequest = {}): Promise<ApiResponse<PageResult<ReportDTO>>> {
+  return post<PageResult<ReportDTO>>('/core/api/v1/report/list', params);
+}
+
+/** Get report detail by id */
+export function getReportDetail(id: number): Promise<ApiResponse<ReportDetailDTO>> {
+  return post<ReportDetailDTO>('/core/api/v1/report/detail', { id });
+}
+
+/** Update a report */
+export function updateReport(params: UpdateReportRequest): Promise<ApiResponse<ReportDetailDTO>> {
+  return post<ReportDetailDTO>('/core/api/v1/report/update', params);
+}
+
+/** Delete a report by id */
+export function deleteReport(id: number): Promise<ApiResponse<null>> {
+  return post<null>('/core/api/v1/report/delete', { id });
+}
