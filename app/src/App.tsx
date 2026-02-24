@@ -33,6 +33,9 @@ import FieldMappingPage from './pages/FieldMappingPage';
 import ReportManagementPage from './pages/ReportManagementPage';
 import ReportDetailPage from './pages/ReportDetailPage';
 import ReportEditPage from './pages/ReportEditPage';
+import ReportTemplateListPage from './pages/ReportTemplateListPage';
+import ReportTemplateDetailPage from './pages/ReportTemplateDetailPage';
+import ReportTemplateEditPage from './pages/ReportTemplateEditPage';
 import UserManagementPage from './pages/UserManagementPage';
 import RolesPermissionsPage from './pages/RolesPermissionsPage';
 import AgentConversationFlowPage from './pages/AgentConversationFlowPage';
@@ -113,6 +116,10 @@ function ThemedApp() {
             <Route path="report-management" element={<ReportManagementPage />} />
             <Route path="report-management/:reportId" element={<ReportDetailPage />} />
             <Route path="report-management/:reportId/edit" element={<ReportEditPage />} />
+            <Route path="report-templates" element={<ReportTemplateListPage />} />
+            <Route path="report-templates/new" element={<ReportTemplateEditPage />} />
+            <Route path="report-templates/:templateId" element={<ReportTemplateDetailPage />} />
+            <Route path="report-templates/:templateId/edit" element={<ReportTemplateEditPage />} />
             <Route path="user-management" element={<UserManagementPage />} />
             <Route path="user-management/:userId" element={<UserDetailPage />} />
             <Route path="search" element={<GlobalSearchPage />} />

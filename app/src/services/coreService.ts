@@ -1025,3 +1025,122 @@ export function updateReport(params: UpdateReportRequest): Promise<ApiResponse<R
 export function deleteReport(id: number): Promise<ApiResponse<null>> {
   return post<null>('/core/api/v1/report/delete', { id });
 }
+
+// ---------------------------------------------------------------------------
+// Report Template types
+// ---------------------------------------------------------------------------
+
+export interface ReportTemplateDTO {
+  id: number;
+  title: string;
+  description: string;
+  icon: string;
+  iconColor: string;
+  status: string;
+  majorVersion: number;
+  minorVersion: number;
+  updatedAt: string;
+}
+
+export interface ReportTemplateDetailDTO {
+  id: number;
+  title: string;
+  description: string;
+  icon: string;
+  iconColor: string;
+  status: string;
+  content: string;
+  majorVersion: number;
+  minorVersion: number;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: number;
+  updatedBy: number;
+}
+
+export interface ReportTemplateVersionDTO {
+  id: number;
+  templateId: number;
+  title: string;
+  majorVersion: number;
+  minorVersion: number;
+  createdAt: string;
+  createdBy: number;
+}
+
+export interface ReportTemplateVersionDetailDTO {
+  id: number;
+  templateId: number;
+  title: string;
+  description: string;
+  content: string;
+  majorVersion: number;
+  minorVersion: number;
+  createdAt: string;
+  createdBy: number;
+}
+
+export interface ListReportTemplateRequest {
+  keyword?: string;
+  status?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface CreateReportTemplateRequest {
+  title: string;
+  description?: string;
+  icon?: string;
+  iconColor?: string;
+  status?: string;
+  content?: string;
+}
+
+export interface UpdateReportTemplateRequest {
+  id: number;
+  title: string;
+  description?: string;
+  icon?: string;
+  iconColor?: string;
+  status?: string;
+  content?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Report Template APIs
+// ---------------------------------------------------------------------------
+
+/** List report templates (paginated) */
+export function listReportTemplates(params: ListReportTemplateRequest = {}): Promise<ApiResponse<PageResult<ReportTemplateDTO>>> {
+  return post<PageResult<ReportTemplateDTO>>('/core/api/v1/report-template/list', params);
+}
+
+/** Get report template detail by id */
+export function getReportTemplateDetail(id: number): Promise<ApiResponse<ReportTemplateDetailDTO>> {
+  return post<ReportTemplateDetailDTO>('/core/api/v1/report-template/detail', { id });
+}
+
+/** Create a new report template */
+export function createReportTemplate(params: CreateReportTemplateRequest): Promise<ApiResponse<ReportTemplateDetailDTO>> {
+  return post<ReportTemplateDetailDTO>('/core/api/v1/report-template/create', params);
+}
+
+/** Update a report template */
+export function updateReportTemplate(params: UpdateReportTemplateRequest): Promise<ApiResponse<ReportTemplateDetailDTO>> {
+  return post<ReportTemplateDetailDTO>('/core/api/v1/report-template/update', params);
+}
+
+/** Delete a report template by id */
+export function deleteReportTemplate(id: number): Promise<ApiResponse<null>> {
+  return post<null>('/core/api/v1/report-template/delete', { id });
+}
+
+/** List template version history */
+export function listTemplateVersions(templateId: number): Promise<ApiResponse<ReportTemplateVersionDTO[]>> {
+  return post<ReportTemplateVersionDTO[]>('/core/api/v1/report-template/versions', { templateId });
+}
+
+/** Get template version detail */
+export function getTemplateVersionDetail(id: number): Promise<ApiResponse<ReportTemplateVersionDetailDTO>> {
+  return post<ReportTemplateVersionDetailDTO>('/core/api/v1/report-template/version-detail', { id });
+}
