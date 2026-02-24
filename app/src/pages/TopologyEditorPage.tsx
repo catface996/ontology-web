@@ -168,9 +168,9 @@ export default function TopologyEditorPage() {
 
   return (
     <>
-      <div style={{ flex: 1, padding: 24, display: 'flex', flexDirection: 'column', gap: 24, overflow: 'auto' }}>
+      <div style={{ flex: 1, padding: 24, display: 'flex', flexDirection: 'column', gap: 24, overflow: 'hidden' }}>
         {/* Top section: Name, Description, Stats */}
-        <Card>
+        <Card style={{ flexShrink: 0 }}>
           <div style={{ display: 'flex', gap: 24 }}>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
@@ -209,11 +209,11 @@ export default function TopologyEditorPage() {
         </Card>
 
         {/* Dual-column class picker */}
-        <div style={{ flex: 1, display: 'flex', gap: 24, minHeight: 400 }}>
+        <div style={{ flex: 1, display: 'flex', gap: 24, minHeight: 0, overflow: 'hidden' }}>
           {/* Available Classes */}
           <Card
-            style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
-            styles={{ body: { flex: 1, display: 'flex', flexDirection: 'column', padding: 16 } }}
+            style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+            styles={{ body: { flex: 1, display: 'flex', flexDirection: 'column', padding: 16, overflow: 'hidden' } }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
               <Boxes size={18} color="var(--primary-color)" />
@@ -264,8 +264,8 @@ export default function TopologyEditorPage() {
 
           {/* Included Classes */}
           <Card
-            style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
-            styles={{ body: { flex: 1, display: 'flex', flexDirection: 'column', padding: 16 } }}
+            style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+            styles={{ body: { flex: 1, display: 'flex', flexDirection: 'column', padding: 16, overflow: 'hidden' } }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
               <ArrowLeftRight size={18} color="var(--primary-color)" />

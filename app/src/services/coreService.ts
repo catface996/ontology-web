@@ -650,6 +650,8 @@ export interface ClassTopologyNode {
   status: string;
   propertyCount: number;
   center: boolean;
+  positionX: number | null;
+  positionY: number | null;
 }
 
 export interface ClassTopologyEdge {
@@ -856,6 +858,11 @@ export interface TopologyDTO {
   updatedAt: string;
 }
 
+export interface SaveTopologyPositionsRequest {
+  topologyId: number;
+  positions: { classId: number; positionX: number; positionY: number }[];
+}
+
 export interface CreateTopologyRequest {
   ontologyId: number;
   name: string;
@@ -897,4 +904,14 @@ export async function updateTopology(params: UpdateTopologyRequest): Promise<Api
 /** Delete a topology by id */
 export async function deleteTopology(id: number): Promise<ApiResponse<null>> {
   return await post<null>('/core/api/v1/topology/delete', { id });
+}
+
+/** Save topology node positions */
+export async function saveTopologyPositions(params: SaveTopologyPositionsRequest): Promise<ApiResponse<null>> {
+  return await post<null>('/core/api/v1/topology/save-positions', params);
+}
+
+/** Reset topology node positions to force-directed layout */
+export async function resetTopologyPositions(topologyId: number): Promise<ApiResponse<null>> {
+  return await post<null>('/core/api/v1/topology/reset-positions', { id: topologyId });
 }

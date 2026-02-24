@@ -28,7 +28,13 @@ interface Props {
   selectedNodeIds?: Set<number>;
   /** Explicitly provide the set of "connected/normal" node IDs. When provided, these nodes display at normal opacity (not highlighted, not dimmed) and edge-based auto-expansion is skipped. */
   connectedNodeIds?: Set<number>;
+  /** Initial saved positions for nodes. Nodes with saved positions are pinned (fx/fy). */
+  initialPositions?: Map<number, { x: number; y: number }>;
   onNodeClick?: (nodeId: number, nodeName: string) => void;
+  /** Called when a node drag ends, with the node's final position. */
+  onDragEnd?: (nodeId: number, x: number, y: number) => void;
+  /** Called when the background (empty area) is clicked. */
+  onBackgroundClick?: () => void;
   onZoomChange?: (zoomPercent: number) => void;
   zoomRef?: React.MutableRefObject<d3.ZoomBehavior<SVGSVGElement, unknown> | null>;
   svgRef?: React.MutableRefObject<SVGSVGElement | null>;
@@ -104,7 +110,7 @@ function nodeHH(d: SimNode): number {
 /* ------------------------------------------------------------------ */
 
 export default function ForceTopologyGraph({
-  nodes, edges, selectedNodeIds, connectedNodeIds, onNodeClick, onZoomChange, zoomRef, svgRef,
+  nodes, edges, selectedNodeIds, connectedNodeIds, initialPositions, onNodeClick, onDragEnd, onBackgroundClick, onZoomChange, zoomRef, svgRef,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const svgElRef = useRef<SVGSVGElement | null>(null);
@@ -117,6 +123,10 @@ export default function ForceTopologyGraph({
   // Stable callback refs
   const onNodeClickRef = useRef(onNodeClick);
   onNodeClickRef.current = onNodeClick;
+  const onDragEndRef = useRef(onDragEnd);
+  onDragEndRef.current = onDragEnd;
+  const onBackgroundClickRef = useRef(onBackgroundClick);
+  onBackgroundClickRef.current = onBackgroundClick;
   const onZoomChangeRef = useRef(onZoomChange);
   onZoomChangeRef.current = onZoomChange;
 
@@ -190,6 +200,15 @@ export default function ForceTopologyGraph({
 
     const g = svg.append('g');
 
+    // Background rect for click-to-deselect
+    g.append('rect')
+      .attr('x', -10000).attr('y', -10000)
+      .attr('width', 20000).attr('height', 20000)
+      .attr('fill', 'transparent')
+      .on('click', () => {
+        onBackgroundClickRef.current?.();
+      });
+
     // Zoom
     const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.2, 4])
@@ -202,21 +221,26 @@ export default function ForceTopologyGraph({
     svg.call(zoomBehavior.transform, d3.zoomIdentity.translate(width / 2, height / 2));
 
     // Build simulation data
-    const simNodes: SimNode[] = nodes.map((n) => ({
-      id: n.id,
-      name: n.name,
-      sublabel: n.sublabel,
-      color: n.color || DEFAULT_COLOR,
-      icon: n.icon,
-      isCenter: n.isCenter ?? false,
-      x: 0,
-      y: 0,
-    }));
+    const simNodes: SimNode[] = nodes.map((n) => {
+      const saved = initialPositions?.get(n.id);
+      return {
+        id: n.id,
+        name: n.name,
+        sublabel: n.sublabel,
+        color: n.color || DEFAULT_COLOR,
+        icon: n.icon,
+        isCenter: n.isCenter ?? false,
+        x: saved ? saved.x : 0,
+        y: saved ? saved.y : 0,
+        fx: saved ? saved.x : undefined,
+        fy: saved ? saved.y : undefined,
+      };
+    });
     const nodeMap = new Map(simNodes.map((n) => [n.id, n]));
 
-    // Pin center nodes at origin
+    // Pin center nodes at origin (only if no saved position)
     for (const n of simNodes) {
-      if (n.isCenter) { n.fx = 0; n.fy = 0; }
+      if (n.isCenter && n.fx === undefined) { n.fx = 0; n.fy = 0; }
     }
 
     const simLinks: SimLink[] = edges
@@ -285,6 +309,7 @@ export default function ForceTopologyGraph({
         .on('end', (e, d) => {
           if (!e.active) simulation.alphaTarget(0);
           d.fx = d.x; d.fy = d.y;
+          onDragEndRef.current?.(d.id, d.x!, d.y!);
           if (!clickable) {
             d3.select(e.sourceEvent.target.closest('.node')).style('cursor', 'grab');
           }
@@ -363,7 +388,7 @@ export default function ForceTopologyGraph({
     });
 
     return () => { simulation.stop(); };
-  }, [nodes, edges, handleClick, size, zoomRef]);
+  }, [nodes, edges, handleClick, size, zoomRef, initialPositions]);
 
   /* ---------- Highlight effect ---------- */
   useEffect(() => {

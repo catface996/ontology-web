@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Breadcrumb, Typography, Spin, Collapse, Badge, Button, Flex } from 'antd';
-import { ChevronRight, Download, Pencil } from 'lucide-react';
+import { Breadcrumb, Typography, Spin, Collapse, Badge, Button, Flex, message } from 'antd';
+import { ChevronRight, Download, Pencil, Save, RotateCcw } from 'lucide-react';
 import { useHeader } from '../contexts/HeaderContext';
-import { useCurrentOntology } from '../contexts/OntologyContext';
 import {
   getTopology,
   getClassTopology,
   fetchMultiClassInstanceTopology,
+  saveTopologyPositions,
+  resetTopologyPositions,
   type TopologyDTO,
   type InstanceTopologyDTO,
 } from '../services/coreService';
@@ -96,7 +97,6 @@ export default function TopologyViewPage() {
   const { topologyId } = useParams();
   const navigate = useNavigate();
   const { setBreadcrumbs, setActions } = useHeader();
-  const { currentOntologyId } = useCurrentOntology();
 
   // Topology entity
   const [topology, setTopology] = useState<TopologyDTO | null>(null);
@@ -127,6 +127,16 @@ export default function TopologyViewPage() {
 
   // classId → color, populated when class topology loads, used by both panels
   const classColorMapRef = useRef<Map<number, string>>(new Map());
+
+  // T15: initialPositions for class topology (from saved positions in DB)
+  const [initialPositions, setInitialPositions] = useState<Map<number, { x: number; y: number }>>(new Map());
+
+  // T16: Track all current node positions via drag end callback
+  const nodePositionsRef = useRef<Map<number, { x: number; y: number }>>(new Map());
+
+  // Saving/resetting state
+  const [saving, setSaving] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   // Debounce timer
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -168,6 +178,17 @@ export default function TopologyViewPage() {
             colorMap.set(n.id, n.color || CLASS_COLORS[colorIdx++ % CLASS_COLORS.length]);
           }
           classColorMapRef.current = colorMap;
+
+          // Build initial positions map from saved positionX/positionY
+          const posMap = new Map<number, { x: number; y: number }>();
+          for (const n of res.data.nodes) {
+            if (n.positionX != null && n.positionY != null) {
+              posMap.set(n.id, { x: n.positionX, y: n.positionY });
+            }
+          }
+          setInitialPositions(posMap);
+          // Seed nodePositionsRef with saved positions
+          nodePositionsRef.current = new Map(posMap);
 
           const nodes: ForceGraphNode[] = res.data.nodes.map((n) => ({
             id: n.id,
@@ -211,6 +232,85 @@ export default function TopologyViewPage() {
     },
     [],
   );
+
+  // T16: Track dragged node positions
+  const handleClassDragEnd = useCallback((nodeId: number, x: number, y: number) => {
+    nodePositionsRef.current.set(nodeId, { x, y });
+  }, []);
+
+  // T20: Click background to deselect
+  const handleClassBackgroundClick = useCallback(() => {
+    setFocusedClassId(new Set());
+    setSelectedInstanceIds(new Set());
+  }, []);
+
+  // T17: Save all node positions
+  const handleSavePositions = useCallback(async () => {
+    if (!topology) return;
+    setSaving(true);
+    try {
+      const positions = Array.from(nodePositionsRef.current.entries()).map(([classId, pos]) => ({
+        classId,
+        positionX: pos.x,
+        positionY: pos.y,
+      }));
+      await saveTopologyPositions({ topologyId: topology.id, positions });
+      message.success('Positions saved successfully');
+    } catch {
+      message.error('Failed to save positions');
+    } finally {
+      setSaving(false);
+    }
+  }, [topology]);
+
+  // T18: Reset layout (clear all saved positions)
+  const handleResetLayout = useCallback(async () => {
+    if (!topology) return;
+    setResetting(true);
+    try {
+      await resetTopologyPositions(topology.id);
+      message.success('Layout reset successfully');
+      // Clear local positions and reload topology
+      nodePositionsRef.current.clear();
+      setInitialPositions(new Map());
+      // Re-fetch class topology to get fresh data
+      setLoadingClass(true);
+      const res = await getClassTopology(undefined, topology.ontologyId, topology.id);
+      if (res.data) {
+        const colorMap = new Map<number, string>();
+        let colorIdx = 0;
+        for (const n of res.data.nodes) {
+          colorMap.set(n.id, n.color || CLASS_COLORS[colorIdx++ % CLASS_COLORS.length]);
+        }
+        classColorMapRef.current = colorMap;
+        const nodes: ForceGraphNode[] = res.data.nodes.map((n) => ({
+          id: n.id,
+          name: n.name,
+          sublabel: 'Class',
+          color: colorMap.get(n.id),
+          icon: n.icon,
+        }));
+        const edges: ForceGraphEdge[] = [];
+        for (const e of res.data.edges) {
+          const isSubClassOf = e.type === 'SUB_CLASS_OF';
+          edges.push({
+            source: e.sourceClassId,
+            target: e.targetClassId,
+            label: isSubClassOf ? 'subClassOf' : e.name,
+            style: isSubClassOf ? 'dashed' : 'solid',
+            color: isSubClassOf ? '#22D3EE' : 'var(--primary-color)',
+          });
+        }
+        setClassNodes(nodes);
+        setClassEdges(edges);
+      }
+      setLoadingClass(false);
+    } catch {
+      message.error('Failed to reset layout');
+    } finally {
+      setResetting(false);
+    }
+  }, [topology]);
 
   const handleInstanceNodeClick = useCallback((nodeId: number) => {
     setSelectedInstanceIds((prev) => {
@@ -412,6 +512,25 @@ export default function TopologyViewPage() {
             <Typography.Text style={{ fontSize: 11, color: '#71717a', marginLeft: 8 }}>
               — dashed = subClassOf, solid = Relation
             </Typography.Text>
+            <div style={{ flex: 1 }} />
+            <Flex gap={4}>
+              <Button
+                size="small"
+                icon={<Save size={14} />}
+                loading={saving}
+                onClick={handleSavePositions}
+              >
+                Save Position
+              </Button>
+              <Button
+                size="small"
+                icon={<RotateCcw size={14} />}
+                loading={resetting}
+                onClick={handleResetLayout}
+              >
+                Reset Layout
+              </Button>
+            </Flex>
           </div>
           <div style={{ flex: 1, overflow: 'hidden' }}>
             {loadingClass ? (
@@ -423,7 +542,10 @@ export default function TopologyViewPage() {
                 nodes={classNodes}
                 edges={classEdges}
                 selectedNodeIds={focusedClassId}
+                initialPositions={initialPositions}
                 onNodeClick={handleToggleClass}
+                onDragEnd={handleClassDragEnd}
+                onBackgroundClick={handleClassBackgroundClick}
               />
             )}
           </div>
