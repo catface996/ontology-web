@@ -308,7 +308,7 @@ export default function OntologyFormPage() {
 
       <SuccessModal
         open={successModalOpen}
-        onClose={() => { setSuccessModalOpen(false); navigate('/ontologies'); }}
+        onClose={() => { setSuccessModalOpen(false); navigate('/select-ontology'); }}
       />
     </div>
   );

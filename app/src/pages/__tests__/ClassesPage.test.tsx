@@ -40,9 +40,9 @@ import ClassesPage from '../ClassesPage';
 
 // ---- Fixtures ----
 const mockClasses = [
-  { id: 1, name: 'Person', description: 'A human being', parentClassName: null, childCount: 3, status: 'ACTIVE' },
-  { id: 2, name: 'Organization', description: 'A company', parentClassName: 'Entity', childCount: 0, status: 'ACTIVE' },
-  { id: 3, name: 'Location', description: 'A place', parentClassName: null, childCount: 1, status: 'DRAFT' },
+  { id: 1, name: 'Person', description: 'A human being', instanceCount: 5, status: 'ACTIVE' },
+  { id: 2, name: 'Organization', description: 'A company', instanceCount: 0, status: 'ACTIVE' },
+  { id: 3, name: 'Location', description: 'A place', instanceCount: 1, status: 'DRAFT' },
 ];
 
 describe('ClassesPage', () => {
@@ -84,7 +84,6 @@ describe('ClassesPage', () => {
 
   describe('search filtering', () => {
     it('calls listClasses with search keyword after debounce', async () => {
-      const user = userEvent.setup();
       render(<ClassesPage />);
 
       await waitFor(() => {
@@ -139,11 +138,6 @@ describe('ClassesPage', () => {
       await waitFor(() => {
         expect(screen.getByText('Person')).toBeInTheDocument();
       });
-
-      // Find all delete icon buttons (Trash2 icons) - the 3rd column action
-      const deleteButtons = screen.getAllByRole('button').filter(
-        (btn) => btn.querySelector('[data-testid]') || btn.closest('td'),
-      );
 
       // Click the first trash icon in the actions column
       // Each row has 3 action buttons: Brain, Pencil, Trash2

@@ -35,12 +35,13 @@ body {
   height: 100%;
   cursor: pointer;
   transition: background 0.15s;
+  background: #27273a;
 }
 .header-view-toggle > div:hover {
   background: rgba(255, 255, 255, 0.06);
 }
 .header-view-toggle > div.active {
-  background: rgba(255, 255, 255, 0.08);
+  background: #0a0a0f;
 }
 
 /* ── Header filter toggle group ── */

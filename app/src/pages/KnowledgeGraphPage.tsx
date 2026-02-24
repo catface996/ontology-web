@@ -468,7 +468,6 @@ export default function KnowledgeGraphPage() {
                     { label: 'Label', value: selectedClassDetail.name },
                     { label: 'URI', value: selectedClassDetail.uri || '--' },
                     { label: 'Description', value: selectedClassDetail.description || 'No description' },
-                    ...(selectedClassDetail.parentClassName ? [{ label: 'Parent Class', value: selectedClassDetail.parentClassName }] : []),
                   ].map((prop) => (
                     <div key={prop.label} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                       <Typography.Text style={{ fontSize: 12, color: '#a1a1aa' }}>{prop.label}</Typography.Text>

@@ -1,25 +1,28 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Breadcrumb, Input, Button, Checkbox, Tag, Typography, Flex, App } from 'antd';
+import { Breadcrumb, Input, Button, Checkbox, Tag, Typography, Flex, App, Spin } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
-  CornerDownRight,
   Search, Plus, Boxes, List, Pencil, Brain, Trash2, Share2,
   GitFork, File, ArrowLeftRight,
 } from 'lucide-react';
 import TableCard from '../components/TableCard';
+import ForceTopologyGraph, { type ForceGraphNode, type ForceGraphEdge } from '../components/ForceTopologyGraph';
 import { useModal } from '../contexts/ModalContext';
 import { useHeader } from '../contexts/HeaderContext';
 import { useCurrentOntology } from '../contexts/OntologyContext';
-import { listClasses, deleteClass, type ClassDTO } from '../services/coreService';
+import {
+  listClasses, deleteClass, getClassTopology,
+  listClassProperties, listClassRelations,
+  type ClassDTO, type ClassPropertyDTO, type ClassRelationDTO,
+  type ClassTopologyNode,
+} from '../services/coreService';
 import { resolveClassIcon, DEFAULT_CLASS_COLOR } from '../utils/classIconMap';
 
 interface ClassData {
   id: string;
   name: string;
   description: string;
-  parent: string | null;
-  childCount: number;
   instanceCount: number;
   status: string;
   icon: React.ComponentType<{ size?: number; color?: string }>;
@@ -31,8 +34,6 @@ function dtoToClassData(dto: ClassDTO): ClassData {
     id: String(dto.id),
     name: dto.name,
     description: dto.description ?? '',
-    parent: dto.parentClassName ?? null,
-    childCount: dto.childCount ?? 0,
     instanceCount: dto.instanceCount ?? 0,
     status: dto.status ?? 'ACTIVE',
     icon: resolveClassIcon(dto.icon),
@@ -62,6 +63,18 @@ export default function ClassesPage() {
 
   // Store all classes from API; pagination is client-side
   const [allClasses, setAllClasses] = useState<ClassData[]>([]);
+
+  // Topology view data
+  const [topoNodes, setTopoNodes] = useState<ForceGraphNode[]>([]);
+  const [topoEdges, setTopoEdges] = useState<ForceGraphEdge[]>([]);
+  const [topoLoading, setTopoLoading] = useState(false);
+  const [selectedTopoClassIds, setSelectedTopoClassIds] = useState<Set<number>>(new Set());
+
+  // Topology detail panel
+  const [topoRawNodes, setTopoRawNodes] = useState<ClassTopologyNode[]>([]);
+  const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
+  const [detailProperties, setDetailProperties] = useState<ClassPropertyDTO[]>([]);
+  const [detailRelations, setDetailRelations] = useState<ClassRelationDTO[]>([]);
 
   const loadClasses = useCallback(async (keyword: string, filterKey: string) => {
     if (!currentOntologyId) {
@@ -106,6 +119,79 @@ export default function ClassesPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
 
+  // Load topology data when switching to topology view
+  useEffect(() => {
+    if (view !== 'topology' || !currentOntologyId) return;
+    let cancelled = false;
+    setTopoLoading(true);
+
+    (async () => {
+      try {
+        // Fetch full ontology topology (no classId = all classes)
+        const res = await getClassTopology(undefined, currentOntologyId);
+        if (cancelled) return;
+        if (res.data) {
+          const nodes: ForceGraphNode[] = res.data.nodes.map((n) => ({
+            id: n.id,
+            name: n.name,
+            sublabel: 'Class',
+            color: n.color,
+            icon: n.icon,
+          }));
+          const edges: ForceGraphEdge[] = [];
+          // All edges (including subClassOf) come from the edges array
+          for (const e of res.data.edges) {
+            const isSubClassOf = e.type === 'SUB_CLASS_OF';
+            edges.push({
+              source: e.sourceClassId,
+              target: e.targetClassId,
+              label: isSubClassOf ? 'subClassOf' : e.name,
+              style: isSubClassOf ? 'dashed' : 'solid',
+              color: isSubClassOf ? '#22D3EE' : 'var(--primary-color)',
+            });
+          }
+          setTopoNodes(nodes);
+          setTopoEdges(edges);
+          setTopoRawNodes(res.data.nodes);
+          setSelectedClassId(null);
+        }
+      } catch {
+        // failed
+      } finally {
+        if (!cancelled) setTopoLoading(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [view, currentOntologyId]);
+
+  // Load detail data when a class is selected in topology view
+  const handleTopoClassClick = useCallback((classId: number) => {
+    setSelectedClassId(classId);
+    setSelectedTopoClassIds(new Set([classId]));
+    // Fetch properties and relations
+    Promise.allSettled([
+      listClassProperties(classId),
+      listClassRelations(classId),
+    ]).then(([propsRes, relsRes]) => {
+      if (propsRes.status === 'fulfilled' && propsRes.value.data) {
+        setDetailProperties(propsRes.value.data);
+      } else {
+        setDetailProperties([]);
+      }
+      if (relsRes.status === 'fulfilled' && relsRes.value.data) {
+        setDetailRelations(relsRes.value.data);
+      } else {
+        setDetailRelations([]);
+      }
+    });
+  }, []);
+
+  // Get selected class info from raw topology nodes
+  const selectedClassInfo = selectedClassId
+    ? topoRawNodes.find((n) => n.id === selectedClassId)
+    : null;
+
   // Client-side pagination
   const classesData = allClasses.slice(page * rowsPerPage, (page + 1) * rowsPerPage);
   const total = allClasses.length;
@@ -145,7 +231,7 @@ export default function ClassesPage() {
         <div className="header-view-toggle">
           {[
             { key: 'list', Icon: List },
-            { key: 'grid', Icon: Boxes },
+            { key: 'topology', Icon: Share2 },
           ].map(({ key, Icon }) => (
             <div
               key={key}
@@ -254,31 +340,6 @@ export default function ClassesPage() {
       ),
     },
     {
-      title: <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', letterSpacing: 0.5 }}>Parent Class</Typography.Text>,
-      dataIndex: 'parent',
-      key: 'parent',
-      width: 140,
-      render: (parent: string | null) =>
-        parent ? (
-          <Flex align="center" gap={6} style={{ color: 'var(--primary-color)' }}>
-            <CornerDownRight size={12} />
-            <Typography.Text strong style={{ fontSize: 14, color: 'var(--primary-color)' }}>
-              {parent}
-            </Typography.Text>
-          </Flex>
-        ) : (
-          <Typography.Text style={{ fontSize: 14, color: '#71717a' }}>—</Typography.Text>
-        ),
-    },
-    {
-      title: <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', letterSpacing: 0.5 }}>Children</Typography.Text>,
-      dataIndex: 'childCount',
-      key: 'childCount',
-      width: 100,
-      align: 'center',
-      render: (val: number) => <Tag>{val}</Tag>,
-    },
-    {
       title: <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', letterSpacing: 0.5 }}>Instances</Typography.Text>,
       dataIndex: 'instanceCount',
       key: 'instanceCount',
@@ -333,6 +394,108 @@ export default function ClassesPage() {
         <Boxes size={48} color="#a1a1aa" />
         <Typography.Text style={{ fontSize: 16, color: '#a1a1aa' }}>No ontology selected</Typography.Text>
         <Button type="primary" onClick={() => navigate('/ontologies')}>Select an Ontology</Button>
+      </div>
+    );
+  }
+
+  if (view === 'topology') {
+    return (
+      <div style={{ flex: 1, display: 'flex', gap: 16, padding: '16px 24px 24px', overflow: 'hidden' }}>
+        {/* Topology Canvas */}
+        <div style={{ flex: 1, borderRadius: 12, border: '1px solid #27273a', overflow: 'hidden', position: 'relative', minHeight: 0 }}>
+          {topoLoading ? (
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#0a0a0f' }}>
+              <Spin size="large" />
+            </div>
+          ) : topoNodes.length === 0 ? (
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#0a0a0f' }}>
+              <Typography.Text style={{ color: '#a1a1aa' }}>No topology data available</Typography.Text>
+            </div>
+          ) : (
+            <ForceTopologyGraph
+              nodes={topoNodes}
+              edges={topoEdges}
+              selectedNodeIds={selectedTopoClassIds}
+              onNodeClick={(classId) => handleTopoClassClick(classId)}
+            />
+          )}
+        </div>
+
+        {/* Detail Panel — always rendered to keep layout stable */}
+        <div style={{
+          width: 300, borderRadius: 12, border: '1px solid #27273a',
+          display: 'flex', flexDirection: 'column', overflow: 'auto', flexShrink: 0,
+        }}>
+          {selectedClassInfo ? (
+            <>
+              {/* Header */}
+              <div style={{ padding: 20, borderBottom: '1px solid #27273a' }}>
+                <Flex align="center" gap={8} style={{ marginBottom: 12 }}>
+                  <Boxes size={18} color={selectedClassInfo.color || 'var(--primary-color)'} />
+                  <Typography.Text style={{ fontSize: 16, fontWeight: 600 }}>Class Details</Typography.Text>
+                </Flex>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <Typography.Text style={{ fontSize: 20, fontWeight: 600 }}>{selectedClassInfo.name}</Typography.Text>
+                  {selectedClassInfo.description && (
+                    <Typography.Text style={{ color: '#71717a', fontSize: 13 }}>{selectedClassInfo.description}</Typography.Text>
+                  )}
+                </div>
+              </div>
+
+              {/* Properties */}
+              <div style={{ padding: 20, borderBottom: '1px solid #27273a' }}>
+                <Typography.Text style={{ color: '#a1a1aa', fontSize: 12, fontWeight: 600 }}>
+                  Properties ({detailProperties.length})
+                </Typography.Text>
+                {detailProperties.length === 0 ? (
+                  <Typography.Text style={{ color: '#71717a', fontSize: 13, display: 'block', marginTop: 8 }}>No properties</Typography.Text>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
+                    {detailProperties.map((p) => (
+                      <Flex key={p.propertyId} justify="space-between" align="center">
+                        <Typography.Text style={{ color: '#a1a1aa', fontSize: 13 }}>{p.propertyName}</Typography.Text>
+                        <Tag style={{ fontSize: 11, margin: 0 }}>{p.dataType}</Tag>
+                      </Flex>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Relations */}
+              <div style={{ padding: 20 }}>
+                <Typography.Text style={{ color: '#a1a1aa', fontSize: 12, fontWeight: 600 }}>
+                  Relations ({detailRelations.length})
+                </Typography.Text>
+                {detailRelations.length === 0 ? (
+                  <Typography.Text style={{ color: '#71717a', fontSize: 13, display: 'block', marginTop: 8 }}>No relations</Typography.Text>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+                    {detailRelations.map((r) => (
+                      <div
+                        key={r.relationId}
+                        style={{
+                          display: 'flex', flexDirection: 'column', gap: 2,
+                          padding: 10, backgroundColor: '#1a1a24', borderRadius: 8,
+                        }}
+                      >
+                        <Typography.Text style={{ fontSize: 13, fontWeight: 500 }}>{r.relationName}</Typography.Text>
+                        <Typography.Text style={{ color: '#a1a1aa', fontSize: 11 }}>
+                          {r.domainClassName} → {r.rangeClassName}
+                        </Typography.Text>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Typography.Text style={{ color: '#52525b', fontSize: 13 }}>
+                Click a class to see details
+              </Typography.Text>
+            </div>
+          )}
+        </div>
       </div>
     );
   }

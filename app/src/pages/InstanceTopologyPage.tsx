@@ -12,61 +12,10 @@ import {
   listInstancePropertyValues,
   listInstanceRelations,
   getInstanceTopology,
-  type InstanceDTO,
   type InstancePropertyValueDTO,
   type InstanceRelationDTO,
-  type InstanceTopologyDTO,
 } from '../services/coreService';
-
-/* ------------------------------------------------------------------ */
-/*  Constants                                                          */
-/* ------------------------------------------------------------------ */
-
-const CLASS_COLORS = [
-  'var(--primary-color)', '#22D3EE', '#F472B6', '#4ADE80',
-  '#A78BFA', '#FB923C', '#38BDF8', '#FBBF24',
-];
-
-/* -- Node dimensions -- */
-const NODE_W = 120;
-const NODE_H = 56;
-const CENTER_W = 150;
-const CENTER_H = 64;
-const NODE_RX = 12;
-const CENTER_RX = 16;
-
-/** Compute the point where a line from the rectangle center to (tx, ty) intersects the rectangle edge. */
-function rectEdgePoint(cx: number, cy: number, tx: number, ty: number, hw: number, hh: number): [number, number] {
-  const dx = tx - cx;
-  const dy = ty - cy;
-  if (dx === 0 && dy === 0) return [cx, cy];
-  const absDx = Math.abs(dx);
-  const absDy = Math.abs(dy);
-  if (absDx * hh > absDy * hw) {
-    const sign = dx > 0 ? 1 : -1;
-    return [cx + sign * hw, cy + (dy * hw) / absDx];
-  } else {
-    const sign = dy > 0 ? 1 : -1;
-    return [cx + (dx * hh) / absDy, cy + sign * hh];
-  }
-}
-
-/* ------------------------------------------------------------------ */
-/*  D3 simulation types                                                */
-/* ------------------------------------------------------------------ */
-
-interface SimNode extends d3.SimulationNodeDatum {
-  id: number;
-  name: string;
-  classId: number;
-  className: string;
-  color: string;
-  isCenter: boolean;
-}
-
-interface SimLink extends d3.SimulationLinkDatum<SimNode> {
-  relationName: string;
-}
+import ForceTopologyGraph, { type ForceGraphNode, type ForceGraphEdge } from '../components/ForceTopologyGraph';
 
 /* ------------------------------------------------------------------ */
 /*  Detail panel types                                                 */
@@ -89,13 +38,20 @@ export default function InstanceTopologyPage() {
   const [instanceClassName, setInstanceClassName] = useState('');
   const [properties, setProperties] = useState<PropertyDisplay[]>([]);
   const [relations, setRelations] = useState<RelationDisplay[]>([]);
-  const [topoData, setTopoData] = useState<InstanceTopologyDTO | null>(null);
+  const [graphNodes, setGraphNodes] = useState<ForceGraphNode[]>([]);
+  const [graphEdges, setGraphEdges] = useState<ForceGraphEdge[]>([]);
+  const [selectedNodeIds, setSelectedNodeIds] = useState<Set<number>>(new Set());
 
-  const containerRef = useRef<HTMLDivElement>(null);
-  const svgRef = useRef<SVGSVGElement>(null);
+  const svgRef = useRef<SVGSVGElement | null>(null);
   const zoomBehaviorRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
   const [zoom, setZoom] = useState(100);
-  const [svgSize, setSvgSize] = useState({ width: 0, height: 0 });
+
+  const handleNodeClick = useCallback((nodeId: number) => {
+    setSelectedNodeIds((prev) => {
+      if (prev.has(nodeId)) return new Set();
+      return new Set([nodeId]);
+    });
+  }, []);
 
   /* ---------- Load data ---------- */
   useEffect(() => {
@@ -129,7 +85,30 @@ export default function InstanceTopologyPage() {
           })));
         }
         if (topoRes.status === 'fulfilled' && topoRes.value.data) {
-          setTopoData(topoRes.value.data);
+          const topo = topoRes.value.data;
+
+          // Build class color map
+          const FALLBACK_COLORS = [
+            'var(--primary-color)', '#22D3EE', '#F472B6', '#4ADE80',
+            '#A78BFA', '#FB923C', '#38BDF8', '#FBBF24',
+          ];
+          const classIds = [...new Set(topo.nodes.map((n) => n.classId))];
+          const classColorMap = new Map<number, string>();
+          classIds.forEach((cid, i) => classColorMap.set(cid, FALLBACK_COLORS[i % FALLBACK_COLORS.length]));
+
+          const centerId = Number(instanceId);
+          setGraphNodes(topo.nodes.map((n) => ({
+            id: n.instanceId,
+            name: n.instanceName,
+            sublabel: n.className,
+            color: classColorMap.get(n.classId) || '#a1a1aa',
+            isCenter: n.instanceId === centerId,
+          })));
+          setGraphEdges(topo.edges.map((e) => ({
+            source: e.sourceInstanceId,
+            target: e.targetInstanceId,
+            label: e.relationName || undefined,
+          })));
         }
       } catch {
         // failed
@@ -138,199 +117,6 @@ export default function InstanceTopologyPage() {
       }
     })();
   }, [instanceId]);
-
-  /* ---------- ResizeObserver ---------- */
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver((entries) => {
-      const { width, height } = entries[0].contentRect;
-      if (width > 0 && height > 0) setSvgSize({ width, height });
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
-  /* ---------- D3 render ---------- */
-  useEffect(() => {
-    if (!svgRef.current || !topoData || topoData.nodes.length === 0 || svgSize.width === 0) return;
-
-    const centerId = Number(instanceId);
-    const svg = d3.select(svgRef.current);
-    svg.selectAll('*').remove();
-
-    const { width, height } = svgSize;
-
-    // Class color map
-    const classIds = [...new Set(topoData.nodes.map((n) => n.classId))];
-    const classColorMap = new Map<number, string>();
-    classIds.forEach((cid, i) => classColorMap.set(cid, CLASS_COLORS[i % CLASS_COLORS.length]));
-
-    // Defs
-    const defs = svg.append('defs');
-    const filter = defs.append('filter').attr('id', 'inst-topo-glow').attr('x', '-50%').attr('y', '-50%').attr('width', '200%').attr('height', '200%');
-    filter.append('feGaussianBlur').attr('stdDeviation', '6').attr('result', 'coloredBlur');
-    const feMerge = filter.append('feMerge');
-    feMerge.append('feMergeNode').attr('in', 'coloredBlur');
-    feMerge.append('feMergeNode').attr('in', 'SourceGraphic');
-
-    // Arrow marker — refX at tip since link endpoints are already at rect edges
-    defs.append('marker').attr('id', 'arrow-inst-topo').attr('viewBox', '0 0 10 6').attr('refX', 10).attr('refY', 3)
-      .attr('markerWidth', 8).attr('markerHeight', 6).attr('orient', 'auto')
-      .append('path').attr('d', 'M0,0 L10,3 L0,6 Z').attr('fill', 'var(--primary-color)');
-
-    const g = svg.append('g');
-
-    // Zoom
-    const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.2, 4])
-      .on('zoom', (e) => {
-        g.attr('transform', e.transform);
-        setZoom(Math.round(e.transform.k * 100));
-      });
-    zoomBehaviorRef.current = zoomBehavior;
-    svg.call(zoomBehavior);
-    svg.call(zoomBehavior.transform, d3.zoomIdentity.translate(width / 2, height / 2));
-
-    // Build simulation data
-    const simNodes: SimNode[] = topoData.nodes.map((n) => ({
-      id: n.instanceId,
-      name: n.instanceName,
-      classId: n.classId,
-      className: n.className,
-      color: classColorMap.get(n.classId) || '#a1a1aa',
-      isCenter: n.instanceId === centerId,
-    }));
-    const nodeMap = new Map(simNodes.map((n) => [n.id, n]));
-
-    const simLinks: SimLink[] = topoData.edges
-      .filter((e) => nodeMap.has(e.sourceInstanceId) && nodeMap.has(e.targetInstanceId))
-      .map((e) => ({
-        source: nodeMap.get(e.sourceInstanceId)!,
-        target: nodeMap.get(e.targetInstanceId)!,
-        relationName: e.relationName || '',
-      }));
-
-    // Force simulation — pin center node at origin
-    const centerNode = simNodes.find((n) => n.isCenter);
-    if (centerNode) { centerNode.fx = 0; centerNode.fy = 0; }
-
-    const simulation = d3.forceSimulation<SimNode>(simNodes)
-      .force('link', d3.forceLink<SimNode, SimLink>(simLinks).id((d) => d.id).distance(180))
-      .force('charge', d3.forceManyBody().strength(-400))
-      .force('center', d3.forceCenter(0, 0))
-      .force('collide', d3.forceCollide(Math.max(CENTER_W, CENTER_H) / 2 + 10));
-
-    // Links
-    const link = g.selectAll<SVGLineElement, SimLink>('.link')
-      .data(simLinks).enter().append('line')
-      .attr('class', 'link')
-      .attr('stroke', 'var(--primary-color)')
-      .attr('stroke-width', 1.5)
-      .attr('marker-end', 'url(#arrow-inst-topo)');
-
-    // Link labels
-    const linkLabel = g.selectAll<SVGTextElement, SimLink>('.link-label')
-      .data(simLinks.filter((l) => l.relationName))
-      .enter().append('text')
-      .attr('class', 'link-label')
-      .attr('text-anchor', 'middle')
-      .attr('fill', 'var(--primary-color)')
-      .attr('font-size', 10)
-      .attr('dy', -6)
-      .text((d) => d.relationName);
-
-    // Nodes
-    const node = g.selectAll<SVGGElement, SimNode>('.node')
-      .data(simNodes).enter().append('g')
-      .attr('class', 'node')
-      .style('cursor', 'grab')
-      .call(d3.drag<SVGGElement, SimNode>()
-        .on('start', (e, d) => {
-          if (!e.active) simulation.alphaTarget(0.3).restart();
-          d.fx = d.x; d.fy = d.y;
-          d3.select(e.sourceEvent.target.closest('.node')).style('cursor', 'grabbing');
-        })
-        .on('drag', (e, d) => { d.fx = e.x; d.fy = e.y; })
-        .on('end', (e, d) => {
-          if (!e.active) simulation.alphaTarget(0);
-          d.fx = d.x; d.fy = d.y;
-          d3.select(e.sourceEvent.target.closest('.node')).style('cursor', 'grab');
-        }),
-      );
-
-    // Node rounded rectangles — transparent fill, border-only with class color
-    node.append('rect')
-      .attr('x', (d) => d.isCenter ? -CENTER_W / 2 : -NODE_W / 2)
-      .attr('y', (d) => d.isCenter ? -CENTER_H / 2 : -NODE_H / 2)
-      .attr('width', (d) => d.isCenter ? CENTER_W : NODE_W)
-      .attr('height', (d) => d.isCenter ? CENTER_H : NODE_H)
-      .attr('rx', (d) => d.isCenter ? CENTER_RX : NODE_RX)
-      .attr('ry', (d) => d.isCenter ? CENTER_RX : NODE_RX)
-      .attr('fill', 'transparent')
-      .attr('stroke', (d) => d.isCenter ? 'var(--primary-color)' : d.color)
-      .attr('stroke-width', 2)
-      .attr('filter', (d) => d.isCenter ? 'url(#inst-topo-glow)' : 'none');
-
-    // Node name labels
-    node.append('text')
-      .attr('text-anchor', 'middle')
-      .attr('dy', (d) => d.isCenter ? -4 : -2)
-      .attr('fill', '#e4e4e7')
-      .attr('font-size', (d) => d.isCenter ? 14 : 11)
-      .attr('font-weight', (d) => d.isCenter ? 600 : 500)
-      .text((d) => {
-        const max = d.isCenter ? 16 : 14;
-        return d.name.length > max ? d.name.slice(0, max - 1) + '…' : d.name;
-      });
-
-    // Class label below name (inside rect)
-    node.append('text')
-      .attr('text-anchor', 'middle')
-      .attr('dy', (d) => d.isCenter ? 14 : 14)
-      .attr('fill', (d) => d.isCenter ? 'var(--primary-color)' : d.color)
-      .attr('font-size', (d) => d.isCenter ? 11 : 9)
-      .text((d) => d.className);
-
-    simulation.on('tick', () => {
-      // Compute link endpoints snapped to rectangle edges
-      link
-        .attr('x1', (d) => {
-          const s = d.source as SimNode;
-          const t = d.target as SimNode;
-          const shw = s.isCenter ? CENTER_W / 2 : NODE_W / 2;
-          const shh = s.isCenter ? CENTER_H / 2 : NODE_H / 2;
-          return rectEdgePoint(s.x!, s.y!, t.x!, t.y!, shw, shh)[0];
-        })
-        .attr('y1', (d) => {
-          const s = d.source as SimNode;
-          const t = d.target as SimNode;
-          const shw = s.isCenter ? CENTER_W / 2 : NODE_W / 2;
-          const shh = s.isCenter ? CENTER_H / 2 : NODE_H / 2;
-          return rectEdgePoint(s.x!, s.y!, t.x!, t.y!, shw, shh)[1];
-        })
-        .attr('x2', (d) => {
-          const s = d.source as SimNode;
-          const t = d.target as SimNode;
-          const thw = t.isCenter ? CENTER_W / 2 : NODE_W / 2;
-          const thh = t.isCenter ? CENTER_H / 2 : NODE_H / 2;
-          return rectEdgePoint(t.x!, t.y!, s.x!, s.y!, thw, thh)[0];
-        })
-        .attr('y2', (d) => {
-          const s = d.source as SimNode;
-          const t = d.target as SimNode;
-          const thw = t.isCenter ? CENTER_W / 2 : NODE_W / 2;
-          const thh = t.isCenter ? CENTER_H / 2 : NODE_H / 2;
-          return rectEdgePoint(t.x!, t.y!, s.x!, s.y!, thw, thh)[1];
-        });
-      linkLabel
-        .attr('x', (d) => ((d.source as SimNode).x! + (d.target as SimNode).x!) / 2)
-        .attr('y', (d) => ((d.source as SimNode).y! + (d.target as SimNode).y!) / 2);
-      node.attr('transform', (d) => `translate(${d.x}, ${d.y})`);
-    });
-
-    return () => { simulation.stop(); };
-  }, [topoData, svgSize, instanceId]);
 
   /* ---------- Zoom controls ---------- */
   const handleZoomIn = useCallback(() => {
@@ -389,25 +175,26 @@ export default function InstanceTopologyPage() {
   /* ---------- Render ---------- */
   return (
     <div style={{ flex: 1, padding: 24, display: 'flex', gap: 24, overflow: 'hidden' }}>
-      {/* Topology Canvas — always rendered so ResizeObserver can measure it */}
-      <div
-        ref={containerRef}
-        style={{
-          flex: 1, borderRadius: 12, border: '1px solid #27273a',
-          overflow: 'hidden', position: 'relative', background: '#0a0a0f',
-        }}
-      >
-        <svg ref={svgRef} width={svgSize.width} height={svgSize.height} style={{ display: 'block' }} />
-        {/* Overlay: loading / empty states */}
-        {loading && (
+      {/* Topology Canvas */}
+      <div style={{ flex: 1, borderRadius: 12, border: '1px solid #27273a', overflow: 'hidden', position: 'relative', background: '#0a0a0f' }}>
+        {loading ? (
           <div style={{ position: 'absolute', inset: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#0a0a0f' }}>
             <Spin size="large" />
           </div>
-        )}
-        {!loading && (!topoData || topoData.nodes.length === 0) && (
+        ) : graphNodes.length === 0 ? (
           <div style={{ position: 'absolute', inset: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#0a0a0f' }}>
             <Typography.Text style={{ color: '#a1a1aa' }}>No topology data available</Typography.Text>
           </div>
+        ) : (
+          <ForceTopologyGraph
+            nodes={graphNodes}
+            edges={graphEdges}
+            selectedNodeIds={selectedNodeIds}
+            onNodeClick={handleNodeClick}
+            onZoomChange={setZoom}
+            zoomRef={zoomBehaviorRef}
+            svgRef={svgRef}
+          />
         )}
       </div>
 

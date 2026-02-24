@@ -101,7 +101,6 @@ export default function RelationsPage() {
       ),
       dataIndex: 'name',
       key: 'name',
-      width: 200,
       render: (_: unknown, record: RelationDTO) => (
         <Flex align="center" gap={10}>
           <div

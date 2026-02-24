@@ -85,7 +85,7 @@ describe('ClassEditorPage', () => {
       render(<ClassEditorPage />);
 
       expect(screen.getByText('Save the class first, then you can bind properties.')).toBeInTheDocument();
-      expect(screen.getByText('Save the class first, then you can bind relations.')).toBeInTheDocument();
+      expect(screen.getByText('Save the class first to see related relations')).toBeInTheDocument();
     });
 
     it('fills in form fields', async () => {
@@ -129,7 +129,8 @@ describe('ClassEditorPage', () => {
           uri: 'http://example.com/Person',
           description: 'A human being',
           ontologyId: 1,
-          parentClassId: null,
+
+
         },
       });
     });

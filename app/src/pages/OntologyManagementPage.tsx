@@ -152,7 +152,7 @@ export default function OntologyManagementPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-          <div style={{ display: 'flex', gap: 4, backgroundColor: '#1a1a24', borderRadius: 8, padding: 4 }}>
+          <div style={{ display: 'flex', gap: 4, backgroundColor: '#1a1a24', borderRadius: 8, padding: '0 4px', height: 32, alignItems: 'center' }}>
             {filters.map((f) => (
               <Tag
                 key={f}
@@ -166,6 +166,7 @@ export default function OntologyManagementPage() {
                   cursor: 'pointer',
                   border: 'none',
                   margin: 0,
+                  lineHeight: '24px',
                 }}
               >
                 {f}

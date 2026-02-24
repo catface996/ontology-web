@@ -1,19 +1,42 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Breadcrumb, Typography, Spin, Collapse, Badge, Button, Flex } from 'antd';
-import { ChevronRight, ZoomIn, ZoomOut, Maximize, Download, Pencil } from 'lucide-react';
+import { ChevronRight, Download, Pencil } from 'lucide-react';
 import { useHeader } from '../contexts/HeaderContext';
 import { useCurrentOntology } from '../contexts/OntologyContext';
 import {
   getTopology,
-  fetchOntologyGraph,
+  getClassTopology,
   fetchMultiClassInstanceTopology,
   type TopologyDTO,
-  type OntologyGraphData,
   type InstanceTopologyDTO,
 } from '../services/coreService';
-import ClassTopologyGraph, { type ClassNode, type ClassEdge } from '../components/ClassTopologyGraph';
-import InstanceTopologyGraph from '../components/InstanceTopologyGraph';
+import ForceTopologyGraph, { type ForceGraphNode, type ForceGraphEdge } from '../components/ForceTopologyGraph';
+
+const CLASS_COLORS = [
+  'var(--primary-color)', '#22D3EE', '#F472B6', '#4ADE80',
+  '#A78BFA', '#FB923C', '#38BDF8', '#FBBF24',
+];
+
+/** Map an instance subgraph DTO into ForceTopologyGraph props.
+ *  classColorMap maps classId → color sourced from the Class Topology graph to ensure consistency. */
+function mapInstanceSubgraph(
+  sg: InstanceTopologyDTO,
+  classColorMap: Map<number, string>,
+): { nodes: ForceGraphNode[]; edges: ForceGraphEdge[] } {
+  const nodes: ForceGraphNode[] = sg.nodes.map((n) => ({
+    id: n.instanceId,
+    name: n.instanceName,
+    sublabel: n.className,
+    color: classColorMap.get(n.classId) || n.classColor || '#a1a1aa',
+  }));
+  const edges: ForceGraphEdge[] = sg.edges.map((e) => ({
+    source: e.sourceInstanceId,
+    target: e.targetInstanceId,
+    label: e.relationName,
+  }));
+  return { nodes, edges };
+}
 
 /** Split a combined InstanceTopologyDTO into connected-component subgraphs */
 interface InstanceSubgraph {
@@ -80,16 +103,19 @@ export default function TopologyViewPage() {
   const [loadingTopology, setLoadingTopology] = useState(true);
 
   // Class topology state
-  const [classNodes, setClassNodes] = useState<ClassNode[]>([]);
-  const [classEdges, setClassEdges] = useState<ClassEdge[]>([]);
+  const [classNodes, setClassNodes] = useState<ForceGraphNode[]>([]);
+  const [classEdges, setClassEdges] = useState<ForceGraphEdge[]>([]);
   const [loadingClass, setLoadingClass] = useState(true);
 
-  // Selection state — auto-populated from topology classIds
+  // Selection state — auto-populated from topology classIds (drives instance topology fetch)
   const [selectedClassIds, setSelectedClassIds] = useState<Set<number>>(new Set());
+  // Visual highlight on the class graph — single focused node
+  const [focusedClassId, setFocusedClassId] = useState<Set<number>>(new Set());
 
   // Instance topology state
   const [instanceData, setInstanceData] = useState<InstanceTopologyDTO | null>(null);
   const [loadingInstance, setLoadingInstance] = useState(false);
+  const [selectedInstanceIds, setSelectedInstanceIds] = useState<Set<number>>(new Set());
 
   // Accordion active keys
   const [activeKeys, setActiveKeys] = useState<string[]>([]);
@@ -99,8 +125,11 @@ export default function TopologyViewPage() {
   const dragging = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // classId → color, populated when class topology loads, used by both panels
+  const classColorMapRef = useRef<Map<number, string>>(new Map());
+
   // Debounce timer
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Load topology entity
   useEffect(() => {
@@ -120,77 +149,88 @@ export default function TopologyViewPage() {
     })();
   }, [topologyId]);
 
-  // Load class topology graph
+  // Load class topology graph scoped to this topology's classes (wait for topology entity to load)
   useEffect(() => {
-    const ontologyId = topology?.ontologyId ?? currentOntologyId;
+    if (!topology) return;
+    const ontologyId = topology.ontologyId;
     if (!ontologyId) return;
+    let cancelled = false;
+
     (async () => {
       try {
-        const res = await fetchOntologyGraph(ontologyId);
+        const res = await getClassTopology(undefined, ontologyId, topology.id);
+        if (cancelled) return;
         if (res.data) {
-          const rawData = res.data as any;
-          const nodes: ClassNode[] = (rawData.nodes || []).map((n: any) => ({
+          // Build color map: backend color first, fallback to generated color
+          const colorMap = new Map<number, string>();
+          let colorIdx = 0;
+          for (const n of res.data.nodes) {
+            colorMap.set(n.id, n.color || CLASS_COLORS[colorIdx++ % CLASS_COLORS.length]);
+          }
+          classColorMapRef.current = colorMap;
+
+          const nodes: ForceGraphNode[] = res.data.nodes.map((n) => ({
             id: n.id,
-            name: n.name || n.label || String(n.id),
-            type: n.type || 'class',
-            color: n.color || null,
-            icon: n.icon || null,
+            name: n.name,
+            sublabel: 'Class',
+            color: colorMap.get(n.id),
+            icon: n.icon,
           }));
-          const edges: ClassEdge[] = (rawData.edges || rawData.links || []).map((e: any) => ({
-            source: typeof e.source === 'string' ? parseInt(e.source, 10) : e.source,
-            target: typeof e.target === 'string' ? parseInt(e.target, 10) : e.target,
-            type: e.type || (e.relationId || e.relationName ? 'relation' : 'subClassOf'),
-            relationId: e.relationId,
-            relationName: e.relationName || e.label,
-          }));
+          const edges: ForceGraphEdge[] = [];
+          // Add all relation edges (including subClassOf)
+          for (const e of res.data.edges) {
+            const isSubClassOf = e.type === 'SUB_CLASS_OF';
+            edges.push({
+              source: e.sourceClassId,
+              target: e.targetClassId,
+              label: isSubClassOf ? 'subClassOf' : e.name,
+              style: isSubClassOf ? 'dashed' : 'solid',
+              color: isSubClassOf ? '#22D3EE' : 'var(--primary-color)',
+            });
+          }
           setClassNodes(nodes);
           setClassEdges(edges);
         }
       } catch {
         // failed
       } finally {
-        setLoadingClass(false);
+        if (!cancelled) setLoadingClass(false);
       }
     })();
-  }, [topology?.ontologyId, currentOntologyId]);
 
-  // Auto-expand: when a class is toggled, include classes connected by Relation edges
-  const expandClassSelection = useCallback(
-    (clickedId: number): Set<number> => {
-      const expanded = new Set<number>([clickedId]);
-      for (const edge of classEdges) {
-        if (edge.type === 'relation') {
-          if (edge.source === clickedId) expanded.add(edge.target);
-          if (edge.target === clickedId) expanded.add(edge.source);
-        }
-      }
-      return expanded;
-    },
-    [classEdges],
-  );
+    return () => { cancelled = true; };
+  }, [topology]);
 
   const handleToggleClass = useCallback(
-    (classId: number, _className: string) => {
-      setSelectedClassIds((prev) => {
-        const next = new Set(prev);
-        if (next.has(classId)) {
-          const expanded = expandClassSelection(classId);
-          expanded.forEach((id) => next.delete(id));
-        } else {
-          const expanded = expandClassSelection(classId);
-          expanded.forEach((id) => next.add(id));
-        }
-        return next;
+    (classId: number) => {
+      // Only toggle visual highlight — do NOT modify selectedClassIds to avoid re-fetching
+      setFocusedClassId((prev) => {
+        if (prev.has(classId)) return new Set();
+        return new Set([classId]);
       });
     },
-    [expandClassSelection],
+    [],
   );
+
+  const handleInstanceNodeClick = useCallback((nodeId: number) => {
+    setSelectedInstanceIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(nodeId)) {
+        next.delete(nodeId);
+      } else {
+        next.clear();
+        next.add(nodeId);
+      }
+      return next;
+    });
+  }, []);
 
   // Fetch instance topology when selectedClassIds changes
   useEffect(() => {
     if (selectedClassIds.size === 0) {
       setInstanceData(null);
       setActiveKeys([]);
+      setSelectedInstanceIds(new Set());
       return;
     }
 
@@ -200,12 +240,12 @@ export default function TopologyViewPage() {
       try {
         const res = await fetchMultiClassInstanceTopology({
           classIds: Array.from(selectedClassIds),
-          limit: 200,
         });
         if (res.data) {
           setInstanceData(res.data);
+          setSelectedInstanceIds(new Set());
           const groups = splitByConnectedComponents(res.data);
-          setActiveKeys(groups.map((g) => String(g.index)));
+          setActiveKeys(groups.length > 0 ? [String(groups[0].index)] : []);
         }
       } catch {
         setInstanceData(null);
@@ -219,11 +259,56 @@ export default function TopologyViewPage() {
     };
   }, [selectedClassIds]);
 
-  // Split instance data into connected-component subgraphs
+  // Split instance data into connected-component subgraphs and pre-map ForceGraph props
+  // classColorMapRef is populated when class topology loads, so instance colors match exactly
   const subgraphs = useMemo(() => {
     if (!instanceData) return [];
-    return splitByConnectedComponents(instanceData);
+    return splitByConnectedComponents(instanceData).map((sg) => ({
+      ...sg,
+      mapped: mapInstanceSubgraph(sg.data, classColorMapRef.current),
+    }));
   }, [instanceData]);
+
+  // Compute three class-level states from the Class Topology:
+  //   focused (highlighted), connected (normal), rest (dimmed)
+  // Then map to instance IDs for the Instance Topology.
+  const connectedClassIds = useMemo(() => {
+    if (focusedClassId.size === 0) return new Set<number>();
+    const ids = new Set<number>();
+    for (const e of classEdges) {
+      const src = e.source as number;
+      const tgt = e.target as number;
+      if (focusedClassId.has(src)) ids.add(tgt);
+      if (focusedClassId.has(tgt)) ids.add(src);
+    }
+    // Remove the focused class itself — it belongs in selectedNodeIds, not connectedNodeIds
+    for (const id of focusedClassId) ids.delete(id);
+    return ids;
+  }, [focusedClassId, classEdges]);
+
+  // Instances of the focused class → highlighted (selectedNodeIds)
+  const highlightedInstanceIds = useMemo(() => {
+    if (focusedClassId.size === 0 || !instanceData) return selectedInstanceIds;
+    const ids = new Set<number>();
+    for (const n of instanceData.nodes) {
+      if (focusedClassId.has(n.classId)) ids.add(n.instanceId);
+    }
+    for (const id of selectedInstanceIds) ids.add(id);
+    // When a class is focused but has no matching instances, use sentinel (-1)
+    // to signal "selection is active" so all instance nodes get dimmed
+    if (ids.size === 0) ids.add(-1);
+    return ids;
+  }, [focusedClassId, instanceData, selectedInstanceIds]);
+
+  // Instances of connected classes → normal display (connectedNodeIds)
+  const connectedInstanceIds = useMemo<Set<number> | undefined>(() => {
+    if (focusedClassId.size === 0 || !instanceData) return undefined;
+    const ids = new Set<number>();
+    for (const n of instanceData.nodes) {
+      if (connectedClassIds.has(n.classId)) ids.add(n.instanceId);
+    }
+    return ids;
+  }, [focusedClassId, connectedClassIds, instanceData]);
 
   // Divider drag handlers
   const handleMouseDown = useCallback(() => {
@@ -334,11 +419,11 @@ export default function TopologyViewPage() {
                 <Spin />
               </div>
             ) : (
-              <ClassTopologyGraph
+              <ForceTopologyGraph
                 nodes={classNodes}
                 edges={classEdges}
-                selectedClassIds={selectedClassIds}
-                onToggleClass={handleToggleClass}
+                selectedNodeIds={focusedClassId}
+                onNodeClick={handleToggleClass}
               />
             )}
           </div>
@@ -445,23 +530,31 @@ export default function TopologyViewPage() {
                 items={subgraphs.map((sg) => ({
                   key: String(sg.index),
                   label: (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <Typography.Text style={{ fontSize: 13, fontWeight: 600 }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                      <Typography.Text style={{ fontSize: 13, fontWeight: 600, flexShrink: 0 }}>
                         Graph {sg.index}
                       </Typography.Text>
-                      <Typography.Text style={{ fontSize: 12, color: '#a1a1aa' }}>
+                      <Typography.Text
+                        style={{ fontSize: 12, color: '#a1a1aa', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}
+                      >
                         {sg.label}
                       </Typography.Text>
                       <Badge
                         count={`${sg.nodeCount} nodes`}
-                        style={{ backgroundColor: '#27273a', color: '#a1a1aa', fontSize: 11, boxShadow: 'none' }}
+                        style={{ backgroundColor: '#27273a', color: '#a1a1aa', fontSize: 11, boxShadow: 'none', flexShrink: 0 }}
                         overflowCount={999}
                       />
                     </span>
                   ),
                   children: (
                     <div style={{ flex: 1, border: '1px solid #27273a', borderRadius: 8, overflow: 'hidden', minHeight: 200 }}>
-                      <InstanceTopologyGraph data={sg.data} />
+                      <ForceTopologyGraph
+                        nodes={sg.mapped.nodes}
+                        edges={sg.mapped.edges}
+                        selectedNodeIds={highlightedInstanceIds}
+                        connectedNodeIds={connectedInstanceIds}
+                        onNodeClick={handleInstanceNodeClick}
+                      />
                     </div>
                   ),
                   style: {

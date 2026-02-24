@@ -88,12 +88,9 @@ export interface ClassDTO {
   uri?: string;
   description: string;
   ontologyId?: number;
-  parentClassId?: number | null;
-  parentClassName?: string | null;
   color?: string | null;
   icon?: string | null;
   status?: string;
-  childCount?: number;
   instanceCount?: number;
   createdAt?: string;
   updatedAt?: string;
@@ -110,7 +107,6 @@ export interface CreateClassRequest {
   name: string;
   uri: string;
   description?: string;
-  parentClassId?: number | null;
   color?: string | null;
   icon?: string | null;
 }
@@ -120,7 +116,6 @@ export interface UpdateClassRequest {
   name?: string;
   uri?: string;
   description?: string;
-  parentClassId?: number | null;
   color?: string | null;
   icon?: string | null;
   status?: string;
@@ -650,8 +645,6 @@ export interface ClassTopologyNode {
   name: string;
   uri: string;
   description: string;
-  parentClassId: number | null;
-  parentClassName: string | null;
   color: string | null;
   icon: string | null;
   status: string;
@@ -669,6 +662,7 @@ export interface ClassTopologyEdge {
   targetClassId: number;
   targetClassName: string;
   cardinality: string;
+  type?: string;
 }
 
 export interface ClassTopologyData {
@@ -676,9 +670,9 @@ export interface ClassTopologyData {
   edges: ClassTopologyEdge[];
 }
 
-/** Get topology data for a class (nodes + edges in one call) */
-export function getClassTopology(classId: number, ontologyId?: number): Promise<ApiResponse<ClassTopologyData>> {
-  return post<ClassTopologyData>('/core/api/v1/class/topology', { classId, ontologyId });
+/** Get topology data for a class (nodes + edges in one call). Pass classId=0 or omit for full ontology topology. When topologyId is provided, only classes in that topology are returned. */
+export function getClassTopology(classId?: number, ontologyId?: number, topologyId?: number): Promise<ApiResponse<ClassTopologyData>> {
+  return post<ClassTopologyData>('/core/api/v1/class/topology', { classId: classId || undefined, ontologyId, topologyId });
 }
 
 // ---------------------------------------------------------------------------
@@ -780,7 +774,6 @@ export interface InstanceTopologyDTO {
 export interface MultiClassTopologyRequest {
   ontologyId?: number;
   classIds: number[];
-  limit?: number;
 }
 
 // ---------------------------------------------------------------------------

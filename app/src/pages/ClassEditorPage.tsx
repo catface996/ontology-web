@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Breadcrumb, Typography, Input, Button, Card, Select, Checkbox, Tag, Spin, App, ColorPicker, Popover } from 'antd';
 import {
   ChevronRight, Save, Info, List, Plus, Trash2, Eye,
-  Boxes, Brain, ArrowLeftRight, Palette,
+  Boxes, Brain, ArrowLeftRight,
   // Building / Facility
   Factory, Building2, Warehouse, Home, Store, Hospital, School, Church, Landmark,
   // People / Org
@@ -205,7 +205,7 @@ const ICON_CATEGORIES: IconCategory[] = [
 const ALL_ICONS: IconOption[] = ICON_CATEGORIES.flatMap((c) => c.icons);
 import { useCurrentOntology } from '../contexts/OntologyContext';
 import {
-  getClass, createClass, updateClass, listClasses,
+  getClass, createClass, updateClass,
   listProperties, listRelations,
   listClassProperties, bindClassProperties, unbindClassProperty,
   type ClassDTO, type PropertyDTO, type RelationDTO,
@@ -225,11 +225,9 @@ export default function ClassEditorPage() {
   const [name, setName] = useState('');
   const [uri, setUri] = useState('');
   const [description, setDescription] = useState('');
-  const [parentClassId, setParentClassId] = useState<number | null>(null);
   const [color, setColor] = useState<string>('#8B5CF6');
   const [icon, setIcon] = useState<string>('boxes');
   const [iconPopoverOpen, setIconPopoverOpen] = useState(false);
-  const [parentOptions, setParentOptions] = useState<{ value: number; label: string }[]>([]);
   const [successModalOpen, setSuccessModalOpen] = useState(false);
 
   // Property bind/unbind state
@@ -255,7 +253,6 @@ export default function ClassEditorPage() {
           setName(res.data.name);
           setUri(res.data.uri ?? '');
           setDescription(res.data.description ?? '');
-          setParentClassId(res.data.parentClassId ?? null);
           if (res.data.color) setColor(res.data.color);
           if (res.data.icon) setIcon(res.data.icon);
         }
@@ -267,23 +264,6 @@ export default function ClassEditorPage() {
     })();
     return () => { cancelled = true; };
   }, [classId, isEditing]);
-
-  // Load parent class options
-  useEffect(() => {
-    const ontologyId = apiClass?.ontologyId ?? currentOntologyId;
-    if (!ontologyId) return;
-    (async () => {
-      try {
-        const res = await listClasses({ ontologyId });
-        if (res.data) {
-          const opts = res.data
-            .filter(c => !isEditing || c.id !== Number(classId))
-            .map(c => ({ value: c.id, label: c.name }));
-          setParentOptions(opts);
-        }
-      } catch { /* keep defaults */ }
-    })();
-  }, [apiClass?.ontologyId, currentOntologyId, isEditing, classId]);
 
   // Load available properties + relations for the ontology
   useEffect(() => {
@@ -346,9 +326,9 @@ export default function ClassEditorPage() {
     setSaving(true);
     try {
       if (isEditing && apiClass) {
-        await updateClass({ id: apiClass.id, name, uri, description, parentClassId: parentClassId ?? undefined, color, icon });
+        await updateClass({ id: apiClass.id, name, uri, description, color, icon });
       } else {
-        await createClass({ ontologyId, name, uri, description, parentClassId: parentClassId ?? undefined, color, icon });
+        await createClass({ ontologyId, name, uri, description, color, icon });
       }
       setSuccessModalOpen(true);
     } catch (err) {
@@ -421,18 +401,6 @@ export default function ClassEditorPage() {
               <div>
                 <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>Description</label>
                 <Input.TextArea placeholder="Describe the purpose and usage of this class..." rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
-              </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>Parent Class</label>
-                <Select
-                  style={{ width: '100%' }}
-                  placeholder="Select parent class (optional)"
-                  value={parentClassId ?? undefined}
-                  onChange={(val) => setParentClassId(val ?? null)}
-                  allowClear
-                  onClear={() => setParentClassId(null)}
-                  options={parentOptions}
-                />
               </div>
               <div style={{ display: 'flex', gap: 16 }}>
                 <div style={{ flex: 1 }}>
