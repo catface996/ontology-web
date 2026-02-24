@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Layout, Typography, Divider, Flex } from 'antd';
-import { Bell, Globe, Check, LogOut, ChevronDown, ChevronUp } from 'lucide-react';
+import { Bell, Globe, Check, LogOut } from 'lucide-react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { logout, getUser } from './utils/auth';
 import Sidebar from './components/Sidebar';
@@ -44,28 +44,18 @@ function GlobalHeader() {
           </div>
 
           {/* User Area */}
-          <Flex
-            align="center"
-            gap={10}
-            style={{ cursor: 'pointer' }}
+          <div
+            style={{
+              width: 32, height: 32, borderRadius: '50%',
+              background: 'var(--primary-color)', display: 'flex',
+              alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+            }}
             onClick={() => setUserMenuOpen((prev) => !prev)}
           >
-            <div
-              style={{
-                width: 32, height: 32, borderRadius: '50%',
-                background: 'var(--primary-color)', display: 'flex',
-                alignItems: 'center', justifyContent: 'center',
-              }}
-            >
-              <Typography.Text style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>
-                {user?.nickname?.[0] || 'A'}
-              </Typography.Text>
-            </div>
-            <Typography.Text style={{ fontSize: 14, fontWeight: 500 }}>
-              {user?.nickname || 'Admin User'}
+            <Typography.Text style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>
+              {user?.nickname?.[0] || 'A'}
             </Typography.Text>
-            {userMenuOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-          </Flex>
+          </div>
         </Flex>
       </Flex>
 
