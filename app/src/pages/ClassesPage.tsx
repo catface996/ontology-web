@@ -4,7 +4,7 @@ import { Breadcrumb, Input, Button, Checkbox, Tag, Typography, Flex, App, Spin }
 import type { ColumnsType } from 'antd/es/table';
 import {
   Search, Plus, Boxes, List, Pencil, Brain, Trash2, Share2,
-  GitFork, File, ArrowLeftRight,
+  ArrowLeftRight, Save,
 } from 'lucide-react';
 import TableCard from '../components/TableCard';
 import ForceTopologyGraph, { type ForceGraphNode, type ForceGraphEdge } from '../components/ForceTopologyGraph';
@@ -12,10 +12,10 @@ import { useModal } from '../contexts/ModalContext';
 import { useHeader } from '../contexts/HeaderContext';
 import { useCurrentOntology } from '../contexts/OntologyContext';
 import {
-  listClasses, deleteClass, getClassTopology,
-  listClassProperties, listClassRelations,
-  type ClassDTO, type ClassPropertyDTO, type ClassRelationDTO,
-  type ClassTopologyNode,
+  listClasses, deleteClass, getClassTopology, saveClassPositions,
+  listClassProperties,
+  type ClassDTO, type ClassPropertyDTO,
+  type ClassTopologyNode, type ClassTopologyEdge,
 } from '../services/coreService';
 import { resolveClassIcon, DEFAULT_CLASS_COLOR } from '../utils/classIconMap';
 
@@ -41,18 +41,11 @@ function dtoToClassData(dto: ClassDTO): ClassData {
   };
 }
 
-const filters = [
-  { key: 'all', label: 'All' },
-  { key: 'root', label: 'Root', Icon: GitFork },
-  { key: 'leaf', label: 'Leaf', Icon: File },
-];
-
 export default function ClassesPage() {
   const navigate = useNavigate();
   const { message } = App.useApp();
   const { setBreadcrumbs, setActions } = useHeader();
   const { currentOntologyId } = useCurrentOntology();
-  const [filter, setFilter] = useState('all');
   const [view, setView] = useState('list');
   const [selected, setSelected] = useState<string[]>([]);
   const [page, setPage] = useState(0);
@@ -72,11 +65,17 @@ export default function ClassesPage() {
 
   // Topology detail panel
   const [topoRawNodes, setTopoRawNodes] = useState<ClassTopologyNode[]>([]);
+  const [topoRawEdges, setTopoRawEdges] = useState<ClassTopologyEdge[]>([]);
   const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
   const [detailProperties, setDetailProperties] = useState<ClassPropertyDTO[]>([]);
-  const [detailRelations, setDetailRelations] = useState<ClassRelationDTO[]>([]);
+  const [detailRelations, setDetailRelations] = useState<ClassTopologyEdge[]>([]);
 
-  const loadClasses = useCallback(async (keyword: string, filterKey: string) => {
+  // Position tracking for save
+  const [initialPositions, setInitialPositions] = useState<Map<number, { x: number; y: number }>>(new Map());
+  const positionChangesRef = useRef<Map<number, { x: number; y: number }>>(new Map());
+  const [savingPositions, setSavingPositions] = useState(false);
+
+  const loadClasses = useCallback(async (keyword: string) => {
     if (!currentOntologyId) {
       setAllClasses([]);
       setLoading(false);
@@ -87,7 +86,6 @@ export default function ClassesPage() {
       const res = await listClasses({
         ontologyId: currentOntologyId,
         name: keyword || undefined,
-        filter: filterKey === 'all' ? undefined : filterKey.toUpperCase(),
       });
       const list = res.data ?? [];
       setAllClasses(list.map(dtoToClassData));
@@ -98,11 +96,11 @@ export default function ClassesPage() {
     }
   }, [currentOntologyId]);
 
-  // Load on filter change
+  // Load on mount / ontology change
   useEffect(() => {
-    void loadClasses(search, filter);
+    void loadClasses(search);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filter, loadClasses]);
+  }, [loadClasses]);
 
   // Debounced search — skip initial mount (effect 1 already loads data)
   const searchMounted = useRef(false);
@@ -113,7 +111,7 @@ export default function ClassesPage() {
     }
     const timer = setTimeout(() => {
       setPage(0);
-      void loadClasses(search, filter);
+      void loadClasses(search);
     }, 300);
     return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -153,7 +151,17 @@ export default function ClassesPage() {
           setTopoNodes(nodes);
           setTopoEdges(edges);
           setTopoRawNodes(res.data.nodes);
+          setTopoRawEdges(res.data.edges);
           setSelectedClassId(null);
+          // Build initial positions from saved data
+          const posMap = new Map<number, { x: number; y: number }>();
+          for (const n of res.data.nodes) {
+            if (n.positionX != null && n.positionY != null) {
+              posMap.set(n.id, { x: n.positionX, y: n.positionY });
+            }
+          }
+          setInitialPositions(posMap);
+          positionChangesRef.current = new Map();
         }
       } catch {
         // failed
@@ -169,23 +177,54 @@ export default function ClassesPage() {
   const handleTopoClassClick = useCallback((classId: number) => {
     setSelectedClassId(classId);
     setSelectedTopoClassIds(new Set([classId]));
-    // Fetch properties and relations
-    Promise.allSettled([
-      listClassProperties(classId),
-      listClassRelations(classId),
-    ]).then(([propsRes, relsRes]) => {
-      if (propsRes.status === 'fulfilled' && propsRes.value.data) {
-        setDetailProperties(propsRes.value.data);
+    // Derive relations from topology edges (edges connected to this class)
+    const classEdges = topoRawEdges.filter(
+      (e) => e.sourceClassId === classId || e.targetClassId === classId,
+    );
+    setDetailRelations(classEdges);
+    // Fetch properties
+    listClassProperties(classId).then((res) => {
+      if (res.data) {
+        setDetailProperties(res.data);
       } else {
         setDetailProperties([]);
       }
-      if (relsRes.status === 'fulfilled' && relsRes.value.data) {
-        setDetailRelations(relsRes.value.data);
-      } else {
-        setDetailRelations([]);
-      }
+    }).catch(() => {
+      setDetailProperties([]);
     });
+  }, [topoRawEdges]);
+
+  // Track node position changes on drag
+  const handleDragEnd = useCallback((nodeId: number, x: number, y: number) => {
+    positionChangesRef.current.set(nodeId, { x, y });
   }, []);
+
+  // Save all current node positions
+  const handleSavePositions = useCallback(async () => {
+    if (!currentOntologyId) return;
+    setSavingPositions(true);
+    try {
+      // Merge initial positions with drag changes
+      const allPositions = new Map(initialPositions);
+      for (const [id, pos] of positionChangesRef.current) {
+        allPositions.set(id, pos);
+      }
+      const positions = Array.from(allPositions.entries()).map(([classId, pos]) => ({
+        classId,
+        positionX: pos.x,
+        positionY: pos.y,
+      }));
+      await saveClassPositions(currentOntologyId, positions);
+      message.success('Positions saved');
+      // Update initial positions to reflect saved state
+      setInitialPositions(allPositions);
+      positionChangesRef.current = new Map();
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : 'Failed to save positions');
+    } finally {
+      setSavingPositions(false);
+    }
+  }, [currentOntologyId, initialPositions, message]);
 
   // Get selected class info from raw topology nodes
   const selectedClassInfo = selectedClassId
@@ -207,20 +246,6 @@ export default function ClassesPage() {
     );
     setActions(
       <Flex gap={8} align="center">
-        {/* Filter toggle */}
-        <div className="header-filter-toggle">
-          {filters.map((f) => (
-            <div
-              key={f.key}
-              className={filter === f.key ? 'active' : ''}
-              onClick={() => { setFilter(f.key); setPage(0); }}
-            >
-              {f.Icon && <f.Icon size={14} />}
-              {f.label}
-            </div>
-          ))}
-        </div>
-
         <Input
           placeholder="Search classes..."
           prefix={<Search size={16} />}
@@ -228,6 +253,15 @@ export default function ClassesPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
+        {view === 'topology' && (
+          <Button
+            icon={<Save size={14} />}
+            loading={savingPositions}
+            onClick={handleSavePositions}
+          >
+            Save Position
+          </Button>
+        )}
         <div className="header-view-toggle">
           {[
             { key: 'list', Icon: List },
@@ -251,7 +285,7 @@ export default function ClassesPage() {
         </Button>
       </Flex>
     );
-  }, [setBreadcrumbs, setActions, navigate, search, filter, view]);
+  }, [setBreadcrumbs, setActions, navigate, search, view, savingPositions, handleSavePositions]);
 
   const handleDelete = (record: ClassData) => {
     confirmModal.confirm.delete({
@@ -263,7 +297,7 @@ export default function ClassesPage() {
         try {
           await deleteClass(Number(record.id));
           message.success('Class deleted');
-          void loadClasses(search, filter);
+          void loadClasses(search);
         } catch (err) {
           message.error(err instanceof Error ? err.message : 'Failed to delete class');
         }
@@ -416,7 +450,15 @@ export default function ClassesPage() {
               nodes={topoNodes}
               edges={topoEdges}
               selectedNodeIds={selectedTopoClassIds}
+              initialPositions={initialPositions}
               onNodeClick={(classId) => handleTopoClassClick(classId)}
+              onDragEnd={handleDragEnd}
+              onBackgroundClick={() => {
+                setSelectedClassId(null);
+                setSelectedTopoClassIds(new Set());
+                setDetailProperties([]);
+                setDetailRelations([]);
+              }}
             />
           )}
         </div>
@@ -472,15 +514,15 @@ export default function ClassesPage() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
                     {detailRelations.map((r) => (
                       <div
-                        key={r.relationId}
+                        key={r.id}
                         style={{
                           display: 'flex', flexDirection: 'column', gap: 2,
                           padding: 10, backgroundColor: '#1a1a24', borderRadius: 8,
                         }}
                       >
-                        <Typography.Text style={{ fontSize: 13, fontWeight: 500 }}>{r.relationName}</Typography.Text>
+                        <Typography.Text style={{ fontSize: 13, fontWeight: 500 }}>{r.name}</Typography.Text>
                         <Typography.Text style={{ color: '#a1a1aa', fontSize: 11 }}>
-                          {r.domainClassName} → {r.rangeClassName}
+                          {r.sourceClassName} → {r.targetClassName}
                         </Typography.Text>
                       </div>
                     ))}

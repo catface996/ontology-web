@@ -677,6 +677,11 @@ export function getClassTopology(classId?: number, ontologyId?: number, topology
   return post<ClassTopologyData>('/core/api/v1/class/topology', { classId: classId || undefined, ontologyId, topologyId });
 }
 
+/** Save class topology node positions (ontology-level) */
+export function saveClassPositions(ontologyId: number, positions: { classId: number; positionX: number; positionY: number }[]): Promise<ApiResponse<null>> {
+  return post<null>('/core/api/v1/class/save-positions', { ontologyId, positions });
+}
+
 // ---------------------------------------------------------------------------
 // Instance types
 // ---------------------------------------------------------------------------
