@@ -12,6 +12,8 @@ import {
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
+import MermaidBlock from '../components/MermaidBlock';
+import EChartsBlock from '../components/EChartsBlock';
 import {
   getReportTemplateDetail,
   deleteReportTemplate,
@@ -21,6 +23,17 @@ import {
   type ReportTemplateVersionDTO,
   type ReportTemplateVersionDetailDTO,
 } from '../services/coreService';
+
+/* -- Extract plain text from React children (handles rehype-highlight spans) -- */
+function extractText(node: React.ReactNode): string {
+  if (typeof node === 'string') return node;
+  if (typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return node.map(extractText).join('');
+  if (node && typeof node === 'object' && 'props' in node) {
+    return extractText((node as React.ReactElement<{ children?: React.ReactNode }>).props.children);
+  }
+  return '';
+}
 
 /* -- Icon map -- */
 const iconMap: Record<string, React.ComponentType<{ size?: number; color?: string }>> = {
@@ -262,7 +275,23 @@ export default function ReportTemplateDetailPage() {
             {versionLoading ? (
               <Spin />
             ) : displayContent ? (
-              <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
+              <Markdown
+                remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeHighlight]}
+                components={{
+                  pre({ children, ...props }) {
+                    const child = children as React.ReactElement<{ className?: string; children?: React.ReactNode }>;
+                    const cls = child?.props?.className || '';
+                    if (cls.includes('language-mermaid')) {
+                      return <MermaidBlock>{extractText(child.props.children)}</MermaidBlock>;
+                    }
+                    if (cls.includes('language-echarts')) {
+                      return <EChartsBlock>{extractText(child.props.children)}</EChartsBlock>;
+                    }
+                    return <pre {...props}>{children}</pre>;
+                  },
+                }}
+              >
                 {displayContent}
               </Markdown>
             ) : (
