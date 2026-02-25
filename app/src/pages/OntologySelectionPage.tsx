@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Typography, Button, Tag, Spin } from 'antd';
+import { Typography, Button, Tag, Spin, Divider, Flex } from 'antd';
 import {
-  Share2, LayoutGrid, Heart, Wallet, Cpu, Link2, Globe, Plus, Eye,
+  Share2, LayoutGrid, Heart, Wallet, Cpu, Link2, Globe, Plus, Eye, Check, LogOut,
 } from 'lucide-react';
 import { useCurrentOntology } from '../contexts/OntologyContext';
-import { getUser } from '../utils/auth';
+import { getUser, logout } from '../utils/auth';
 import { listOntologies, type OntologyDTO } from '../services/coreService';
 
 /* -- Icon palette -- */
@@ -68,6 +68,8 @@ export default function OntologySelectionPage() {
   const { setCurrentOntology } = useCurrentOntology();
   const [ontologies, setOntologies] = useState<CardData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState('English');
   const user = getUser();
 
   useEffect(() => {
@@ -105,14 +107,93 @@ export default function OntologySelectionPage() {
           <Typography.Text style={{ fontSize: 18, fontWeight: 600, color: '#e4e4e7' }}>Ontology</Typography.Text>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Typography.Text style={{ fontSize: 14, fontWeight: 500, color: '#a1a1aa' }}>{user?.nickname || user?.username || 'User'}</Typography.Text>
-          <div style={{ width: 36, height: 36, borderRadius: 18, background: 'var(--primary-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div
+            style={{ width: 36, height: 36, borderRadius: 18, background: 'var(--primary-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+            onClick={() => setUserMenuOpen((prev) => !prev)}
+          >
             <Typography.Text style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>
               {(user?.nickname || user?.username || 'U').charAt(0).toUpperCase()}
             </Typography.Text>
           </div>
         </div>
       </div>
+
+      {/* User Menu Popover */}
+      {userMenuOpen && (
+        <div style={{ position: 'relative' }}>
+          <div
+            style={{
+              position: 'absolute', top: 0, right: 24, zIndex: 1300,
+              width: 248, background: '#1a1a24',
+              border: '1px solid #27273a', borderRadius: 12, padding: '8px 0',
+            }}
+          >
+            {/* User Info */}
+            <Flex align="center" gap={12} style={{ padding: '12px 16px' }}>
+              <div
+                style={{
+                  width: 32, height: 32, borderRadius: '50%',
+                  background: 'var(--primary-color)', display: 'flex',
+                  alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                }}
+              >
+                <Typography.Text style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>
+                  {(user?.nickname || user?.username || 'U').charAt(0).toUpperCase()}
+                </Typography.Text>
+              </div>
+              <div>
+                <Typography.Text style={{ fontSize: 14, fontWeight: 500, display: 'block' }}>
+                  {user?.nickname || 'Admin User'}
+                </Typography.Text>
+                <Typography.Text style={{ fontSize: 12, color: '#a1a1aa', display: 'block' }}>
+                  {user?.username || 'admin@ontology.io'}
+                </Typography.Text>
+              </div>
+            </Flex>
+            <Divider style={{ margin: '0 8px' }} />
+
+            {/* Language */}
+            <div style={{ padding: '8px 16px' }}>
+              <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa' }}>Language</Typography.Text>
+            </div>
+            {(['English', '中文', '日本語'] as const).map((lang) => {
+              const isActive = selectedLanguage === lang;
+              return (
+                <Flex
+                  key={lang}
+                  align="center"
+                  gap={12}
+                  onClick={() => setSelectedLanguage(lang)}
+                  style={{
+                    padding: '8px 16px', margin: '0 8px', borderRadius: 8, cursor: 'pointer',
+                    background: isActive ? 'rgba(var(--primary-rgb), 0.13)' : 'transparent',
+                  }}
+                >
+                  <div style={{ width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {isActive && <Check size={14} color="var(--primary-color)" />}
+                  </div>
+                  <Globe size={14} color="#a1a1aa" />
+                  <Typography.Text style={{ fontSize: 13 }}>{lang}</Typography.Text>
+                </Flex>
+              );
+            })}
+            <Divider style={{ margin: '0 8px' }} />
+
+            {/* Logout */}
+            <Flex
+              align="center"
+              gap={12}
+              onClick={() => { void logout().then(() => navigate('/login')); }}
+              style={{
+                padding: '8px 16px', margin: '0 8px', borderRadius: 8, cursor: 'pointer',
+              }}
+            >
+              <LogOut size={14} color="#f87171" />
+              <Typography.Text style={{ fontSize: 13, fontWeight: 500, color: '#f87171' }}>Log out</Typography.Text>
+            </Flex>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <div style={{ flex: 1, padding: '60px 120px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 40, overflow: 'auto' }}>
@@ -122,7 +203,7 @@ export default function OntologySelectionPage() {
             <LayoutGrid size={32} color="var(--primary-color)" />
           </div>
           <Typography.Text style={{ fontSize: 28, fontWeight: 700, color: '#f4f4f5' }}>Select an Ontology</Typography.Text>
-          <Typography.Text style={{ fontSize: 15, color: '#a1a1aa', textAlign: 'center', maxWidth: 520, lineHeight: '1.6' }}>
+          <Typography.Text style={{ fontSize: 15, color: '#a1a1aa', textAlign: 'center', maxWidth: 720, lineHeight: '1.6' }}>
             Choose an ontology to explore its knowledge graph, classes, relations and properties.
           </Typography.Text>
           <Button

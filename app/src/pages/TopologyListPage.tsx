@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Breadcrumb, Input, Button, Checkbox, Tag, Card, Typography, Flex, App } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { Search, Plus, Network, Pencil, Eye, Trash2, ArrowLeftRight, List, LayoutGrid } from 'lucide-react';
+import { Search, Plus, Network, Pencil, Share2, Trash2, ArrowLeftRight, List, LayoutGrid } from 'lucide-react';
 import TableCard from '../components/TableCard';
 import Pagination from '../components/Pagination';
 import { useModal } from '../contexts/ModalContext';
@@ -226,7 +226,7 @@ export default function TopologyListPage() {
           <Button
             type="text"
             size="small"
-            icon={<Eye size={16} />}
+            icon={<Share2 size={16} />}
             onClick={() => navigate(`/topology/${record.id}/view`)}
           />
           <Button
@@ -314,7 +314,7 @@ export default function TopologyListPage() {
 
                 {/* Actions */}
                 <Flex gap={8} justify="flex-end" style={{ borderTop: '1px solid #27273a', paddingTop: 12 }}>
-                  <Button size="small" icon={<Eye size={14} />} onClick={() => navigate(`/topology/${record.id}/view`)}>
+                  <Button size="small" icon={<Share2 size={14} />} onClick={() => navigate(`/topology/${record.id}/view`)}>
                     View
                   </Button>
                   <Button size="small" icon={<Pencil size={14} />} onClick={() => navigate(`/topology/${record.id}/edit`)}>
