@@ -87,6 +87,20 @@ export default function ConfirmDeleteModal({
         <Typography.Text style={{ fontSize: 20, fontWeight: 600, textAlign: 'center' }}>
           {title}
         </Typography.Text>
+        {confirmName && (
+          <div style={{
+            padding: '8px 16px',
+            borderRadius: 8,
+            background: 'rgba(239, 68, 68, 0.08)',
+            border: '1px solid rgba(239, 68, 68, 0.15)',
+            maxWidth: '100%',
+            wordBreak: 'break-word',
+          }}>
+            <Typography.Text style={{ fontSize: 15, fontWeight: 600, color: '#f87171' }}>
+              {confirmName}
+            </Typography.Text>
+          </div>
+        )}
         <Typography.Text style={{ fontSize: 14, color: '#a1a1aa', textAlign: 'center', lineHeight: 1.6, padding: '0 16px' }}>
           {description}
         </Typography.Text>

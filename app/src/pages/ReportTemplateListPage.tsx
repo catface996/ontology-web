@@ -63,27 +63,46 @@ function TemplateCard({ template, onClick }: { template: ReportTemplateDTO; onCl
       }}
     >
       {/* Header */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <Flex align="center" justify="space-between">
-          <div
-            style={{
-              width: 40,
-              height: 40,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: 8,
-              background: `${template.iconColor || '#8b5cf6'}20`,
-            }}
-          >
-            <Icon size={20} color={template.iconColor || '#8b5cf6'} />
-          </div>
-          <Typography.Text style={{ fontSize: 11, color: '#71717a' }}>
+          <Flex align="center" gap={10} style={{ flex: 1, minWidth: 0 }}>
+            <div
+              style={{
+                width: 36,
+                height: 36,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 8,
+                background: `${template.iconColor || '#8b5cf6'}20`,
+                flexShrink: 0,
+              }}
+            >
+              <Icon size={18} color={template.iconColor || '#8b5cf6'} />
+            </div>
+            <Typography.Text
+              style={{ fontSize: 15, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+            >
+              {template.title}
+            </Typography.Text>
+          </Flex>
+          <Typography.Text style={{ fontSize: 11, color: '#71717a', flexShrink: 0, marginLeft: 8 }}>
             v{template.majorVersion}.{template.minorVersion}
           </Typography.Text>
         </Flex>
-        <Typography.Text style={{ fontSize: 16, fontWeight: 600 }}>{template.title}</Typography.Text>
-        <Typography.Text style={{ fontSize: 13, color: '#a1a1aa' }}>{template.description}</Typography.Text>
+        <div
+          style={{
+            fontSize: 13,
+            color: '#a1a1aa',
+            display: '-webkit-box',
+            WebkitLineClamp: 3,
+            WebkitBoxOrient: 'vertical' as const,
+            overflow: 'hidden',
+            lineHeight: 1.5,
+          }}
+        >
+          {template.description}
+        </div>
       </div>
 
       {/* Footer */}
