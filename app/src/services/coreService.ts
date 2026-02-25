@@ -963,16 +963,20 @@ export async function resetTopologyPositions(topologyId: number): Promise<ApiRes
 
 export interface ReportDTO {
   id: number;
+  ontologyId: number;
   title: string;
   description: string;
   icon: string;
   iconColor: string;
   status: string;
+  createdAt?: string;
   updatedAt: string;
+  createdBy?: number;
 }
 
 export interface ReportDetailDTO {
   id: number;
+  ontologyId: number;
   title: string;
   description: string;
   icon: string;
@@ -986,6 +990,7 @@ export interface ReportDetailDTO {
 }
 
 export interface ListReportRequest {
+  ontologyId?: number;
   keyword?: string;
   status?: string;
   page?: number;
@@ -1032,6 +1037,7 @@ export function deleteReport(id: number): Promise<ApiResponse<null>> {
 
 export interface ReportTemplateDTO {
   id: number;
+  ontologyId: number;
   title: string;
   description: string;
   icon: string;
@@ -1044,6 +1050,7 @@ export interface ReportTemplateDTO {
 
 export interface ReportTemplateDetailDTO {
   id: number;
+  ontologyId: number;
   title: string;
   description: string;
   icon: string;
@@ -1081,6 +1088,7 @@ export interface ReportTemplateVersionDetailDTO {
 }
 
 export interface ListReportTemplateRequest {
+  ontologyId?: number;
   keyword?: string;
   status?: string;
   page?: number;
@@ -1088,6 +1096,7 @@ export interface ListReportTemplateRequest {
 }
 
 export interface CreateReportTemplateRequest {
+  ontologyId: number;
   title: string;
   description?: string;
   icon?: string;

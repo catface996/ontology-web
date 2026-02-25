@@ -7,6 +7,7 @@ import { markdown } from '@codemirror/lang-markdown';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
+import { useCurrentOntology } from '../contexts/OntologyContext';
 import {
   getReportTemplateDetail,
   createReportTemplate,
@@ -17,6 +18,7 @@ import {
 export default function ReportTemplateEditPage() {
   const navigate = useNavigate();
   const { templateId } = useParams();
+  const { currentOntologyId } = useCurrentOntology();
   const isCreateMode = !templateId;
 
   const [template, setTemplate] = useState<ReportTemplateDetailDTO | null>(null);
@@ -47,11 +49,12 @@ export default function ReportTemplateEditPage() {
   }, [templateId, isCreateMode]);
 
   const handleSave = async () => {
-    if (!title.trim()) return;
+    if (!title.trim() || (isCreateMode && !currentOntologyId)) return;
     setSaving(true);
     try {
       if (isCreateMode) {
         const res = await createReportTemplate({
+          ontologyId: currentOntologyId!,
           title,
           description,
           status,

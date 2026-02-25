@@ -7,6 +7,7 @@ import {
   Search, ChevronLeft, ChevronRight, FileText, Plus,
 } from 'lucide-react';
 import { useHeader } from '../contexts/HeaderContext';
+import { useCurrentOntology } from '../contexts/OntologyContext';
 import { listReportTemplates, type ReportTemplateDTO } from '../services/coreService';
 
 /* -- Icon map -- */
@@ -143,6 +144,7 @@ function HeaderActions({
 export default function ReportTemplateListPage() {
   const navigate = useNavigate();
   const { setBreadcrumbs, setActions } = useHeader();
+  const { currentOntologyId } = useCurrentOntology();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [templates, setTemplates] = useState<ReportTemplateDTO[]>([]);
@@ -151,9 +153,14 @@ export default function ReportTemplateListPage() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchTemplates = useCallback(async (keyword: string, pageNum: number) => {
+    if (!currentOntologyId) {
+      setTemplates([]);
+      setTotal(0);
+      return;
+    }
     setLoading(true);
     try {
-      const res = await listReportTemplates({ keyword: keyword || undefined, page: pageNum, pageSize: PAGE_SIZE });
+      const res = await listReportTemplates({ ontologyId: currentOntologyId, keyword: keyword || undefined, page: pageNum, pageSize: PAGE_SIZE });
       if (res.data) {
         setTemplates(res.data.records);
         setTotal(res.data.total);
@@ -161,7 +168,7 @@ export default function ReportTemplateListPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [currentOntologyId]);
 
   // Initial load
   useEffect(() => {

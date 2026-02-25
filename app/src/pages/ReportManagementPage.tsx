@@ -5,8 +5,10 @@ import {
   BarChart2, Users, PieChart,
   TrendingUp, Database, TriangleAlert, Zap, Globe,
   Search, ChevronLeft, ChevronRight, FileText, LayoutTemplate,
+  User, Clock,
 } from 'lucide-react';
 import { useHeader } from '../contexts/HeaderContext';
+import { useCurrentOntology } from '../contexts/OntologyContext';
 import { listReports, type ReportDTO } from '../services/coreService';
 
 /* -- Icon map -- */
@@ -28,20 +30,11 @@ function ReportCard({ report, onClick }: { report: ReportDTO; onClick: () => voi
   const Icon = iconMap[report.icon] || FileText;
   const st = statusConfig[report.status] || statusConfig.DRAFT;
 
-  // Format updatedAt
-  const formatTime = (dateStr: string) => {
+  // Format date
+  const formatDate = (dateStr: string) => {
     if (!dateStr) return '';
     const date = new Date(dateStr);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
-
-    if (minutes < 60) return `Updated ${minutes} min ago`;
-    if (hours < 24) return `Updated ${hours} hours ago`;
-    if (days < 7) return `Updated ${days} days ago`;
-    return `Updated ${date.toLocaleDateString()}`;
+    return date.toLocaleDateString();
   };
 
   return (
@@ -64,7 +57,7 @@ function ReportCard({ report, onClick }: { report: ReportDTO; onClick: () => voi
     >
       {/* Header */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <Flex align="center" justify="space-between">
+        <Flex align="center" gap={12}>
           <div
             style={{
               width: 40,
@@ -74,18 +67,30 @@ function ReportCard({ report, onClick }: { report: ReportDTO; onClick: () => voi
               justifyContent: 'center',
               borderRadius: 8,
               background: `${report.iconColor}20`,
+              flexShrink: 0,
             }}
           >
             <Icon size={20} color={report.iconColor} />
           </div>
+          <Typography.Text style={{ fontSize: 16, fontWeight: 600 }} ellipsis>{report.title}</Typography.Text>
         </Flex>
-        <Typography.Text style={{ fontSize: 16, fontWeight: 600 }}>{report.title}</Typography.Text>
         <Typography.Text style={{ fontSize: 13, color: '#a1a1aa' }}>{report.description}</Typography.Text>
       </div>
 
       {/* Footer */}
       <Flex align="center" justify="space-between">
-        <Typography.Text style={{ fontSize: 12, color: '#71717a' }}>{formatTime(report.updatedAt)}</Typography.Text>
+        <Flex gap={12} align="center">
+          <Flex gap={4} align="center">
+            <Clock size={12} color="#71717a" />
+            <Typography.Text style={{ fontSize: 12, color: '#71717a' }}>{formatDate(report.createdAt || report.updatedAt)}</Typography.Text>
+          </Flex>
+          {report.createdBy && (
+            <Flex gap={4} align="center">
+              <User size={12} color="#71717a" />
+              <Typography.Text style={{ fontSize: 12, color: '#71717a' }}>{report.createdBy}</Typography.Text>
+            </Flex>
+          )}
+        </Flex>
         <div style={{ padding: '4px 8px', borderRadius: 4, background: st.bg }}>
           <Typography.Text style={{ fontSize: 11, fontWeight: 500, color: st.color }}>
             {st.label}
@@ -125,6 +130,7 @@ function HeaderSearch({ searchRef, onTemplates }: { searchRef: React.RefObject<(
 export default function ReportManagementPage() {
   const navigate = useNavigate();
   const { setBreadcrumbs, setActions } = useHeader();
+  const { currentOntologyId } = useCurrentOntology();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [reports, setReports] = useState<ReportDTO[]>([]);
@@ -133,9 +139,14 @@ export default function ReportManagementPage() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchReports = useCallback(async (keyword: string, pageNum: number) => {
+    if (!currentOntologyId) {
+      setReports([]);
+      setTotal(0);
+      return;
+    }
     setLoading(true);
     try {
-      const res = await listReports({ keyword: keyword || undefined, page: pageNum, pageSize: PAGE_SIZE });
+      const res = await listReports({ ontologyId: currentOntologyId, keyword: keyword || undefined, page: pageNum, pageSize: PAGE_SIZE });
       if (res.data) {
         setReports(res.data.records);
         setTotal(res.data.total);
@@ -143,7 +154,7 @@ export default function ReportManagementPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [currentOntologyId]);
 
   // Initial load
   useEffect(() => {
