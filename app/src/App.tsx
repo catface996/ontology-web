@@ -21,7 +21,7 @@ import PropertyEditorPage from './pages/PropertyEditorPage';
 import InstancesPage from './pages/InstancesPage';
 import InstanceTopologyPage from './pages/InstanceTopologyPage';
 import InstanceEditorPage from './pages/InstanceEditorPage';
-import SparqlQueryPage from './pages/SparqlQueryPage';
+import SparqlQueryPage from './pages/SPARQLQueryPage';
 import ImportExportPage from './pages/ImportExportPage';
 import ReasoningPage from './pages/ReasoningPage';
 import AgentChatPage from './pages/AgentChatPage';
