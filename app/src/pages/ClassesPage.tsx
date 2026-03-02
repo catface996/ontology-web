@@ -46,7 +46,7 @@ export default function ClassesPage() {
   const { message } = App.useApp();
   const { setBreadcrumbs, setActions } = useHeader();
   const { currentOntologyId } = useCurrentOntology();
-  const [view, setView] = useState('list');
+  const [view, setView] = useState('topology');
   const [selected, setSelected] = useState<string[]>([]);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);

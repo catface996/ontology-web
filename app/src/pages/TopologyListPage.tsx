@@ -17,7 +17,7 @@ export default function TopologyListPage() {
   const { currentOntologyId } = useCurrentOntology();
   const confirmModal = useModal();
 
-  const [view, setView] = useState<'list' | 'grid'>('list');
+  const [view, setView] = useState<'list' | 'grid'>('grid');
   const [selected, setSelected] = useState<number[]>([]);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -313,14 +313,34 @@ export default function TopologyListPage() {
                 </Flex>
 
                 {/* Actions */}
-                <Flex gap={8} justify="flex-end" style={{ borderTop: '1px solid #27273a', paddingTop: 12 }}>
-                  <Button size="small" icon={<Share2 size={14} />} onClick={() => navigate(`/topology/${record.id}/view`)}>
-                    View
-                  </Button>
-                  <Button size="small" icon={<Pencil size={14} />} onClick={() => navigate(`/topology/${record.id}/edit`)}>
-                    Edit
-                  </Button>
-                  <Button size="small" danger icon={<Trash2 size={14} />} onClick={() => handleDelete(record)} />
+                <Flex justify="space-between" align="center" style={{ borderTop: '1px solid #27273a', paddingTop: 12 }}>
+                  <Flex gap={4}>
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<Share2 size={14} />}
+                      onClick={() => navigate(`/topology/${record.id}/view`)}
+                      style={{ color: '#a1a1aa' }}
+                    >
+                      View
+                    </Button>
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<Pencil size={14} />}
+                      onClick={() => navigate(`/topology/${record.id}/edit`)}
+                      style={{ color: '#a1a1aa' }}
+                    >
+                      Edit
+                    </Button>
+                  </Flex>
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<Trash2 size={14} />}
+                    onClick={() => handleDelete(record)}
+                    style={{ color: '#ef4444' }}
+                  />
                 </Flex>
               </Card>
             ))}
