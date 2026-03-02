@@ -1,57 +1,55 @@
-import { Breadcrumb, Typography, Button, Select } from 'antd';
+import { Breadcrumb, Typography, Button, Select, Spin, message } from 'antd';
 import {
-  ChevronRight, ChevronDown, Database,
+  ChevronDown, Database,
   ArrowRight, Zap, Plus, Save,
   ArrowLeftRight, Trash2, Check, AlertTriangle,
   KeyRound, Share2, GitMerge,
 } from 'lucide-react';
 import SuccessModal from '../components/SuccessModal';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useHeader } from '../contexts/HeaderContext';
+import { useCurrentOntology } from '../contexts/OntologyContext';
+import { listDataSources, getDataSource } from '../services/dataSourceService';
+import { listMappings, saveMappings, deleteMapping } from '../services/dataSourceService';
+import { listClasses, listClassProperties } from '../services/coreService';
+import type { DataSourceDTO, FieldMappingDTO, TransformType, TableSchema, ColumnSchema } from '../types/datasource';
+import type { ClassDTO, ClassPropertyDTO } from '../services/coreService';
 
-/* ── Types ── */
-interface SourceField {
-  name: string;
-  type: string;
-  isPrimary?: boolean;
-}
-
-interface MappingItem {
-  source: string;
-  target: string;
-  transform: string;
-}
-
-interface TargetField {
-  name: string;
-  type: string;
-}
-
-/* ── Static data ── */
-const allSourceFields: SourceField[] = [
-  { name: 'id',         type: 'INTEGER',      isPrimary: true },
-  { name: 'username',   type: 'VARCHAR(50)' },
-  { name: 'email',      type: 'VARCHAR(100)' },
-  { name: 'created_at', type: 'TIMESTAMP' },
+/* -- Transform options -- */
+const transformOptions: { value: TransformType; label: string }[] = [
+  { value: 'DIRECT', label: 'Direct mapping' },
+  { value: 'UPPERCASE', label: 'Uppercase' },
+  { value: 'LOWERCASE', label: 'Lowercase' },
+  { value: 'TRIM', label: 'Trim' },
+  { value: 'CUSTOM', label: 'Custom' },
 ];
 
-const allTargetFields: TargetField[] = [
-  { name: 'personId',    type: 'xsd:integer' },
-  { name: 'name',        type: 'xsd:string' },
-  { name: 'email',       type: 'xsd:string' },
-  { name: 'createdDate', type: 'xsd:dateTime' },
-  { name: 'belongsTo',   type: 'Organization' },
-];
+const transformLabels: Record<TransformType, string> = {
+  DIRECT: 'Direct mapping',
+  UPPERCASE: 'Uppercase',
+  LOWERCASE: 'Lowercase',
+  TRIM: 'Trim',
+  CUSTOM: 'Custom',
+};
 
-const initialMappings: MappingItem[] = [
-  { source: 'id',       target: 'personId', transform: 'Direct mapping' },
-  { source: 'username', target: 'name',     transform: 'Direct mapping' },
-  { source: 'email',    target: 'email',    transform: 'Direct mapping' },
-];
+/* -- Type mismatch detection -- */
+const SQL_NUMERIC_TYPES = /^(int|integer|bigint|smallint|tinyint|float|double|decimal|numeric|real)/i;
+const SQL_STRING_TYPES = /^(varchar|char|text|clob|nvarchar|nchar)/i;
+const SQL_DATE_TYPES = /^(date|time|timestamp|datetime)/i;
 
-const transformOptions = ['Direct mapping', 'Uppercase', 'Lowercase', 'Trim', 'Custom'];
+function hasTypeMismatch(sourceType: string, targetType: string): boolean {
+  const src = sourceType.toLowerCase();
+  const tgt = targetType.toLowerCase();
+  if (SQL_NUMERIC_TYPES.test(src) && tgt.includes('string')) return true;
+  if (SQL_STRING_TYPES.test(src) && tgt.includes('integer')) return true;
+  if (SQL_STRING_TYPES.test(src) && tgt.includes('decimal')) return true;
+  if (SQL_DATE_TYPES.test(src) && tgt.includes('string')) return true;
+  if (SQL_STRING_TYPES.test(src) && tgt.includes('datetime')) return true;
+  return false;
+}
 
-/* ── Connector dot ── */
+/* -- Connector dot -- */
 function ConnectorDot({ filled }: { filled: boolean }) {
   return (
     <div
@@ -68,7 +66,7 @@ function ConnectorDot({ filled }: { filled: boolean }) {
   );
 }
 
-/* ── Field row ── */
+/* -- Field row -- */
 function FieldRow({
   name,
   type,
@@ -123,57 +121,219 @@ function FieldRow({
   );
 }
 
-/* ── Page ── */
+/* -- Page -- */
 export default function FieldMappingPage() {
   const { setBreadcrumbs, setActions } = useHeader();
-  const [source, setSource] = useState('PostgreSQL / users');
-  const [target, setTarget] = useState('Person (Class)');
+  const { currentOntologyId } = useCurrentOntology();
+  const [searchParams] = useSearchParams();
+
+  // Data source state
+  const [allDataSources, setAllDataSources] = useState<DataSourceDTO[]>([]);
+  const [selectedDsId, setSelectedDsId] = useState<number | null>(
+    searchParams.get('dataSourceId') ? Number(searchParams.get('dataSourceId')) : null
+  );
+  const [currentDs, setCurrentDs] = useState<DataSourceDTO | null>(null);
+
+  // Schema state
+  const [tables, setTables] = useState<TableSchema[]>([]);
+  const [selectedTable, setSelectedTable] = useState<string>('');
+  const [sourceColumns, setSourceColumns] = useState<ColumnSchema[]>([]);
+
+  // Target state
+  const [classes, setClasses] = useState<ClassDTO[]>([]);
+  const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
+  const [classProperties, setClassProperties] = useState<ClassPropertyDTO[]>([]);
 
   // Mapping state
-  const [mappingList, setMappingList] = useState<MappingItem[]>(initialMappings);
+  const [mappingList, setMappingList] = useState<FieldMappingDTO[]>([]);
+  const [loadingMappings, setLoadingMappings] = useState(false);
 
   // Add mapping state
   const [adding, setAdding] = useState(false);
-  const [newSource, setNewSource] = useState('');
-  const [newTarget, setNewTarget] = useState('');
-  const [newTransform, setNewTransform] = useState('Direct mapping');
+  const [newSourceCol, setNewSourceCol] = useState('');
+  const [newTargetPropId, setNewTargetPropId] = useState<number | null>(null);
+  const [newTransform, setNewTransform] = useState<TransformType>('DIRECT');
 
   // Delete mapping state
-  const [deletingSource, setDeletingSource] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   // Save success modal
   const [saveOpen, setSaveOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   // Derived mapped sets
-  const mappedSourceNames = new Set(mappingList.map((m) => m.source));
-  const mappedTargetNames = new Set(mappingList.map((m) => m.target));
+  const mappedSourceCols = new Set(mappingList.map((m) => m.sourceColumn));
+  const mappedTargetPropIds = new Set(mappingList.map((m) => m.targetPropertyId));
 
   // Unmapped options for add form
-  const unmappedSources = allSourceFields.filter((f) => !mappedSourceNames.has(f.name)).map((f) => f.name);
-  const unmappedTargets = allTargetFields.filter((f) => !mappedTargetNames.has(f.name)).map((f) => f.name);
+  const unmappedSources = sourceColumns.filter((c) => !mappedSourceCols.has(c.columnName));
+  const unmappedTargets = classProperties.filter((p) => !mappedTargetPropIds.has(p.propertyId));
 
   const mappedCount = mappingList.length;
-  const totalCount = allSourceFields.length;
+  const totalCount = sourceColumns.length;
+
+  // Load data sources
+  useEffect(() => {
+    if (!currentOntologyId) return;
+    listDataSources({ ontologyId: currentOntologyId })
+      .then((res) => setAllDataSources(res.data ?? []))
+      .catch(() => {});
+  }, [currentOntologyId]);
+
+  // Load classes
+  useEffect(() => {
+    if (!currentOntologyId) return;
+    listClasses({ ontologyId: currentOntologyId })
+      .then((res) => setClasses(res.data ?? []))
+      .catch(() => {});
+  }, [currentOntologyId]);
+
+  // Load data source detail when selected
+  useEffect(() => {
+    if (!selectedDsId) {
+      setCurrentDs(null);
+      setTables([]);
+      setSourceColumns([]);
+      setSelectedTable('');
+      return;
+    }
+    setLoading(true);
+    getDataSource(selectedDsId)
+      .then((res) => {
+        setCurrentDs(res.data);
+        const schemaTables = res.data.schemaJson?.tables ?? [];
+        setTables(schemaTables);
+        if (schemaTables.length > 0 && !selectedTable) {
+          setSelectedTable(schemaTables[0].tableName);
+          setSourceColumns(schemaTables[0].columns ?? []);
+        }
+      })
+      .catch((err) => {
+        message.error(err instanceof Error ? err.message : 'Failed to load data source');
+      })
+      .finally(() => setLoading(false));
+  }, [selectedDsId]);
+
+  // Update columns when table changes
+  useEffect(() => {
+    if (!selectedTable || tables.length === 0) {
+      setSourceColumns([]);
+      return;
+    }
+    const table = tables.find((t) => t.tableName === selectedTable);
+    setSourceColumns(table?.columns ?? []);
+  }, [selectedTable, tables]);
+
+  // Load class properties when target class changes
+  useEffect(() => {
+    if (!selectedClassId) {
+      setClassProperties([]);
+      return;
+    }
+    listClassProperties(selectedClassId)
+      .then((res) => setClassProperties(res.data ?? []))
+      .catch(() => {});
+  }, [selectedClassId]);
+
+  // Load mappings
+  const fetchMappings = useCallback(async () => {
+    if (!selectedDsId) return;
+    setLoadingMappings(true);
+    try {
+      const params: { dataSourceId: number; sourceTable?: string; targetClassId?: number } = {
+        dataSourceId: selectedDsId,
+      };
+      if (selectedTable) params.sourceTable = selectedTable;
+      if (selectedClassId) params.targetClassId = selectedClassId;
+      const res = await listMappings(params);
+      setMappingList(res.data ?? []);
+    } catch {
+      // ignore
+    } finally {
+      setLoadingMappings(false);
+    }
+  }, [selectedDsId, selectedTable, selectedClassId]);
+
+  useEffect(() => {
+    fetchMappings();
+  }, [fetchMappings]);
+
+  // Auto-select first class if available
+  useEffect(() => {
+    if (classes.length > 0 && selectedClassId === null) {
+      setSelectedClassId(classes[0].id);
+    }
+  }, [classes, selectedClassId]);
 
   const handleConfirmAdd = () => {
-    if (!newSource || !newTarget) return;
-    setMappingList((prev) => [...prev, { source: newSource, target: newTarget, transform: newTransform }]);
+    if (!newSourceCol || !newTargetPropId || !selectedDsId || !selectedClassId) return;
+    const col = sourceColumns.find((c) => c.columnName === newSourceCol);
+    const prop = classProperties.find((p) => p.propertyId === newTargetPropId);
+    const newMapping: FieldMappingDTO = {
+      id: -Date.now(), // temporary negative ID for unsaved
+      dataSourceId: selectedDsId,
+      sourceTable: selectedTable,
+      sourceColumn: newSourceCol,
+      sourceColumnType: col?.dataType,
+      targetClassId: selectedClassId,
+      targetClassName: classes.find((c) => c.id === selectedClassId)?.name,
+      targetPropertyId: newTargetPropId,
+      targetPropertyName: prop?.propertyName,
+      targetPropertyType: prop?.dataType,
+      transformType: newTransform,
+    };
+    setMappingList((prev) => [...prev, newMapping]);
     setAdding(false);
-    setNewSource('');
-    setNewTarget('');
-    setNewTransform('Direct mapping');
+    setNewSourceCol('');
+    setNewTargetPropId(null);
+    setNewTransform('DIRECT');
   };
 
   const handleCancelAdd = () => {
     setAdding(false);
-    setNewSource('');
-    setNewTarget('');
-    setNewTransform('Direct mapping');
+    setNewSourceCol('');
+    setNewTargetPropId(null);
+    setNewTransform('DIRECT');
   };
 
-  const handleConfirmDelete = (sourceKey: string) => {
-    setMappingList((prev) => prev.filter((m) => m.source !== sourceKey));
-    setDeletingSource(null);
+  const handleConfirmDelete = async (mapping: FieldMappingDTO) => {
+    if (mapping.id > 0) {
+      try {
+        await deleteMapping(mapping.id);
+      } catch (err) {
+        message.error(err instanceof Error ? err.message : 'Failed to delete mapping');
+        setDeletingId(null);
+        return;
+      }
+    }
+    setMappingList((prev) => prev.filter((m) => m.id !== mapping.id));
+    setDeletingId(null);
+  };
+
+  const handleSave = async () => {
+    if (!selectedDsId || !selectedClassId) return;
+    setSaving(true);
+    try {
+      await saveMappings({
+        dataSourceId: selectedDsId,
+        mappings: mappingList.map((m) => ({
+          sourceTable: m.sourceTable,
+          sourceColumn: m.sourceColumn,
+          sourceColumnType: m.sourceColumnType,
+          targetClassId: m.targetClassId,
+          targetPropertyId: m.targetPropertyId,
+          transformType: m.transformType,
+          customExpression: m.customExpression,
+        })),
+      });
+      setSaveOpen(true);
+      fetchMappings(); // reload with server IDs
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : 'Failed to save mappings');
+    } finally {
+      setSaving(false);
+    }
   };
 
   useEffect(() => {
@@ -189,18 +349,32 @@ export default function FieldMappingPage() {
     setActions(
       <div style={{ display: 'flex', gap: 12 }}>
         <Button icon={<Zap size={16} />}>Auto Mapping</Button>
-        <Button type="primary" icon={<Save size={16} />} onClick={() => setSaveOpen(true)}>
+        <Button
+          type="primary"
+          icon={<Save size={16} />}
+          onClick={handleSave}
+          loading={saving}
+          disabled={!selectedDsId || mappingList.length === 0}
+        >
           Save Mapping
         </Button>
       </div>
     );
-  }, [setBreadcrumbs, setActions]);
+  }, [setBreadcrumbs, setActions, saving, selectedDsId, mappingList.length]);
+
+  if (loading) {
+    return (
+      <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
 
   return (
     <>
-      {/* Content — three-panel layout */}
+      {/* Content -- three-panel layout */}
       <div style={{ flex: 1, padding: 24, display: 'flex', gap: 24, overflow: 'hidden' }}>
-        {/* ── Source Fields ── */}
+        {/* -- Source Fields -- */}
         <div style={{
           flex: 1, display: 'flex', flexDirection: 'column',
           borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', overflow: 'hidden',
@@ -210,34 +384,58 @@ export default function FieldMappingPage() {
               <Database size={20} color="#336791" />
               <Typography.Text style={{ fontSize: 16, fontWeight: 600 }}>Source Fields</Typography.Text>
             </div>
+            {/* Data source selector */}
             <Select
               style={{ width: '100%' }}
-              value={source}
-              onChange={setSource}
+              placeholder="Select data source"
+              value={selectedDsId ?? undefined}
+              onChange={(val) => {
+                setSelectedDsId(val);
+                setSelectedTable('');
+                setSourceColumns([]);
+              }}
               suffixIcon={<ChevronDown size={16} />}
-              options={[
-                { value: 'PostgreSQL / users', label: 'PostgreSQL / users' },
-                { value: 'PostgreSQL / orders', label: 'PostgreSQL / orders' },
-                { value: 'MySQL / products', label: 'MySQL / products' },
-              ]}
+              options={allDataSources.map((ds) => ({
+                value: ds.id,
+                label: `${ds.name} (${ds.subtype})`,
+              }))}
             />
+            {/* Table selector */}
+            {tables.length > 0 && (
+              <Select
+                style={{ width: '100%' }}
+                value={selectedTable || undefined}
+                placeholder="Select table"
+                onChange={(val) => setSelectedTable(val)}
+                suffixIcon={<ChevronDown size={16} />}
+                options={tables.map((t) => ({
+                  value: t.tableName,
+                  label: `${t.tableName}${t.rowCount != null ? ` (${t.rowCount} rows)` : ''}`,
+                }))}
+              />
+            )}
           </div>
           <div style={{ flex: 1, padding: 12, display: 'flex', flexDirection: 'column', gap: 8, overflow: 'auto' }}>
-            {allSourceFields.map((f) => (
+            {sourceColumns.length === 0 && selectedDsId && (
+              <Typography.Text type="secondary" style={{ textAlign: 'center', marginTop: 24, fontSize: 13 }}>
+                {tables.length === 0 ? 'No schema discovered. Run schema discovery first.' : 'Select a table to view columns.'}
+              </Typography.Text>
+            )}
+            {sourceColumns.map((col) => (
               <FieldRow
-                key={f.name}
-                name={f.name}
-                type={f.type}
-                mapped={mappedSourceNames.has(f.name)}
-                active={adding && newSource === f.name}
-                isPrimary={f.isPrimary}
+                key={col.columnName}
+                name={col.columnName}
+                type={col.dataType}
+                mapped={mappedSourceCols.has(col.columnName)}
+                active={adding && newSourceCol === col.columnName}
+                isPrimary={col.isPrimaryKey}
                 connectorSide="right"
               />
             ))}
           </div>
         </div>
 
-        {/* ── Field Mappings ── */}
+        {/* -- Field Mappings -- */}
         <div style={{
           width: 320, flexShrink: 0, display: 'flex', flexDirection: 'column',
           borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', overflow: 'hidden',
@@ -252,24 +450,33 @@ export default function FieldMappingPage() {
             </Typography.Text>
           </div>
           <div style={{ flex: 1, padding: 12, display: 'flex', flexDirection: 'column', gap: 8, overflow: 'auto' }}>
-            {mappingList.map((m) =>
-              deletingSource === m.source ? (
-                /* ── Delete confirmation ── */
+            {loadingMappings && (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}>
+                <Spin />
+              </div>
+            )}
+            {!loadingMappings && mappingList.map((m) => {
+              const mismatch = m.sourceColumnType && m.targetPropertyType
+                ? hasTypeMismatch(m.sourceColumnType, m.targetPropertyType)
+                : false;
+
+              return deletingId === m.id ? (
+                /* -- Delete confirmation -- */
                 <div
-                  key={m.source}
+                  key={m.id}
                   style={{
                     padding: 12, borderRadius: 8, border: '1px solid #ef4444',
                     background: 'rgba(239,68,68,0.08)', display: 'flex', flexDirection: 'column', gap: 10,
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Typography.Text style={{ fontSize: 13, fontWeight: 500 }}>{m.source}</Typography.Text>
+                    <Typography.Text style={{ fontSize: 13, fontWeight: 500 }}>{m.sourceColumn}</Typography.Text>
                     <ArrowRight size={14} color="#ef4444" />
-                    <Typography.Text style={{ fontSize: 13, fontWeight: 500 }}>{m.target}</Typography.Text>
+                    <Typography.Text style={{ fontSize: 13, fontWeight: 500 }}>{m.targetPropertyName ?? `prop#${m.targetPropertyId}`}</Typography.Text>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                     <Zap size={12} color="#a1a1aa" />
-                    <Typography.Text type="secondary" style={{ fontSize: 11 }}>{m.transform}</Typography.Text>
+                    <Typography.Text type="secondary" style={{ fontSize: 11 }}>{transformLabels[m.transformType]}</Typography.Text>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
                     <AlertTriangle size={12} color="#ef4444" />
@@ -278,16 +485,16 @@ export default function FieldMappingPage() {
                     </Typography.Text>
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <Button block onClick={() => setDeletingSource(null)}>Keep</Button>
-                    <Button block danger type="primary" icon={<Trash2 size={16} />} onClick={() => handleConfirmDelete(m.source)}>
+                    <Button block onClick={() => setDeletingId(null)}>Keep</Button>
+                    <Button block danger type="primary" icon={<Trash2 size={16} />} onClick={() => handleConfirmDelete(m)}>
                       Remove
                     </Button>
                   </div>
                 </div>
               ) : (
-                /* ── Normal mapping row with hover trash ── */
+                /* -- Normal mapping row -- */
                 <div
-                  key={m.source}
+                  key={m.id}
                   className="mapping-row"
                   style={{
                     padding: 12, borderRadius: 8, border: '1px solid var(--primary-color)',
@@ -296,11 +503,11 @@ export default function FieldMappingPage() {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Typography.Text style={{ fontSize: 13, fontWeight: 500 }}>{m.source}</Typography.Text>
+                    <Typography.Text style={{ fontSize: 13, fontWeight: 500 }}>{m.sourceColumn}</Typography.Text>
                     <ArrowRight size={14} />
-                    <Typography.Text style={{ fontSize: 13, fontWeight: 500 }}>{m.target}</Typography.Text>
+                    <Typography.Text style={{ fontSize: 13, fontWeight: 500 }}>{m.targetPropertyName ?? `prop#${m.targetPropertyId}`}</Typography.Text>
                     <div
-                      onClick={() => setDeletingSource(m.source)}
+                      onClick={() => setDeletingId(m.id)}
                       style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', marginLeft: 4, color: '#ef4444' }}
                     >
                       <Trash2 size={14} />
@@ -308,13 +515,22 @@ export default function FieldMappingPage() {
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                     <Zap size={12} color="#a1a1aa" />
-                    <Typography.Text type="secondary" style={{ fontSize: 11 }}>{m.transform}</Typography.Text>
+                    <Typography.Text type="secondary" style={{ fontSize: 11 }}>{transformLabels[m.transformType]}</Typography.Text>
                   </div>
+                  {/* T045B: Type mismatch warning */}
+                  {mismatch && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <AlertTriangle size={12} color="#F59E0B" />
+                      <Typography.Text style={{ fontSize: 11, color: '#F59E0B' }}>
+                        Type mismatch: {m.sourceColumnType} → {m.targetPropertyType}
+                      </Typography.Text>
+                    </div>
+                  )}
                 </div>
-              ),
-            )}
+              );
+            })}
 
-            {/* Add Mapping — form or button */}
+            {/* Add Mapping -- form or button */}
             {adding ? (
               <div style={{
                 padding: 12, borderRadius: 8, border: '1px solid var(--primary-color)',
@@ -327,25 +543,31 @@ export default function FieldMappingPage() {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <div>
-                    <Typography.Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 4 }}>Source Field</Typography.Text>
+                    <Typography.Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 4 }}>Source Column</Typography.Text>
                     <Select
                       style={{ width: '100%' }}
-                      value={newSource || undefined}
-                      placeholder="Select source field"
-                      onChange={setNewSource}
+                      value={newSourceCol || undefined}
+                      placeholder="Select source column"
+                      onChange={setNewSourceCol}
                       suffixIcon={<ChevronDown size={16} />}
-                      options={unmappedSources.map((s) => ({ value: s, label: s }))}
+                      options={unmappedSources.map((c) => ({
+                        value: c.columnName,
+                        label: `${c.columnName} (${c.dataType})`,
+                      }))}
                     />
                   </div>
                   <div>
                     <Typography.Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 4 }}>Target Property</Typography.Text>
                     <Select
                       style={{ width: '100%' }}
-                      value={newTarget || undefined}
+                      value={newTargetPropId ?? undefined}
                       placeholder="Select target property"
-                      onChange={setNewTarget}
+                      onChange={(val) => setNewTargetPropId(val)}
                       suffixIcon={<ChevronDown size={16} />}
-                      options={unmappedTargets.map((t) => ({ value: t, label: t }))}
+                      options={unmappedTargets.map((p) => ({
+                        value: p.propertyId,
+                        label: `${p.propertyName} (${p.dataType})`,
+                      }))}
                     />
                   </div>
                   <div>
@@ -355,21 +577,27 @@ export default function FieldMappingPage() {
                       value={newTransform}
                       onChange={setNewTransform}
                       suffixIcon={<ChevronDown size={16} />}
-                      options={transformOptions.map((t) => ({ value: t, label: t }))}
+                      options={transformOptions}
                     />
                   </div>
                 </div>
 
                 <div style={{ display: 'flex', gap: 8 }}>
                   <Button block onClick={handleCancelAdd}>Cancel</Button>
-                  <Button block type="primary" disabled={!newSource || !newTarget} icon={<Check size={16} />} onClick={handleConfirmAdd}>
+                  <Button block type="primary" disabled={!newSourceCol || !newTargetPropId} icon={<Check size={16} />} onClick={handleConfirmAdd}>
                     Confirm
                   </Button>
                 </div>
               </div>
             ) : (
               <div
-                onClick={() => setAdding(true)}
+                onClick={() => {
+                  if (!selectedDsId || !selectedClassId) {
+                    message.info('Select a data source and target class first');
+                    return;
+                  }
+                  setAdding(true);
+                }}
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                   padding: '10px 0', borderRadius: 8, border: '1px solid rgba(255,255,255,0.12)',
@@ -383,7 +611,7 @@ export default function FieldMappingPage() {
           </div>
         </div>
 
-        {/* ── Target Properties ── */}
+        {/* -- Target Properties -- */}
         <div style={{
           flex: 1, display: 'flex', flexDirection: 'column',
           borderRadius: 12, border: '1px solid rgba(255,255,255,0.12)', overflow: 'hidden',
@@ -395,24 +623,29 @@ export default function FieldMappingPage() {
             </div>
             <Select
               style={{ width: '100%' }}
-              value={target}
-              onChange={setTarget}
+              placeholder="Select target class"
+              value={selectedClassId ?? undefined}
+              onChange={(val) => setSelectedClassId(val)}
               suffixIcon={<ChevronDown size={16} />}
-              options={[
-                { value: 'Person (Class)', label: 'Person (Class)' },
-                { value: 'Organization (Class)', label: 'Organization (Class)' },
-                { value: 'Event (Class)', label: 'Event (Class)' },
-              ]}
+              options={classes.map((c) => ({
+                value: c.id,
+                label: `${c.name} (Class)`,
+              }))}
             />
           </div>
           <div style={{ flex: 1, padding: 12, display: 'flex', flexDirection: 'column', gap: 8, overflow: 'auto' }}>
-            {allTargetFields.map((f) => (
+            {classProperties.length === 0 && selectedClassId && (
+              <Typography.Text type="secondary" style={{ textAlign: 'center', marginTop: 24, fontSize: 13 }}>
+                No properties bound to this class.
+              </Typography.Text>
+            )}
+            {classProperties.map((p) => (
               <FieldRow
-                key={f.name}
-                name={f.name}
-                type={f.type}
-                mapped={mappedTargetNames.has(f.name)}
-                active={adding && newTarget === f.name}
+                key={p.propertyId}
+                name={p.propertyName}
+                type={p.dataType}
+                mapped={mappedTargetPropIds.has(p.propertyId)}
+                active={adding && newTargetPropId === p.propertyId}
                 connectorSide="left"
               />
             ))}
