@@ -27,6 +27,7 @@ import ReasoningPage from './pages/ReasoningPage';
 import AgentChatPage from './pages/AgentChatPage';
 import TaskHistoryPage from './pages/TaskHistoryPage';
 import DataSourcesPage from './pages/DataSourcesPage';
+import DataSourceDetailPage from './pages/DataSourceDetailPage';
 import AddConnectionPage from './pages/AddConnectionPage';
 import ConnectorsPage from './pages/ConnectorsPage';
 import FieldMappingPage from './pages/FieldMappingPage';
@@ -111,6 +112,7 @@ function ThemedApp() {
             <Route path="task-history" element={<TaskHistoryPage />} />
             <Route path="data-sources" element={<DataSourcesPage />} />
             <Route path="data-sources/add" element={<AddConnectionPage />} />
+            <Route path="data-sources/:datasourceId" element={<DataSourceDetailPage />} />
             <Route path="connectors" element={<ConnectorsPage />} />
             <Route path="field-mapping" element={<FieldMappingPage />} />
             <Route path="report-management" element={<ReportManagementPage />} />

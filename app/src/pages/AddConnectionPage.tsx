@@ -1,35 +1,43 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Breadcrumb, Typography, Input, Button } from 'antd';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Breadcrumb, Typography, Input, Button, Spin, message } from 'antd';
 import { ChevronRight, Database, Save, Plug } from 'lucide-react';
 import { useHeader } from '../contexts/HeaderContext';
+import { useCurrentOntology } from '../contexts/OntologyContext';
+import {
+  createDataSource,
+  updateDataSource,
+  getDataSource,
+  updateDataSourceStatus,
+} from '../services/dataSourceService';
+import type { DataSourceSubtype } from '../types/datasource';
 
-/* ── Types ── */
+/* -- Types -- */
 interface SourceType {
-  key: string;
+  key: DataSourceSubtype;
   name: string;
   icon: React.ComponentType<{ size?: number; color?: string }>;
   brandColor: string;
   defaultPort: string;
 }
 
-/* ── Data ── */
+/* -- Data (MVP: postgresql + mysql only) -- */
 const sourceTypes: SourceType[] = [
-  { key: 'postgresql', name: 'PostgreSQL',  icon: Database, brandColor: '#336791', defaultPort: '5432' },
-  { key: 'mysql',      name: 'MySQL',       icon: Database, brandColor: '#4479A1', defaultPort: '3306' },
-  { key: 'mongodb',    name: 'MongoDB',     icon: Database, brandColor: '#47A248', defaultPort: '27017' },
-  { key: 'redis',      name: 'Redis',       icon: Database, brandColor: '#DC382D', defaultPort: '6379' },
-  { key: 'salesforce', name: 'Salesforce',  icon: Database, brandColor: '#00A1E0', defaultPort: '' },
-  { key: 'sap',        name: 'SAP',         icon: Database, brandColor: '#0070F2', defaultPort: '' },
-  { key: 'workday',    name: 'Workday',     icon: Database, brandColor: '#F68D2E', defaultPort: '' },
-  { key: 'slack',      name: 'Slack',       icon: Database, brandColor: '#4A154B', defaultPort: '' },
+  { key: 'postgresql', name: 'PostgreSQL', icon: Database, brandColor: '#336791', defaultPort: '5432' },
+  { key: 'mysql',      name: 'MySQL',      icon: Database, brandColor: '#4479A1', defaultPort: '3306' },
 ];
 
-/* ── Page ── */
+/* -- Page -- */
 export default function AddConnectionPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { setBreadcrumbs } = useHeader();
-  const [selected, setSelected] = useState('postgresql');
+  const { currentOntologyId } = useCurrentOntology();
+
+  const editId = searchParams.get('id') ? Number(searchParams.get('id')) : null;
+  const isEdit = editId !== null;
+
+  const [selected, setSelected] = useState<DataSourceSubtype>('postgresql');
   const [form, setForm] = useState({
     name: '',
     host: '',
@@ -38,10 +46,36 @@ export default function AddConnectionPage() {
     username: '',
     password: '',
   });
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+
+  // Load existing data source for edit mode
+  useEffect(() => {
+    if (!editId) return;
+    setLoading(true);
+    getDataSource(editId)
+      .then((res) => {
+        const ds = res.data;
+        setSelected(ds.subtype);
+        setForm({
+          name: ds.name,
+          host: ds.host,
+          port: String(ds.port),
+          database: ds.databaseName,
+          username: ds.username,
+          password: '',
+        });
+      })
+      .catch((err) => {
+        message.error(err instanceof Error ? err.message : 'Failed to load data source');
+      })
+      .finally(() => setLoading(false));
+  }, [editId]);
 
   const current = sourceTypes.find((s) => s.key === selected)!;
 
-  const handleSelect = (key: string) => {
+  const handleSelect = (key: DataSourceSubtype) => {
     const src = sourceTypes.find((s) => s.key === key)!;
     setSelected(key);
     setForm((prev) => ({ ...prev, port: src.defaultPort }));
@@ -51,6 +85,72 @@ export default function AddConnectionPage() {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
   };
 
+  const handleTestConnection = async () => {
+    if (!editId) {
+      message.info('Save the connection first, then test it.');
+      return;
+    }
+    setTesting(true);
+    try {
+      await updateDataSourceStatus({ id: editId, status: 'CONNECTED' });
+      message.success('Connection test successful');
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : 'Connection test failed');
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!currentOntologyId) {
+      message.error('No ontology selected. Please select an ontology first.');
+      return;
+    }
+    if (!form.name || !form.host || !form.port || !form.database || !form.username) {
+      message.error('Please fill in all required fields');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      if (isEdit) {
+        await updateDataSource({
+          id: editId,
+          name: form.name,
+          host: form.host,
+          port: Number(form.port),
+          databaseName: form.database,
+          username: form.username,
+          ...(form.password ? { password: form.password } : {}),
+        });
+        message.success('Connection updated successfully');
+      } else {
+        if (!form.password) {
+          message.error('Password is required for new connections');
+          setSaving(false);
+          return;
+        }
+        await createDataSource({
+          ontologyId: currentOntologyId,
+          name: form.name,
+          subtype: selected,
+          host: form.host,
+          port: Number(form.port),
+          databaseName: form.database,
+          username: form.username,
+          password: form.password,
+          brandColor: current.brandColor,
+        });
+        message.success('Connection created successfully');
+      }
+      navigate('/data-sources');
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : 'Failed to save connection');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   useEffect(() => {
     setBreadcrumbs(
       <Breadcrumb
@@ -58,11 +158,19 @@ export default function AddConnectionPage() {
         items={[
           { title: <a>Integrations</a> },
           { title: <a onClick={(e) => { e.preventDefault(); navigate('/data-sources'); }}>Data Sources</a> },
-          { title: <Typography.Text strong>Add Connection</Typography.Text> },
+          { title: <Typography.Text strong>{isEdit ? 'Edit Connection' : 'Add Connection'}</Typography.Text> },
         ]}
       />
     );
-  }, [setBreadcrumbs, navigate]);
+  }, [setBreadcrumbs, navigate, isEdit]);
+
+  if (loading) {
+    return (
+      <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -86,7 +194,7 @@ export default function AddConnectionPage() {
               return (
                 <div
                   key={src.key}
-                  onClick={() => handleSelect(src.key)}
+                  onClick={() => !isEdit && handleSelect(src.key)}
                   style={{
                     width: 130,
                     height: 88,
@@ -97,7 +205,8 @@ export default function AddConnectionPage() {
                     gap: 6,
                     borderRadius: 10,
                     border: active ? '2px solid var(--primary-color)' : '1px solid rgba(255,255,255,0.12)',
-                    cursor: 'pointer',
+                    cursor: isEdit ? 'default' : 'pointer',
+                    opacity: isEdit && !active ? 0.4 : 1,
                     transition: 'all 0.15s',
                   }}
                 >
@@ -194,7 +303,9 @@ export default function AddConnectionPage() {
                 />
               </div>
               <div style={{ flex: 1 }}>
-                <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>Password</label>
+                <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>
+                  Password {isEdit && <Typography.Text type="secondary" style={{ fontSize: 11 }}>(leave blank to keep current)</Typography.Text>}
+                </label>
                 <Input.Password
                   placeholder="••••••••"
                   value={form.password}
@@ -214,10 +325,23 @@ export default function AddConnectionPage() {
               justifyContent: 'space-between',
             }}
           >
-            <Button icon={<Plug size={16} />}>Test Connection</Button>
+            <Button
+              icon={<Plug size={16} />}
+              onClick={handleTestConnection}
+              loading={testing}
+            >
+              Test Connection
+            </Button>
             <div style={{ display: 'flex', gap: 12 }}>
               <Button onClick={() => navigate('/data-sources')}>Cancel</Button>
-              <Button type="primary" icon={<Save size={16} />}>Save Connection</Button>
+              <Button
+                type="primary"
+                icon={<Save size={16} />}
+                onClick={handleSave}
+                loading={saving}
+              >
+                {isEdit ? 'Update Connection' : 'Save Connection'}
+              </Button>
             </div>
           </div>
         </div>
