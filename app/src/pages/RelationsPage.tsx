@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Breadcrumb, Input, Button, Tag, Typography, Flex, App } from 'antd';
+import { Breadcrumb, Input, Button, Tag, Typography, Flex, App, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
   ArrowRight, Search, Plus, Pencil, Trash2, Brain,
-  ArrowLeftRight, ChevronRight,
+  ChevronRight,
 } from 'lucide-react';
 import TableCard from '../components/TableCard';
 import { useModal } from '../contexts/ModalContext';
@@ -180,9 +180,15 @@ export default function RelationsPage() {
       align: 'center',
       render: (_: unknown, record: RelationDTO) => (
         <Flex justify="center" gap={4}>
-          <Button type="text" size="small" icon={<Brain size={16} />} onClick={() => navigate(`/relations/${record.id}/logic`)} />
-          <Button type="text" size="small" icon={<Pencil size={16} />} onClick={() => navigate(`/relations/${record.id}/edit`)} />
-          <Button type="text" size="small" icon={<Trash2 size={16} />} onClick={() => handleDelete(record)} />
+          <Tooltip title="Logic Rules">
+            <Button type="text" size="small" icon={<Brain size={16} />} onClick={() => navigate(`/relations/${record.id}/logic`)} />
+          </Tooltip>
+          <Tooltip title="Edit">
+            <Button type="text" size="small" icon={<Pencil size={16} />} onClick={() => navigate(`/relations/${record.id}/edit`)} />
+          </Tooltip>
+          <Tooltip title="Delete">
+            <Button type="text" size="small" danger icon={<Trash2 size={16} />} onClick={() => handleDelete(record)} />
+          </Tooltip>
         </Flex>
       ),
     },

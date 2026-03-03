@@ -101,3 +101,69 @@ export interface ListMappingsRequest {
   sourceTable?: string;
   targetClassId?: number;
 }
+
+// ==================== New FieldMappingConfig Types ====================
+
+export interface ColumnMappingItem {
+  sourceColumn: string;
+  sourceColumnType?: string;
+  targetPropertyId: number;
+  targetPropertyName?: string;
+  targetPropertyType?: string;
+  transformType: TransformType;
+  customExpression?: string;
+}
+
+export interface FieldMappingConfigDTO {
+  id: number;
+  dataSourceId: number;
+  dataSourceName?: string;
+  sourceTable: string;
+  targetClassId: number;
+  targetClassName?: string;
+  mappingCount?: number;
+  hasTypeWarning?: boolean;
+  mappings: ColumnMappingItem[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ListFieldMappingConfigRequest {
+  dataSourceId: number;
+  sourceTable?: string;
+  targetClassId?: number;
+}
+
+export interface SaveFieldMappingConfigRequest {
+  dataSourceId: number;
+  sourceTable: string;
+  targetClassId: number;
+  mappings: Array<{
+    sourceColumn: string;
+    sourceColumnType?: string;
+    targetPropertyId: number;
+    transformType: TransformType;
+    customExpression?: string;
+  }>;
+}
+
+export interface DeleteFieldMappingConfigRequest {
+  id: number;
+}
+
+// ==================== Pagination Types ====================
+
+export interface PageResult<T> {
+  current: number;
+  size: number;
+  total: number;
+  pages: number;
+  records: T[];
+}
+
+export interface PageFieldMappingConfigRequest {
+  dataSourceId?: number;
+  targetClassId?: number;
+  page?: number;
+  pageSize?: number;
+}

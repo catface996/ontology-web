@@ -1,19 +1,19 @@
 import { Breadcrumb, Typography, Button, Select, Spin, message } from 'antd';
 import {
   ChevronDown, Database,
-  ArrowRight, Zap, Plus, Save,
+  ArrowRight, Zap, Plus, Save, Pencil,
   ArrowLeftRight, Trash2, Check, AlertTriangle,
-  KeyRound, Share2, GitMerge,
+  KeyRound, Share2, GitMerge, ArrowLeft,
 } from 'lucide-react';
 import SuccessModal from '../components/SuccessModal';
 import { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useHeader } from '../contexts/HeaderContext';
 import { useCurrentOntology } from '../contexts/OntologyContext';
 import { listDataSources, getDataSource } from '../services/dataSourceService';
-import { listMappings, saveMappings, deleteMapping } from '../services/dataSourceService';
+import { listMappingConfigs, saveMappingConfig, deleteMappingConfig } from '../services/dataSourceService';
 import { listClasses, listClassProperties } from '../services/coreService';
-import type { DataSourceDTO, FieldMappingDTO, TransformType, TableSchema, ColumnSchema } from '../types/datasource';
+import type { DataSourceDTO, FieldMappingConfigDTO, ColumnMappingItem, TransformType, TableSchema, ColumnSchema } from '../types/datasource';
 import type { ClassDTO, ClassPropertyDTO } from '../services/coreService';
 
 /* -- Transform options -- */
@@ -125,27 +125,36 @@ function FieldRow({
 export default function FieldMappingPage() {
   const { setBreadcrumbs, setActions } = useHeader();
   const { currentOntologyId } = useCurrentOntology();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+
+  // View mode (readonly) vs edit mode
+  const isViewMode = searchParams.get('mode') === 'view';
 
   // Data source state
   const [allDataSources, setAllDataSources] = useState<DataSourceDTO[]>([]);
   const [selectedDsId, setSelectedDsId] = useState<number | null>(
     searchParams.get('dataSourceId') ? Number(searchParams.get('dataSourceId')) : null
   );
-  const [currentDs, setCurrentDs] = useState<DataSourceDTO | null>(null);
+  const [_currentDs, setCurrentDs] = useState<DataSourceDTO | null>(null);
 
   // Schema state
   const [tables, setTables] = useState<TableSchema[]>([]);
-  const [selectedTable, setSelectedTable] = useState<string>('');
+  const [selectedTable, setSelectedTable] = useState<string>(
+    searchParams.get('sourceTable') ?? ''
+  );
   const [sourceColumns, setSourceColumns] = useState<ColumnSchema[]>([]);
 
   // Target state
   const [classes, setClasses] = useState<ClassDTO[]>([]);
-  const [selectedClassId, setSelectedClassId] = useState<number | null>(null);
+  const [selectedClassId, setSelectedClassId] = useState<number | null>(
+    searchParams.get('targetClassId') ? Number(searchParams.get('targetClassId')) : null
+  );
   const [classProperties, setClassProperties] = useState<ClassPropertyDTO[]>([]);
 
-  // Mapping state
-  const [mappingList, setMappingList] = useState<FieldMappingDTO[]>([]);
+  // Mapping state - now uses config structure
+  const [currentConfig, setCurrentConfig] = useState<FieldMappingConfigDTO | null>(null);
+  const [mappingList, setMappingList] = useState<ColumnMappingItem[]>([]);
   const [loadingMappings, setLoadingMappings] = useState(false);
 
   // Add mapping state
@@ -154,8 +163,8 @@ export default function FieldMappingPage() {
   const [newTargetPropId, setNewTargetPropId] = useState<number | null>(null);
   const [newTransform, setNewTransform] = useState<TransformType>('DIRECT');
 
-  // Delete mapping state
-  const [deletingId, setDeletingId] = useState<number | null>(null);
+  // Delete mapping state - now tracks by sourceColumn since items don't have IDs
+  const [deletingCol, setDeletingCol] = useState<string | null>(null);
 
   // Save success modal
   const [saveOpen, setSaveOpen] = useState(false);
@@ -204,7 +213,13 @@ export default function FieldMappingPage() {
         setCurrentDs(res.data);
         const schemaTables = res.data.schemaJson?.tables ?? [];
         setTables(schemaTables);
-        if (schemaTables.length > 0 && !selectedTable) {
+        // If URL has sourceTable param and it exists in schema, use it
+        const urlTable = searchParams.get('sourceTable');
+        if (urlTable && schemaTables.some((t) => t.tableName === urlTable)) {
+          const table = schemaTables.find((t) => t.tableName === urlTable);
+          setSelectedTable(urlTable);
+          setSourceColumns(table?.columns ?? []);
+        } else if (schemaTables.length > 0 && !selectedTable) {
           setSelectedTable(schemaTables[0].tableName);
           setSourceColumns(schemaTables[0].columns ?? []);
         }
@@ -213,7 +228,7 @@ export default function FieldMappingPage() {
         message.error(err instanceof Error ? err.message : 'Failed to load data source');
       })
       .finally(() => setLoading(false));
-  }, [selectedDsId]);
+  }, [selectedDsId, searchParams]);
 
   // Update columns when table changes
   useEffect(() => {
@@ -236,20 +251,30 @@ export default function FieldMappingPage() {
       .catch(() => {});
   }, [selectedClassId]);
 
-  // Load mappings
+  // Load mappings - now uses config API
   const fetchMappings = useCallback(async () => {
-    if (!selectedDsId) return;
+    if (!selectedDsId || !selectedTable || !selectedClassId) {
+      setCurrentConfig(null);
+      setMappingList([]);
+      return;
+    }
     setLoadingMappings(true);
     try {
-      const params: { dataSourceId: number; sourceTable?: string; targetClassId?: number } = {
+      const res = await listMappingConfigs({
         dataSourceId: selectedDsId,
-      };
-      if (selectedTable) params.sourceTable = selectedTable;
-      if (selectedClassId) params.targetClassId = selectedClassId;
-      const res = await listMappings(params);
-      setMappingList(res.data ?? []);
+        sourceTable: selectedTable,
+        targetClassId: selectedClassId,
+      });
+      // Find the config for current table+class (should be 0 or 1 result)
+      const configs = res.data ?? [];
+      const config = configs.find(
+        (c) => c.sourceTable === selectedTable && c.targetClassId === selectedClassId
+      ) ?? null;
+      setCurrentConfig(config);
+      setMappingList(config?.mappings ?? []);
     } catch {
-      // ignore
+      setCurrentConfig(null);
+      setMappingList([]);
     } finally {
       setLoadingMappings(false);
     }
@@ -270,14 +295,9 @@ export default function FieldMappingPage() {
     if (!newSourceCol || !newTargetPropId || !selectedDsId || !selectedClassId) return;
     const col = sourceColumns.find((c) => c.columnName === newSourceCol);
     const prop = classProperties.find((p) => p.propertyId === newTargetPropId);
-    const newMapping: FieldMappingDTO = {
-      id: -Date.now(), // temporary negative ID for unsaved
-      dataSourceId: selectedDsId,
-      sourceTable: selectedTable,
+    const newMapping: ColumnMappingItem = {
       sourceColumn: newSourceCol,
       sourceColumnType: col?.dataType,
-      targetClassId: selectedClassId,
-      targetClassName: classes.find((c) => c.id === selectedClassId)?.name,
       targetPropertyId: newTargetPropId,
       targetPropertyName: prop?.propertyName,
       targetPropertyType: prop?.dataType,
@@ -297,38 +317,39 @@ export default function FieldMappingPage() {
     setNewTransform('DIRECT');
   };
 
-  const handleConfirmDelete = async (mapping: FieldMappingDTO) => {
-    if (mapping.id > 0) {
-      try {
-        await deleteMapping(mapping.id);
-      } catch (err) {
-        message.error(err instanceof Error ? err.message : 'Failed to delete mapping');
-        setDeletingId(null);
-        return;
-      }
-    }
-    setMappingList((prev) => prev.filter((m) => m.id !== mapping.id));
-    setDeletingId(null);
+  const handleConfirmDelete = async (mapping: ColumnMappingItem) => {
+    // Remove from local state - actual deletion happens on save
+    setMappingList((prev) => prev.filter((m) => m.sourceColumn !== mapping.sourceColumn));
+    setDeletingCol(null);
   };
 
   const handleSave = async () => {
-    if (!selectedDsId || !selectedClassId) return;
+    if (!selectedDsId || !selectedClassId || !selectedTable) return;
     setSaving(true);
     try {
-      await saveMappings({
-        dataSourceId: selectedDsId,
-        mappings: mappingList.map((m) => ({
-          sourceTable: m.sourceTable,
-          sourceColumn: m.sourceColumn,
-          sourceColumnType: m.sourceColumnType,
-          targetClassId: m.targetClassId,
-          targetPropertyId: m.targetPropertyId,
-          transformType: m.transformType,
-          customExpression: m.customExpression,
-        })),
-      });
-      setSaveOpen(true);
-      fetchMappings(); // reload with server IDs
+      // If no mappings left, delete the config (if it exists)
+      if (mappingList.length === 0 && currentConfig) {
+        await deleteMappingConfig(currentConfig.id);
+        setCurrentConfig(null);
+        setSaveOpen(true);
+      } else if (mappingList.length > 0) {
+        // Save using new config API
+        const savedConfig = await saveMappingConfig({
+          dataSourceId: selectedDsId,
+          sourceTable: selectedTable,
+          targetClassId: selectedClassId,
+          mappings: mappingList.map((m) => ({
+            sourceColumn: m.sourceColumn,
+            sourceColumnType: m.sourceColumnType,
+            targetPropertyId: m.targetPropertyId,
+            transformType: m.transformType,
+            customExpression: m.customExpression,
+          })),
+        });
+        setCurrentConfig(savedConfig.data);
+        setMappingList(savedConfig.data?.mappings ?? []);
+        setSaveOpen(true);
+      }
     } catch (err) {
       message.error(err instanceof Error ? err.message : 'Failed to save mappings');
     } finally {
@@ -341,26 +362,45 @@ export default function FieldMappingPage() {
       <Breadcrumb
         separator={<Typography.Text type="secondary" style={{ fontSize: 14 }}>/</Typography.Text>}
         items={[
-          { title: <a>Integrations</a> },
-          { title: <Typography.Text strong>Field Mapping</Typography.Text> },
+          { title: <a onClick={() => navigate('/field-mapping-list')} style={{ cursor: 'pointer' }}>Field Mapping</a> },
+          { title: <Typography.Text strong>{isViewMode ? 'View Mapping' : 'Configure Mapping'}</Typography.Text> },
         ]}
       />
     );
     setActions(
       <div style={{ display: 'flex', gap: 12 }}>
-        <Button icon={<Zap size={16} />}>Auto Mapping</Button>
-        <Button
-          type="primary"
-          icon={<Save size={16} />}
-          onClick={handleSave}
-          loading={saving}
-          disabled={!selectedDsId || mappingList.length === 0}
-        >
-          Save Mapping
+        <Button icon={<ArrowLeft size={16} />} onClick={() => navigate('/field-mapping-list')}>
+          Back to List
         </Button>
+        {isViewMode ? (
+          <Button
+            type="primary"
+            icon={<Pencil size={16} />}
+            onClick={() => {
+              const params = new URLSearchParams(searchParams);
+              params.delete('mode');
+              navigate(`/field-mapping?${params.toString()}`);
+            }}
+          >
+            Edit Mapping
+          </Button>
+        ) : (
+          <>
+            <Button icon={<Zap size={16} />}>Auto Mapping</Button>
+            <Button
+              type="primary"
+              icon={<Save size={16} />}
+              onClick={handleSave}
+              loading={saving}
+              disabled={!selectedDsId || !selectedTable || !selectedClassId}
+            >
+              Save Mapping
+            </Button>
+          </>
+        )}
       </div>
     );
-  }, [setBreadcrumbs, setActions, saving, selectedDsId, mappingList.length]);
+  }, [setBreadcrumbs, setActions, saving, selectedDsId, selectedTable, selectedClassId, navigate, isViewMode, searchParams]);
 
   if (loading) {
     return (
@@ -395,6 +435,7 @@ export default function FieldMappingPage() {
                 setSourceColumns([]);
               }}
               suffixIcon={<ChevronDown size={16} />}
+              disabled={isViewMode}
               options={allDataSources.map((ds) => ({
                 value: ds.id,
                 label: `${ds.name} (${ds.subtype})`,
@@ -408,6 +449,7 @@ export default function FieldMappingPage() {
                 placeholder="Select table"
                 onChange={(val) => setSelectedTable(val)}
                 suffixIcon={<ChevronDown size={16} />}
+                disabled={isViewMode}
                 options={tables.map((t) => ({
                   value: t.tableName,
                   label: `${t.tableName}${t.rowCount != null ? ` (${t.rowCount} rows)` : ''}`,
@@ -460,10 +502,10 @@ export default function FieldMappingPage() {
                 ? hasTypeMismatch(m.sourceColumnType, m.targetPropertyType)
                 : false;
 
-              return deletingId === m.id ? (
+              return !isViewMode && deletingCol === m.sourceColumn ? (
                 /* -- Delete confirmation -- */
                 <div
-                  key={m.id}
+                  key={m.sourceColumn}
                   style={{
                     padding: 12, borderRadius: 8, border: '1px solid #ef4444',
                     background: 'rgba(239,68,68,0.08)', display: 'flex', flexDirection: 'column', gap: 10,
@@ -472,7 +514,7 @@ export default function FieldMappingPage() {
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Typography.Text style={{ fontSize: 13, fontWeight: 500 }}>{m.sourceColumn}</Typography.Text>
                     <ArrowRight size={14} color="#ef4444" />
-                    <Typography.Text style={{ fontSize: 13, fontWeight: 500 }}>{m.targetPropertyName ?? `prop#${m.targetPropertyId}`}</Typography.Text>
+                    <Typography.Text style={{ fontSize: 13, fontWeight: 500 }}>{m.targetPropertyName ?? `Property #${m.targetPropertyId}`}</Typography.Text>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                     <Zap size={12} color="#a1a1aa" />
@@ -485,7 +527,7 @@ export default function FieldMappingPage() {
                     </Typography.Text>
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <Button block onClick={() => setDeletingId(null)}>Keep</Button>
+                    <Button block onClick={() => setDeletingCol(null)}>Keep</Button>
                     <Button block danger type="primary" icon={<Trash2 size={16} />} onClick={() => handleConfirmDelete(m)}>
                       Remove
                     </Button>
@@ -494,7 +536,7 @@ export default function FieldMappingPage() {
               ) : (
                 /* -- Normal mapping row -- */
                 <div
-                  key={m.id}
+                  key={m.sourceColumn}
                   className="mapping-row"
                   style={{
                     padding: 12, borderRadius: 8, border: '1px solid var(--primary-color)',
@@ -505,19 +547,21 @@ export default function FieldMappingPage() {
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Typography.Text style={{ fontSize: 13, fontWeight: 500 }}>{m.sourceColumn}</Typography.Text>
                     <ArrowRight size={14} />
-                    <Typography.Text style={{ fontSize: 13, fontWeight: 500 }}>{m.targetPropertyName ?? `prop#${m.targetPropertyId}`}</Typography.Text>
-                    <div
-                      onClick={() => setDeletingId(m.id)}
-                      style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', marginLeft: 4, color: '#ef4444' }}
-                    >
-                      <Trash2 size={14} />
-                    </div>
+                    <Typography.Text style={{ fontSize: 13, fontWeight: 500 }}>{m.targetPropertyName ?? `Property #${m.targetPropertyId}`}</Typography.Text>
+                    {!isViewMode && (
+                      <div
+                        onClick={() => setDeletingCol(m.sourceColumn)}
+                        style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', marginLeft: 4, color: '#ef4444' }}
+                      >
+                        <Trash2 size={14} />
+                      </div>
+                    )}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                     <Zap size={12} color="#a1a1aa" />
                     <Typography.Text type="secondary" style={{ fontSize: 11 }}>{transformLabels[m.transformType]}</Typography.Text>
                   </div>
-                  {/* T045B: Type mismatch warning */}
+                  {/* Type mismatch warning */}
                   {mismatch && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                       <AlertTriangle size={12} color="#F59E0B" />
@@ -530,8 +574,8 @@ export default function FieldMappingPage() {
               );
             })}
 
-            {/* Add Mapping -- form or button */}
-            {adding ? (
+            {/* Add Mapping -- form or button (hidden in view mode) */}
+            {!isViewMode && adding ? (
               <div style={{
                 padding: 12, borderRadius: 8, border: '1px solid var(--primary-color)',
                 background: 'rgba(139,92,246,0.06)', display: 'flex', flexDirection: 'column', gap: 10,
@@ -589,7 +633,7 @@ export default function FieldMappingPage() {
                   </Button>
                 </div>
               </div>
-            ) : (
+            ) : !isViewMode ? (
               <div
                 onClick={() => {
                   if (!selectedDsId || !selectedClassId) {
@@ -607,7 +651,7 @@ export default function FieldMappingPage() {
                 <Plus size={14} color="#a1a1aa" />
                 <Typography.Text type="secondary" style={{ fontSize: 13 }}>Add Mapping</Typography.Text>
               </div>
-            )}
+            ) : null}
           </div>
         </div>
 
@@ -627,6 +671,7 @@ export default function FieldMappingPage() {
               value={selectedClassId ?? undefined}
               onChange={(val) => setSelectedClassId(val)}
               suffixIcon={<ChevronDown size={16} />}
+              disabled={isViewMode}
               options={classes.map((c) => ({
                 value: c.id,
                 label: `${c.name} (Class)`,

@@ -31,6 +31,7 @@ import DataSourceDetailPage from './pages/DataSourceDetailPage';
 import AddConnectionPage from './pages/AddConnectionPage';
 import ConnectorsPage from './pages/ConnectorsPage';
 import FieldMappingPage from './pages/FieldMappingPage';
+import FieldMappingListPage from './pages/FieldMappingListPage';
 import ReportManagementPage from './pages/ReportManagementPage';
 import ReportDetailPage from './pages/ReportDetailPage';
 import ReportEditPage from './pages/ReportEditPage';
@@ -115,6 +116,7 @@ function ThemedApp() {
             <Route path="data-sources/:datasourceId" element={<DataSourceDetailPage />} />
             <Route path="connectors" element={<ConnectorsPage />} />
             <Route path="field-mapping" element={<FieldMappingPage />} />
+            <Route path="field-mapping-list" element={<FieldMappingListPage />} />
             <Route path="report-management" element={<ReportManagementPage />} />
             <Route path="report-management/:reportId" element={<ReportDetailPage />} />
             <Route path="report-management/:reportId/edit" element={<ReportEditPage />} />

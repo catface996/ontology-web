@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Breadcrumb, Input, Button, Typography, Flex, App } from 'antd';
+import { Breadcrumb, Input, Button, Typography, Flex, App, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
   Type, Hash, Calendar, List,
@@ -166,8 +166,12 @@ export default function PropertiesPage() {
       align: 'center',
       render: (_: unknown, record: PropertyDTO) => (
         <Flex justify="center" gap={4}>
-          <Button type="text" size="small" icon={<Pencil size={16} />} onClick={() => navigate(`/properties/${record.id}/edit`)} />
-          <Button type="text" size="small" icon={<Trash2 size={16} />} onClick={() => handleDelete(record)} />
+          <Tooltip title="Edit">
+            <Button type="text" size="small" icon={<Pencil size={16} />} onClick={() => navigate(`/properties/${record.id}/edit`)} />
+          </Tooltip>
+          <Tooltip title="Delete">
+            <Button type="text" size="small" danger icon={<Trash2 size={16} />} onClick={() => handleDelete(record)} />
+          </Tooltip>
         </Flex>
       ),
     },

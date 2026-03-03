@@ -6,6 +6,11 @@ import type {
   FieldMappingDTO,
   SaveMappingsRequest,
   ListMappingsRequest,
+  FieldMappingConfigDTO,
+  ListFieldMappingConfigRequest,
+  SaveFieldMappingConfigRequest,
+  PageFieldMappingConfigRequest,
+  PageResult,
 } from '../types/datasource';
 
 // ---------------------------------------------------------------------------
@@ -74,4 +79,24 @@ export function deleteMapping(id: number): Promise<ApiResponse<null>> {
 
 export function deleteMappingsBatch(params: { dataSourceId: number; sourceTable?: string; targetClassId?: number }): Promise<ApiResponse<{ deletedCount: number }>> {
   return post('/core/api/v1/datasource/mapping/delete-batch', params);
+}
+
+// ---------------------------------------------------------------------------
+// New Field Mapping Config APIs (table+class granularity, JSON storage)
+// ---------------------------------------------------------------------------
+
+export function listMappingConfigs(params: ListFieldMappingConfigRequest): Promise<ApiResponse<FieldMappingConfigDTO[]>> {
+  return post<FieldMappingConfigDTO[]>('/core/api/v1/datasource/mapping/config/list', params);
+}
+
+export function saveMappingConfig(params: SaveFieldMappingConfigRequest): Promise<ApiResponse<FieldMappingConfigDTO>> {
+  return post<FieldMappingConfigDTO>('/core/api/v1/datasource/mapping/config/save', params);
+}
+
+export function deleteMappingConfig(id: number): Promise<ApiResponse<null>> {
+  return post<null>('/core/api/v1/datasource/mapping/config/delete', { id });
+}
+
+export function pageMappingConfigs(params: PageFieldMappingConfigRequest): Promise<ApiResponse<PageResult<FieldMappingConfigDTO>>> {
+  return post<PageResult<FieldMappingConfigDTO>>('/core/api/v1/datasource/mapping/config/page', params);
 }

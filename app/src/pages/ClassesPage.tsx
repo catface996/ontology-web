@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Breadcrumb, Input, Button, Checkbox, Tag, Typography, Flex, App, Spin } from 'antd';
+import { Breadcrumb, Input, Button, Checkbox, Tag, Typography, Flex, App, Spin, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
   Search, Plus, Boxes, List, Pencil, Brain, Trash2, Share2,
@@ -398,25 +398,33 @@ export default function ClassesPage() {
       align: 'center',
       render: (_: unknown, record: ClassData) => (
         <Flex justify="center" gap={4}>
-          <Button
-            type="text"
-            size="small"
-            icon={<Share2 size={16} />}
-            onClick={() => navigate(`/classes/${record.id}/topology`)}
-          />
-          <Button
-            type="text"
-            size="small"
-            icon={<Brain size={16} />}
-            onClick={() => navigate(`/classes/${record.id}/logic`)}
-          />
-          <Button
-            type="text"
-            size="small"
-            icon={<Pencil size={16} />}
-            onClick={() => navigate(`/classes/${record.id}/edit`)}
-          />
-          <Button type="text" size="small" icon={<Trash2 size={16} />} onClick={() => handleDelete(record)} />
+          <Tooltip title="View Topology">
+            <Button
+              type="text"
+              size="small"
+              icon={<Share2 size={16} />}
+              onClick={() => navigate(`/classes/${record.id}/topology`)}
+            />
+          </Tooltip>
+          <Tooltip title="Logic Rules">
+            <Button
+              type="text"
+              size="small"
+              icon={<Brain size={16} />}
+              onClick={() => navigate(`/classes/${record.id}/logic`)}
+            />
+          </Tooltip>
+          <Tooltip title="Edit">
+            <Button
+              type="text"
+              size="small"
+              icon={<Pencil size={16} />}
+              onClick={() => navigate(`/classes/${record.id}/edit`)}
+            />
+          </Tooltip>
+          <Tooltip title="Delete">
+            <Button type="text" size="small" danger icon={<Trash2 size={16} />} onClick={() => handleDelete(record)} />
+          </Tooltip>
         </Flex>
       ),
     },

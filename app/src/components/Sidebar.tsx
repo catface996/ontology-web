@@ -87,7 +87,7 @@ const aiAgentFlowItems: NavItem[] = [
 const dataItems: NavItem[] = [
   { icon: <Database size={20} />, label: 'Data Sources', path: '/data-sources', iconColor: '#60a5fa' },
   { icon: <Plug size={20} />, label: 'Connectors', path: '/connectors', iconColor: '#4ade80' },
-  { icon: <GitMerge size={20} />, label: 'Field Mapping', path: '/field-mapping', iconColor: '#c4b5fd' },
+  { icon: <GitMerge size={20} />, label: 'Field Mapping', path: '/field-mapping-list', iconColor: '#c4b5fd' },
   { icon: <Upload size={20} />, label: 'Import/Export', path: '/import-export', iconColor: '#fbbf24' },
 ];
 
