@@ -670,6 +670,9 @@ export interface ClassTopologyEdge {
 export interface ClassTopologyData {
   nodes: ClassTopologyNode[];
   edges: ClassTopologyEdge[];
+  viewportX: number | null;
+  viewportY: number | null;
+  viewportScale: number | null;
 }
 
 /** Get topology data for a class (nodes + edges in one call). Pass classId=0 or omit for full ontology topology. When topologyId is provided, only classes in that topology are returned. */
@@ -677,9 +680,13 @@ export function getClassTopology(classId?: number, ontologyId?: number, topology
   return post<ClassTopologyData>('/core/api/v1/class/topology', { classId: classId || undefined, ontologyId, topologyId });
 }
 
-/** Save class topology node positions (ontology-level) */
-export function saveClassPositions(ontologyId: number, positions: { classId: number; positionX: number; positionY: number }[]): Promise<ApiResponse<null>> {
-  return post<null>('/core/api/v1/class/save-positions', { ontologyId, positions });
+/** Save class topology node positions and viewport state (ontology-level) */
+export function saveClassPositions(
+  ontologyId: number,
+  positions: { classId: number; positionX: number; positionY: number }[],
+  viewport?: { viewportX: number; viewportY: number; viewportScale: number },
+): Promise<ApiResponse<null>> {
+  return post<null>('/core/api/v1/class/save-positions', { ontologyId, positions, ...viewport });
 }
 
 // ---------------------------------------------------------------------------

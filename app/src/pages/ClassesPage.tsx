@@ -7,7 +7,7 @@ import {
   ArrowLeftRight, Save,
 } from 'lucide-react';
 import TableCard from '../components/TableCard';
-import ForceTopologyGraph, { type ForceGraphNode, type ForceGraphEdge } from '../components/ForceTopologyGraph';
+import ForceTopologyGraph, { type ForceGraphNode, type ForceGraphEdge, type ViewportState } from '../components/ForceTopologyGraph';
 import { useModal } from '../contexts/ModalContext';
 import { useHeader } from '../contexts/HeaderContext';
 import { useCurrentOntology } from '../contexts/OntologyContext';
@@ -72,8 +72,13 @@ export default function ClassesPage() {
 
   // Position tracking for save
   const [initialPositions, setInitialPositions] = useState<Map<number, { x: number; y: number }>>(new Map());
+  const savedPositionsRef = useRef<Map<number, { x: number; y: number }>>(new Map());
   const positionChangesRef = useRef<Map<number, { x: number; y: number }>>(new Map());
   const [savingPositions, setSavingPositions] = useState(false);
+
+  // Viewport (pan + zoom) tracking
+  const [initialViewport, setInitialViewport] = useState<ViewportState | undefined>(undefined);
+  const viewportRef = useRef<ViewportState | undefined>(undefined);
 
   const loadClasses = useCallback(async (keyword: string) => {
     if (!currentOntologyId) {
@@ -161,7 +166,17 @@ export default function ClassesPage() {
             }
           }
           setInitialPositions(posMap);
+          savedPositionsRef.current = new Map(posMap);
           positionChangesRef.current = new Map();
+          // Restore viewport state
+          if (res.data.viewportX != null && res.data.viewportY != null && res.data.viewportScale != null) {
+            const vp = { x: res.data.viewportX, y: res.data.viewportY, scale: res.data.viewportScale };
+            setInitialViewport(vp);
+            viewportRef.current = vp;
+          } else {
+            setInitialViewport(undefined);
+            viewportRef.current = undefined;
+          }
         }
       } catch {
         // failed
@@ -199,13 +214,18 @@ export default function ClassesPage() {
     positionChangesRef.current.set(nodeId, { x, y });
   }, []);
 
+  // Track viewport (pan/zoom) changes
+  const handleViewportChange = useCallback((viewport: ViewportState) => {
+    viewportRef.current = viewport;
+  }, []);
+
   // Save all current node positions
   const handleSavePositions = useCallback(async () => {
     if (!currentOntologyId) return;
     setSavingPositions(true);
     try {
-      // Merge initial positions with drag changes
-      const allPositions = new Map(initialPositions);
+      // Merge saved baseline with drag changes (use ref to avoid re-render)
+      const allPositions = new Map(savedPositionsRef.current);
       for (const [id, pos] of positionChangesRef.current) {
         allPositions.set(id, pos);
       }
@@ -214,17 +234,20 @@ export default function ClassesPage() {
         positionX: pos.x,
         positionY: pos.y,
       }));
-      await saveClassPositions(currentOntologyId, positions);
+      const viewport = viewportRef.current
+        ? { viewportX: viewportRef.current.x, viewportY: viewportRef.current.y, viewportScale: viewportRef.current.scale }
+        : undefined;
+      await saveClassPositions(currentOntologyId, positions, viewport);
       message.success('Positions saved');
-      // Update initial positions to reflect saved state
-      setInitialPositions(allPositions);
+      // Update baseline ref (no state change = no re-render)
+      savedPositionsRef.current = allPositions;
       positionChangesRef.current = new Map();
     } catch (err) {
       message.error(err instanceof Error ? err.message : 'Failed to save positions');
     } finally {
       setSavingPositions(false);
     }
-  }, [currentOntologyId, initialPositions, message]);
+  }, [currentOntologyId, message]);
 
   // Get selected class info from raw topology nodes
   const selectedClassInfo = selectedClassId
@@ -459,8 +482,10 @@ export default function ClassesPage() {
               edges={topoEdges}
               selectedNodeIds={selectedTopoClassIds}
               initialPositions={initialPositions}
+              initialViewport={initialViewport}
               onNodeClick={(classId) => handleTopoClassClick(classId)}
               onDragEnd={handleDragEnd}
+              onViewportChange={handleViewportChange}
               onBackgroundClick={() => {
                 setSelectedClassId(null);
                 setSelectedTopoClassIds(new Set());

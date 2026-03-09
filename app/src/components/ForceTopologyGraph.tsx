@@ -22,6 +22,12 @@ export interface ForceGraphEdge {
   color?: string;
 }
 
+export interface ViewportState {
+  x: number;
+  y: number;
+  scale: number;
+}
+
 interface Props {
   nodes: ForceGraphNode[];
   edges: ForceGraphEdge[];
@@ -30,12 +36,16 @@ interface Props {
   connectedNodeIds?: Set<number>;
   /** Initial saved positions for nodes. Nodes with saved positions are pinned (fx/fy). */
   initialPositions?: Map<number, { x: number; y: number }>;
+  /** Initial saved viewport transform (pan + zoom). */
+  initialViewport?: ViewportState;
   onNodeClick?: (nodeId: number, nodeName: string) => void;
   /** Called when a node drag ends, with the node's final position. */
   onDragEnd?: (nodeId: number, x: number, y: number) => void;
   /** Called when the background (empty area) is clicked. */
   onBackgroundClick?: () => void;
   onZoomChange?: (zoomPercent: number) => void;
+  /** Called when the viewport (pan/zoom) changes. */
+  onViewportChange?: (viewport: ViewportState) => void;
   zoomRef?: React.MutableRefObject<d3.ZoomBehavior<SVGSVGElement, unknown> | null>;
   svgRef?: React.MutableRefObject<SVGSVGElement | null>;
 }
@@ -110,7 +120,7 @@ function nodeHH(d: SimNode): number {
 /* ------------------------------------------------------------------ */
 
 export default function ForceTopologyGraph({
-  nodes, edges, selectedNodeIds, connectedNodeIds, initialPositions, onNodeClick, onDragEnd, onBackgroundClick, onZoomChange, zoomRef, svgRef,
+  nodes, edges, selectedNodeIds, connectedNodeIds, initialPositions, initialViewport, onNodeClick, onDragEnd, onBackgroundClick, onZoomChange, onViewportChange, zoomRef, svgRef,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const svgElRef = useRef<SVGSVGElement | null>(null);
@@ -129,6 +139,8 @@ export default function ForceTopologyGraph({
   onBackgroundClickRef.current = onBackgroundClick;
   const onZoomChangeRef = useRef(onZoomChange);
   onZoomChangeRef.current = onZoomChange;
+  const onViewportChangeRef = useRef(onViewportChange);
+  onViewportChangeRef.current = onViewportChange;
 
   // Callback ref to expose SVG element to parent
   const setSvgRef = useCallback(
@@ -215,10 +227,15 @@ export default function ForceTopologyGraph({
       .on('zoom', (e) => {
         g.attr('transform', e.transform);
         onZoomChangeRef.current?.(Math.round(e.transform.k * 100));
+        onViewportChangeRef.current?.({ x: e.transform.x, y: e.transform.y, scale: e.transform.k });
       });
     if (zoomRef) zoomRef.current = zoomBehavior;
     svg.call(zoomBehavior);
-    svg.call(zoomBehavior.transform, d3.zoomIdentity.translate(width / 2, height / 2));
+    // Restore saved viewport or default to center
+    const initTransform = initialViewport
+      ? d3.zoomIdentity.translate(initialViewport.x, initialViewport.y).scale(initialViewport.scale)
+      : d3.zoomIdentity.translate(width / 2, height / 2);
+    svg.call(zoomBehavior.transform, initTransform);
 
     // Build simulation data
     const simNodes: SimNode[] = nodes.map((n) => {
@@ -388,7 +405,7 @@ export default function ForceTopologyGraph({
     });
 
     return () => { simulation.stop(); };
-  }, [nodes, edges, handleClick, size, zoomRef, initialPositions]);
+  }, [nodes, edges, handleClick, size, zoomRef, initialPositions, initialViewport]);
 
   /* ---------- Highlight effect ---------- */
   useEffect(() => {
