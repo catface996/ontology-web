@@ -343,9 +343,8 @@ export default function ClassesPage() {
       ),
       dataIndex: 'name',
       key: 'name',
-      width: 200,
       render: (_: string, record: ClassData) => (
-        <Flex align="center" gap={10}>
+        <Flex align="center" gap={10} style={{ whiteSpace: 'nowrap' }}>
           <div
             style={{
               width: 32,
@@ -355,6 +354,7 @@ export default function ClassesPage() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              flexShrink: 0,
             }}
           >
             <record.icon size={16} color={record.color} />

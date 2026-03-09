@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useModal } from '../contexts/ModalContext';
+import { useHeader } from '../contexts/HeaderContext';
 import { Breadcrumb, Typography, Button, Spin, Flex } from 'antd';
 import {
-  ChevronRight,
   Calendar, Clock, User,
   FileText, Pencil, Trash2, History,
   BarChart2, Users, PieChart, TrendingUp, Database,
@@ -52,6 +52,7 @@ export default function ReportTemplateDetailPage() {
   const navigate = useNavigate();
   const { templateId } = useParams();
   const confirmModal = useModal();
+  const { setBreadcrumbs, setActions } = useHeader();
   const [template, setTemplate] = useState<ReportTemplateDetailDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -80,6 +81,58 @@ export default function ReportTemplateDetailPage() {
         }
       });
   }, [templateId]);
+
+  // Set header breadcrumbs and actions
+  useEffect(() => {
+    if (!template) return;
+    setBreadcrumbs(
+      <Breadcrumb
+        items={[
+          { title: <a onClick={(e) => { e.preventDefault(); navigate('/report-management'); }}>Data</a> },
+          { title: <a onClick={(e) => { e.preventDefault(); navigate('/report-templates'); }}>Templates</a> },
+          { title: <Typography.Text strong>{template.title}</Typography.Text> },
+        ]}
+      />
+    );
+    const handleDelete = () => {
+      confirmModal.confirm.delete({
+        title: 'Delete Template?',
+        description: 'This action cannot be undone. The template and all its version history will be permanently deleted.',
+        confirmName: template.title,
+        confirmLabel: 'the template name',
+        onConfirm: async () => {
+          await deleteReportTemplate(template.id);
+          navigate('/report-templates');
+        },
+      });
+    };
+    setActions(
+      <div style={{ display: 'flex', gap: 8 }}>
+        <Button icon={<Pencil size={16} />} onClick={() => navigate(`/report-templates/${templateId}/edit`)}>Edit</Button>
+        <Button danger icon={<Trash2 size={16} />} onClick={handleDelete}>Delete</Button>
+      </div>
+    );
+    return () => {
+      setBreadcrumbs(null);
+      setActions(null);
+    };
+  }, [setBreadcrumbs, setActions, template, templateId, navigate, confirmModal]);
+
+  const handleViewVersion = async (versionId: number) => {
+    setVersionLoading(true);
+    try {
+      const res = await getTemplateVersionDetail(versionId);
+      if (res.code === 'SUCCESS' && res.data) {
+        setViewingVersion(res.data);
+      }
+    } finally {
+      setVersionLoading(false);
+    }
+  };
+
+  const handleViewCurrent = () => {
+    setViewingVersion(null);
+  };
 
   if (loading) {
     return (
@@ -120,68 +173,12 @@ export default function ReportTemplateDetailPage() {
     return formatDate(dateStr);
   };
 
-  const handleDelete = () => {
-    confirmModal.confirm.delete({
-      title: 'Delete Template?',
-      description: 'This action cannot be undone. The template and all its version history will be permanently deleted.',
-      confirmName: template.title,
-      confirmLabel: 'the template name',
-      onConfirm: async () => {
-        await deleteReportTemplate(template.id);
-        navigate('/report-templates');
-      },
-    });
-  };
-
-  const handleViewVersion = async (versionId: number) => {
-    setVersionLoading(true);
-    try {
-      const res = await getTemplateVersionDetail(versionId);
-      if (res.code === 'SUCCESS' && res.data) {
-        setViewingVersion(res.data);
-      }
-    } finally {
-      setVersionLoading(false);
-    }
-  };
-
-  const handleViewCurrent = () => {
-    setViewingVersion(null);
-  };
-
   // Determine what content to show
   const displayContent = viewingVersion ? viewingVersion.content : template.content;
   const isViewingHistory = viewingVersion !== null;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-      {/* -- Header -- */}
-      <div
-        style={{
-          height: 64,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '0 24px',
-          borderBottom: '1px solid rgba(255,255,255,0.12)',
-          flexShrink: 0,
-        }}
-      >
-        <Breadcrumb
-          separator={<ChevronRight size={10} />}
-          items={[
-            { title: <a onClick={(e) => { e.preventDefault(); navigate('/report-management'); }}>Data</a> },
-            { title: <a onClick={(e) => { e.preventDefault(); navigate('/report-templates'); }}>Templates</a> },
-            { title: <Typography.Text strong>{template.title}</Typography.Text> },
-          ]}
-        />
-
-        <div style={{ display: 'flex', gap: 8 }}>
-          <Button icon={<Pencil size={16} />} onClick={() => navigate(`/report-templates/${templateId}/edit`)}>Edit</Button>
-          <Button danger icon={<Trash2 size={16} />} onClick={handleDelete}>Delete</Button>
-        </div>
-      </div>
-
       {/* -- Content -- */}
       <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 24 }}>
 

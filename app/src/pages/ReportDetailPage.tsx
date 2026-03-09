@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useModal } from '../contexts/ModalContext';
+import { useHeader } from '../contexts/HeaderContext';
 import { Breadcrumb, Typography, Button, Spin } from 'antd';
 import {
-  ChevronRight,
   Calendar, Clock, User,
   FileText, Pencil, Download, Share2, Trash2,
   BarChart2, Users, PieChart, TrendingUp, Database,
@@ -44,6 +44,7 @@ export default function ReportDetailPage() {
   const navigate = useNavigate();
   const { reportId } = useParams();
   const confirmModal = useModal();
+  const { setBreadcrumbs, setActions } = useHeader();
   const [report, setReport] = useState<ReportDetailDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -62,6 +63,44 @@ export default function ReportDetailPage() {
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
   }, [reportId]);
+
+  // Set header breadcrumbs and actions
+  useEffect(() => {
+    if (!report) return;
+    setBreadcrumbs(
+      <Breadcrumb
+        items={[
+          { title: <a onClick={(e) => { e.preventDefault(); navigate('/report-management'); }}>Data</a> },
+          { title: <a onClick={(e) => { e.preventDefault(); navigate('/report-management'); }}>Report Management</a> },
+          { title: <Typography.Text strong>{report.title}</Typography.Text> },
+        ]}
+      />
+    );
+    const handleDelete = () => {
+      confirmModal.confirm.delete({
+        title: 'Delete Report?',
+        description: 'This action cannot be undone. All data and configurations in this report will be permanently deleted.',
+        confirmName: report.title,
+        confirmLabel: 'the report name',
+        onConfirm: async () => {
+          await deleteReport(report.id);
+          navigate('/report-management');
+        },
+      });
+    };
+    setActions(
+      <div style={{ display: 'flex', gap: 8 }}>
+        <Button icon={<Pencil size={16} />} onClick={() => navigate(`/report-management/${reportId}/edit`)}>Edit</Button>
+        <Button icon={<Download size={16} />}>Export</Button>
+        <Button icon={<Share2 size={16} />}>Share</Button>
+        <Button danger icon={<Trash2 size={16} />} onClick={handleDelete}>Delete</Button>
+      </div>
+    );
+    return () => {
+      setBreadcrumbs(null);
+      setActions(null);
+    };
+  }, [setBreadcrumbs, setActions, report, reportId, navigate, confirmModal]);
 
   if (loading) {
     return (
@@ -102,50 +141,8 @@ export default function ReportDetailPage() {
     return formatDate(dateStr);
   };
 
-  const handleDelete = () => {
-    confirmModal.confirm.delete({
-      title: 'Delete Report?',
-      description: 'This action cannot be undone. All data and configurations in this report will be permanently deleted.',
-      confirmName: report.title,
-      confirmLabel: 'the report name',
-      onConfirm: async () => {
-        await deleteReport(report.id);
-        navigate('/report-management');
-      },
-    });
-  };
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-      {/* -- Header -- */}
-      <div
-        style={{
-          height: 64,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '0 24px',
-          borderBottom: '1px solid rgba(255,255,255,0.12)',
-          flexShrink: 0,
-        }}
-      >
-        <Breadcrumb
-          separator={<ChevronRight size={10} />}
-          items={[
-            { title: <a onClick={(e) => { e.preventDefault(); navigate('/report-management'); }}>Data</a> },
-            { title: <a onClick={(e) => { e.preventDefault(); navigate('/report-management'); }}>Report Management</a> },
-            { title: <Typography.Text strong>{report.title}</Typography.Text> },
-          ]}
-        />
-
-        <div style={{ display: 'flex', gap: 8 }}>
-          <Button icon={<Pencil size={16} />} onClick={() => navigate(`/report-management/${reportId}/edit`)}>Edit</Button>
-          <Button icon={<Download size={16} />}>Export</Button>
-          <Button icon={<Share2 size={16} />}>Share</Button>
-          <Button danger icon={<Trash2 size={16} />} onClick={handleDelete}>Delete</Button>
-        </div>
-      </div>
-
       {/* -- Content -- */}
       <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 24 }}>
 
