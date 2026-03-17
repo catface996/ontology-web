@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Breadcrumb, Input, Button, Checkbox, Tag, Card, Typography, Flex, App } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { Search, Plus, Network, Pencil, Share2, Trash2, ArrowLeftRight, List, LayoutGrid } from 'lucide-react';
+import { useResponsive } from '../hooks/useResponsive';
 import TableCard from '../components/TableCard';
 import Pagination from '../components/Pagination';
 import { useModal } from '../contexts/ModalContext';
@@ -12,6 +13,7 @@ import { listTopologies, deleteTopology, type TopologyDTO } from '../services/co
 
 export default function TopologyListPage() {
   const navigate = useNavigate();
+  const { isMobile } = useResponsive();
   const { message } = App.useApp();
   const { setBreadcrumbs, setActions } = useHeader();
   const { currentOntologyId } = useCurrentOntology();
@@ -279,7 +281,7 @@ export default function TopologyListPage() {
       ) : (
         /* Grid / Card view */
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', border: '1px solid #27273a', borderRadius: 8 }}>
-          <div style={{ flex: 1, overflow: 'auto', padding: 16, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16, alignContent: 'start' }}>
+          <div style={{ flex: 1, overflow: 'auto', padding: isMobile ? 8 : 16, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))', gap: isMobile ? 12 : 16, alignContent: 'start' }}>
             {pageData.map((record) => (
               <Card
                 key={record.id}

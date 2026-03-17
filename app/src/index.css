@@ -235,10 +235,13 @@ input:-webkit-autofill:active,
     padding: 12px;
   }
 
-  /* Form inputs: full width */
-  .ant-input,
-  .ant-select,
-  .ant-input-affix-wrapper {
+  /* Form inputs: full width — scoped to avoid breaking headers, pagination, etc. */
+  .ant-form .ant-input,
+  .ant-form .ant-select,
+  .ant-form .ant-input-affix-wrapper,
+  .ant-modal-body .ant-input,
+  .ant-modal-body .ant-select,
+  .ant-modal-body .ant-input-affix-wrapper {
     width: 100% !important;
     max-width: 100% !important;
   }

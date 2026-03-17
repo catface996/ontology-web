@@ -7,6 +7,7 @@ import {
   Search, ChevronLeft, ChevronRight, FileText, LayoutTemplate,
   User, Clock,
 } from 'lucide-react';
+import { useResponsive } from '../hooks/useResponsive';
 import { useHeader } from '../contexts/HeaderContext';
 import { useCurrentOntology } from '../contexts/OntologyContext';
 import { listReports, type ReportDTO } from '../services/coreService';
@@ -41,9 +42,7 @@ function ReportCard({ report, onClick }: { report: ReportDTO; onClick: () => voi
     <div
       onClick={onClick}
       style={{
-        flex: '1 1 0',
-        minWidth: 220,
-        height: 200,
+        minHeight: 180,
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
@@ -129,6 +128,7 @@ function HeaderSearch({ searchRef, onTemplates }: { searchRef: React.RefObject<(
 /* -- Page -- */
 export default function ReportManagementPage() {
   const navigate = useNavigate();
+  const { isMobile } = useResponsive();
   const { setBreadcrumbs, setActions } = useHeader();
   const { currentOntologyId } = useCurrentOntology();
   const [search, setSearch] = useState('');
@@ -178,10 +178,6 @@ export default function ReportManagementPage() {
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
-  // Split into rows of 4
-  const row1 = reports.slice(0, 4);
-  const row2 = reports.slice(4, 8);
-
   useEffect(() => {
     setBreadcrumbs(
       <Breadcrumb
@@ -205,35 +201,18 @@ export default function ReportManagementPage() {
     <>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* Scrollable area: title + cards */}
-        <div style={{ flex: 1, padding: '24px 24px 0', display: 'flex', flexDirection: 'column', gap: 24, overflow: 'auto' }}>
+        <div style={{ flex: 1, padding: isMobile ? '12px 12px 0' : '24px 24px 0', display: 'flex', flexDirection: 'column', gap: isMobile ? 12 : 24, overflow: 'auto' }}>
           {/* Title row */}
-          <Typography.Text style={{ fontSize: 20, fontWeight: 600 }}>All Reports</Typography.Text>
+          <Typography.Text style={{ fontSize: isMobile ? 16 : 20, fontWeight: 600 }}>All Reports</Typography.Text>
 
           {/* Cards grid */}
           <Spin spinning={loading}>
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 20, minHeight: 200 }}>
-              {row1.length > 0 && (
-                <Flex gap={20}>
-                  {row1.map((r) => (
-                    <ReportCard key={r.id} report={r} onClick={() => navigate(`/report-management/${r.id}`)} />
-                  ))}
-                  {row1.length < 4 && Array.from({ length: 4 - row1.length }).map((_, i) => (
-                    <div key={`filler1-${i}`} style={{ flex: '1 1 0', minWidth: 220 }} />
-                  ))}
-                </Flex>
-              )}
-              {row2.length > 0 && (
-                <Flex gap={20}>
-                  {row2.map((r) => (
-                    <ReportCard key={r.id} report={r} onClick={() => navigate(`/report-management/${r.id}`)} />
-                  ))}
-                  {row2.length < 4 && Array.from({ length: 4 - row2.length }).map((_, i) => (
-                    <div key={`filler2-${i}`} style={{ flex: '1 1 0', minWidth: 220 }} />
-                  ))}
-                </Flex>
-              )}
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(220px, 1fr))', gap: isMobile ? 12 : 20, minHeight: 200 }}>
+              {reports.map((r) => (
+                <ReportCard key={r.id} report={r} onClick={() => navigate(`/report-management/${r.id}`)} />
+              ))}
               {reports.length === 0 && !loading && (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 200 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 200, gridColumn: '1 / -1' }}>
                   <Typography.Text type="secondary">No reports found</Typography.Text>
                 </div>
               )}
@@ -245,26 +224,36 @@ export default function ReportManagementPage() {
         <Flex
           align="center"
           justify="space-between"
-          style={{ padding: '16px 24px', borderTop: '1px solid #27273a', flexShrink: 0 }}
+          style={{ padding: isMobile ? '12px' : '16px 24px', borderTop: '1px solid #27273a', flexShrink: 0 }}
         >
-          <Typography.Text style={{ fontSize: 13, color: '#a1a1aa' }}>
-            Showing {total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}-{Math.min(page * PAGE_SIZE, total)} of {total} reports
-          </Typography.Text>
-          <Flex align="center" gap={8}>
+          {!isMobile && (
+            <Typography.Text style={{ fontSize: 13, color: '#a1a1aa' }}>
+              Showing {total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}-{Math.min(page * PAGE_SIZE, total)} of {total} reports
+            </Typography.Text>
+          )}
+          <Flex align="center" gap={8} style={isMobile ? { margin: '0 auto' } : undefined}>
             <PaginationBtn onClick={() => handlePageChange(Math.max(1, page - 1))}>
               <ChevronLeft size={12} color="#a1a1aa" />
             </PaginationBtn>
-            {Array.from({ length: totalPages }).map((_, i) => {
-              const p = i + 1;
-              const active = p === page;
-              return (
-                <PaginationBtn key={p} active={active} onClick={() => handlePageChange(p)}>
-                  <Typography.Text style={{ fontSize: 14, fontWeight: 500, color: active ? '#fff' : '#a1a1aa' }}>
-                    {p}
-                  </Typography.Text>
-                </PaginationBtn>
-              );
-            })}
+            {isMobile ? (
+              <PaginationBtn active onClick={() => {}}>
+                <Typography.Text style={{ fontSize: 14, fontWeight: 500, color: '#fff' }}>
+                  {page}
+                </Typography.Text>
+              </PaginationBtn>
+            ) : (
+              Array.from({ length: totalPages }).map((_, i) => {
+                const p = i + 1;
+                const active = p === page;
+                return (
+                  <PaginationBtn key={p} active={active} onClick={() => handlePageChange(p)}>
+                    <Typography.Text style={{ fontSize: 14, fontWeight: 500, color: active ? '#fff' : '#a1a1aa' }}>
+                      {p}
+                    </Typography.Text>
+                  </PaginationBtn>
+                );
+              })
+            )}
             <PaginationBtn onClick={() => handlePageChange(Math.min(totalPages, page + 1))}>
               <ChevronRight size={12} color="#a1a1aa" />
             </PaginationBtn>

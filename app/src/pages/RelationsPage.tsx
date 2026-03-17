@@ -131,7 +131,8 @@ export default function RelationsPage() {
       title: <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', letterSpacing: 0.5 }}>Source Class</Typography.Text>,
       dataIndex: 'domainClassName',
       key: 'domainClassName',
-      width: 140,
+      width: 160,
+      ellipsis: true,
       responsive: ['md'],
       render: (text: string) => (
         <Typography.Text style={{ fontSize: 14, color: text ? undefined : '#a1a1aa' }}>{text || 'Any'}</Typography.Text>
@@ -158,7 +159,8 @@ export default function RelationsPage() {
       title: <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', letterSpacing: 0.5 }}>Target Class</Typography.Text>,
       dataIndex: 'rangeClassName',
       key: 'rangeClassName',
-      width: 140,
+      width: 160,
+      ellipsis: true,
       responsive: ['md'],
       render: (text: string) => (
         <Typography.Text style={{ fontSize: 14, color: text ? undefined : '#a1a1aa' }}>{text || 'Any'}</Typography.Text>

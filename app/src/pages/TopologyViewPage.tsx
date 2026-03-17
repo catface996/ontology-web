@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Breadcrumb, Typography, Spin, Select, Badge, Button, Flex, message } from 'antd';
 import { ChevronRight, Download, Pencil, Save, RotateCcw } from 'lucide-react';
+import { useResponsive } from '../hooks/useResponsive';
 import { useHeader } from '../contexts/HeaderContext';
 import SuccessModal from '../components/SuccessModal';
 import {
@@ -118,6 +119,7 @@ function splitByConnectedComponents(dto: InstanceTopologyDTO): InstanceSubgraph[
 export default function TopologyViewPage() {
   const { topologyId } = useParams();
   const navigate = useNavigate();
+  const { isMobile } = useResponsive();
   const { setBreadcrumbs, setActions } = useHeader();
 
   // Topology entity
@@ -598,17 +600,18 @@ export default function TopologyViewPage() {
       {topology && (
         <div
           style={{
-            height: 40,
+            minHeight: 40,
             display: 'flex',
             alignItems: 'center',
-            padding: '0 16px',
+            padding: isMobile ? '8px 12px' : '0 16px',
             borderBottom: '1px solid #303030',
-            gap: 12,
+            gap: isMobile ? 8 : 12,
             flexShrink: 0,
+            flexWrap: isMobile ? 'wrap' : 'nowrap',
           }}
         >
           <Typography.Text strong style={{ fontSize: 13 }}>{topology.name}</Typography.Text>
-          <Typography.Text style={{ fontSize: 12, color: '#71717a' }}>{topology.description}</Typography.Text>
+          {!isMobile && <Typography.Text style={{ fontSize: 12, color: '#71717a' }}>{topology.description}</Typography.Text>}
           <div style={{ flex: 1 }} />
           <Badge count={`${topology.classCount} classes`} style={{ backgroundColor: '#27273a', color: '#a1a1aa', fontSize: 11, boxShadow: 'none' }} />
           <Badge count={`${topology.instanceCount} instances`} style={{ backgroundColor: '#27273a', color: '#a1a1aa', fontSize: 11, boxShadow: 'none' }} />
@@ -616,11 +619,11 @@ export default function TopologyViewPage() {
       )}
 
       {/* Main split panel */}
-      <div ref={containerRef} style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+      <div ref={containerRef} style={{ flex: 1, display: 'flex', flexDirection: isMobile ? 'column' : 'row', overflow: 'hidden' }}>
         {/* Left: Class Topology */}
         <div
           style={{
-            width: `${leftWidthPercent}%`,
+            ...(isMobile ? { height: '50%' } : { width: `${leftWidthPercent}%` }),
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
@@ -661,30 +664,34 @@ export default function TopologyViewPage() {
           </div>
         </div>
 
-        {/* Divider */}
-        <div
-          onMouseDown={handleMouseDown}
-          style={{
-            width: 6,
-            cursor: 'col-resize',
-            background: '#303030',
-            flexShrink: 0,
-            position: 'relative',
-          }}
-        >
+        {/* Divider — hidden on mobile, horizontal separator instead */}
+        {isMobile ? (
+          <div style={{ height: 1, background: '#303030', flexShrink: 0 }} />
+        ) : (
           <div
+            onMouseDown={handleMouseDown}
             style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: 4,
-              height: 32,
-              borderRadius: 2,
-              background: '#71717a',
+              width: 6,
+              cursor: 'col-resize',
+              background: '#303030',
+              flexShrink: 0,
+              position: 'relative',
             }}
-          />
-        </div>
+          >
+            <div
+              style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: 4,
+                height: 32,
+                borderRadius: 2,
+                background: '#71717a',
+              }}
+            />
+          </div>
+        )}
 
         {/* Right: Instance Topology */}
         <div

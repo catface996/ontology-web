@@ -1,5 +1,7 @@
-import { Typography, Select, Flex } from 'antd';
+import { Typography, Select, Flex, Grid } from 'antd';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+
+const { useBreakpoint } = Grid;
 
 /* ── Types ── */
 interface PaginationProps {
@@ -42,6 +44,9 @@ export default function Pagination({
   label = 'items',
   rowsPerPageOptions = [10, 25, 50],
 }: PaginationProps) {
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
+
   const totalPages = Math.max(1, Math.ceil(count / rowsPerPage));
   const currentPage = page + 1; // 1-indexed for display
   const from = count === 0 ? 0 : page * rowsPerPage + 1;
@@ -90,17 +95,19 @@ export default function Pagination({
     <Flex
       align="center"
       justify="space-between"
-      style={{ height: 56, padding: '0 20px', borderTop: '1px solid #27273a', marginTop: 'auto', flexShrink: 0 }}
+      style={{ height: 56, padding: isMobile ? '0 12px' : '0 20px', borderTop: '1px solid #27273a', marginTop: 'auto', flexShrink: 0, overflow: 'hidden' }}
     >
       {/* Left — info text */}
-      <Typography.Text style={{ fontSize: 13, color: '#a1a1aa' }}>
-        Showing {from}-{to} of {count.toLocaleString()} {label}
-      </Typography.Text>
+      {!isMobile && (
+        <Typography.Text style={{ fontSize: 13, color: '#a1a1aa', flexShrink: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          Showing {from}-{to} of {count.toLocaleString()} {label}
+        </Typography.Text>
+      )}
 
       {/* Right — controls */}
-      <Flex align="center" gap={8} style={{ flexShrink: 0 }}>
-        {/* Rows per page */}
-        {onRowsPerPageChange && (
+      <Flex align="center" gap={8} style={{ flexShrink: 0, marginLeft: isMobile ? 'auto' : undefined, marginRight: isMobile ? 'auto' : undefined }}>
+        {/* Rows per page — hidden on mobile */}
+        {!isMobile && onRowsPerPageChange && (
           <>
             <Typography.Text style={{ fontSize: 13, color: '#a1a1aa', whiteSpace: 'nowrap', flexShrink: 0 }}>
               Rows per page:
@@ -108,7 +115,7 @@ export default function Pagination({
             <Select
               value={rowsPerPage}
               onChange={(val) => onRowsPerPageChange(val)}
-              style={{ minWidth: 56 }}
+              style={{ minWidth: 56, width: 56 }}
               options={rowsPerPageOptions.map((opt) => ({ label: opt, value: opt }))}
             />
           </>
@@ -121,24 +128,30 @@ export default function Pagination({
             <ChevronLeft size={12} />
           </PageBtn>
 
-          {/* Page numbers */}
-          {pages.map((p, i) =>
-            p === '...' ? (
-              <Typography.Text
-                key={`dots-${i}`}
-                style={{ fontSize: 13, color: '#a1a1aa', width: 32, textAlign: 'center', userSelect: 'none' }}
-              >
-                ...
-              </Typography.Text>
-            ) : (
-              <PageBtn
-                key={p}
-                active={p === currentPage}
-                onClick={() => onPageChange(p - 1)}
-              >
-                {p}
-              </PageBtn>
-            ),
+          {/* Page numbers — on mobile show only current page */}
+          {isMobile ? (
+            <PageBtn active>
+              {currentPage}
+            </PageBtn>
+          ) : (
+            pages.map((p, i) =>
+              p === '...' ? (
+                <Typography.Text
+                  key={`dots-${i}`}
+                  style={{ fontSize: 13, color: '#a1a1aa', width: 32, textAlign: 'center', userSelect: 'none' }}
+                >
+                  ...
+                </Typography.Text>
+              ) : (
+                <PageBtn
+                  key={p}
+                  active={p === currentPage}
+                  onClick={() => onPageChange(p - 1)}
+                >
+                  {p}
+                </PageBtn>
+              ),
+            )
           )}
 
           {/* Next */}
