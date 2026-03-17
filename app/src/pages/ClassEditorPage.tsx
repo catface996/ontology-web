@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import SuccessModal from '../components/SuccessModal';
 import { useHeader } from '../contexts/HeaderContext';
+import { useResponsive } from '../hooks/useResponsive';
 
 /* ── Icon options for class nodes — grouped by category ── */
 type IconOption = { name: string; label: string; Icon: React.FC<{ size?: number; color?: string }> };
@@ -218,6 +219,7 @@ export default function ClassEditorPage() {
   const { message } = App.useApp();
   const { currentOntologyId } = useCurrentOntology();
   const { setBreadcrumbs, setActions } = useHeader();
+  const { isMobile } = useResponsive();
   const isEditing = classId !== undefined && classId !== 'new';
   const [loading, setLoading] = useState(isEditing);
   const [saving, setSaving] = useState(false);
@@ -380,9 +382,9 @@ export default function ClassEditorPage() {
 
   return (
     <>
-      <div style={{ flex: 1, padding: 24, display: 'flex', gap: 24, overflow: 'auto' }}>
+      <div style={{ flex: 1, padding: isMobile ? 12 : 24, display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 16 : 24, overflow: 'auto' }}>
         {/* Left Column */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 24 }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: isMobile ? 16 : 24 }}>
           {/* Basic Info Card */}
           <Card>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
@@ -558,7 +560,7 @@ export default function ClassEditorPage() {
         </div>
 
         {/* Right Column */}
-        <div style={{ width: 360, display: 'flex', flexDirection: 'column', gap: 24 }}>
+        <div style={{ width: isMobile ? '100%' : 360, display: 'flex', flexDirection: 'column', gap: isMobile ? 16 : 24 }}>
           {/* Preview Card */}
           <Card>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>

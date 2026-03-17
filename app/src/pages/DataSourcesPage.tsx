@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Breadcrumb, Button, Card, Tag, Typography, Flex, Spin, Modal, message } from 'antd';
 import { Plus, Database, Trash2, Pencil } from 'lucide-react';
+import { useResponsive } from '../hooks/useResponsive';
 import { useHeader } from '../contexts/HeaderContext';
 import { useCurrentOntology } from '../contexts/OntologyContext';
 import { listDataSources, deleteDataSource } from '../services/dataSourceService';
@@ -23,6 +24,7 @@ const defaultBrandColor: Record<string, string> = {
 /* -- Page -- */
 export default function DataSourcesPage() {
   const navigate = useNavigate();
+  const { isMobile } = useResponsive();
   const { setBreadcrumbs, setActions } = useHeader();
   const { currentOntologyId } = useCurrentOntology();
 
@@ -96,7 +98,7 @@ export default function DataSourcesPage() {
 
   return (
     <>
-      <div style={{ flex: 1, padding: 24, display: 'flex', flexDirection: 'column', gap: 24, overflow: 'auto' }}>
+      <div style={{ flex: 1, padding: isMobile ? 12 : 24, display: 'flex', flexDirection: 'column', gap: isMobile ? 12 : 24, overflow: 'auto' }}>
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flex: 1 }}>
             <Spin size="large" />
@@ -117,7 +119,7 @@ export default function DataSourcesPage() {
           </div>
         ) : (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', border: '1px solid #27273a', borderRadius: 8 }}>
-            <div style={{ flex: 1, overflow: 'auto', padding: 16, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16, alignContent: 'start' }}>
+            <div style={{ flex: 1, overflow: 'auto', padding: isMobile ? 8 : 16, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))', gap: isMobile ? 12 : 16, alignContent: 'start' }}>
               {dataSources.map((ds) => {
                 const brandColor = ds.brandColor || defaultBrandColor[ds.subtype] || '#6B7280';
                 const st = statusConfig[ds.status] ?? statusConfig.NOT_TESTED;

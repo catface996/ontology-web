@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Divider, Input, Button, Breadcrumb, Typography } from 'antd';
+import { Divider, Input, Button, Breadcrumb, Typography, Drawer } from 'antd';
 import {
   Share2,
   ChevronDown,
@@ -17,7 +17,9 @@ import {
   Upload,
   Plus,
   X,
+  Menu,
 } from 'lucide-react';
+import { useResponsive } from './hooks/useResponsive';
 
 const drawerWidth = 280;
 const propertiesPanelWidth = 320;
@@ -35,12 +37,15 @@ interface DomainData {
 }
 
 export default function OntologyLayout() {
+  const { isMobile, isTablet } = useResponsive();
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     domains: true,
     ontologies: true,
     tools: true,
   });
   const [selectedNav, setSelectedNav] = useState('Topology');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [propertiesOpen, setPropertiesOpen] = useState(false);
 
   const toggleSection = (section: string) => {
     setOpenSections((prev) => ({ ...prev, [section]: !prev[section] }));
@@ -77,8 +82,14 @@ export default function OntologyLayout() {
           {items.map((item) => (
             <div
               key={item.label}
-              style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '8px 12px', borderRadius: 8, cursor: 'pointer', backgroundColor: selectedNav === item.label ? '#1a1a24' : 'transparent' }}
-              onClick={() => setSelectedNav(item.label)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 16,
+                padding: isMobile ? '10px 12px' : '8px 12px',
+                minHeight: isMobile ? 44 : undefined,
+                borderRadius: 8, cursor: 'pointer',
+                backgroundColor: selectedNav === item.label ? '#1a1a24' : 'transparent',
+              }}
+              onClick={() => { setSelectedNav(item.label); if (isMobile) setSidebarOpen(false); }}
             >
               <span style={{ display: 'flex' }}>{item.icon}</span>
               <span style={{ fontSize: 14 }}>{item.label}</span>
@@ -89,56 +100,111 @@ export default function OntologyLayout() {
     </div>
   );
 
-  return (
-    <div style={{ display: 'flex', height: '100vh' }}>
-      <div style={{ width: drawerWidth, flexShrink: 0, display: 'flex', flexDirection: 'column', borderRight: '1px solid #27273a', backgroundColor: '#0d0d14', height: '100vh', overflow: 'hidden' }}>
-        {/* Header */}
-        <div style={{ height: 64, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-          <Share2 size={24} />
-          <span style={{ fontSize: 20, fontWeight: 600 }}>Ontology</span>
-        </div>
-        <Divider style={{ margin: 0, borderColor: '#27273a' }} />
+  const sidebarContent = (
+    <div style={{ width: isMobile ? '100%' : drawerWidth, flexShrink: 0, display: 'flex', flexDirection: 'column', borderRight: isMobile ? 'none' : '1px solid #27273a', backgroundColor: '#0d0d14', height: '100%', overflow: 'hidden' }}>
+      {/* Header */}
+      <div style={{ height: 64, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+        <Share2 size={24} />
+        <span style={{ fontSize: 20, fontWeight: 600 }}>Ontology</span>
+      </div>
+      <Divider style={{ margin: 0, borderColor: '#27273a' }} />
 
-        {/* Content */}
-        <div style={{ flex: 1, overflow: 'auto', padding: '0 8px' }}>
-          {/* Domains */}
-          <div style={{ padding: '8px 0' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 8px', cursor: 'pointer' }} onClick={() => toggleSection('domains')}>
-              <span style={{ fontSize: 12, color: '#a1a1aa' }}>DOMAINS</span>
-              {openSections.domains ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+      {/* Content */}
+      <div style={{ flex: 1, overflow: 'auto', padding: '0 8px' }}>
+        {/* Domains */}
+        <div style={{ padding: '8px 0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 8px', cursor: 'pointer' }} onClick={() => toggleSection('domains')}>
+            <span style={{ fontSize: 12, color: '#a1a1aa' }}>DOMAINS</span>
+            {openSections.domains ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+          </div>
+          {openSections.domains && (
+            <div>
+              {domains.map((domain) => (
+                <div key={domain.label} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: isMobile ? '8px 12px' : '6px 12px', minHeight: isMobile ? 44 : undefined, borderRadius: 8, cursor: 'pointer', backgroundColor: domain.active ? '#1a1a24' : 'transparent' }}>
+                  <span style={{ display: 'flex', color: domain.active ? '#f4f4f5' : domain.color }}>{domain.icon}</span>
+                  <span style={{ fontSize: 14 }}>{domain.label}</span>
+                </div>
+              ))}
             </div>
-            {openSections.domains && (
-              <div>
-                {domains.map((domain) => (
-                  <div key={domain.label} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '6px 12px', borderRadius: 8, cursor: 'pointer', backgroundColor: domain.active ? '#1a1a24' : 'transparent' }}>
-                    <span style={{ display: 'flex', color: domain.active ? '#f4f4f5' : domain.color }}>{domain.icon}</span>
-                    <span style={{ fontSize: 14 }}>{domain.label}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          <Divider style={{ margin: 0, borderColor: '#27273a' }} />
-
-          {renderSection('ONTOLOGIES', 'ontologies', ontologyNavItems)}
-          {renderSection('TOOLS', 'tools', toolsNavItems)}
+          )}
         </div>
-
-        {/* Footer */}
         <Divider style={{ margin: 0, borderColor: '#27273a' }} />
-        <div style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ flex: 1 }}>
-            <span style={{ fontSize: 14, display: 'block' }}>Admin User</span>
-            <span style={{ fontSize: 12, color: '#71717a', display: 'block' }}>admin@ontology.io</span>
-          </div>
-          <ChevronDown size={20} />
-        </div>
+
+        {renderSection('ONTOLOGIES', 'ontologies', ontologyNavItems)}
+        {renderSection('TOOLS', 'tools', toolsNavItems)}
       </div>
 
+      {/* Footer */}
+      <Divider style={{ margin: 0, borderColor: '#27273a' }} />
+      <div style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ flex: 1 }}>
+          <span style={{ fontSize: 14, display: 'block' }}>Admin User</span>
+          <span style={{ fontSize: 12, color: '#71717a', display: 'block' }}>admin@ontology.io</span>
+        </div>
+        <ChevronDown size={20} />
+      </div>
+    </div>
+  );
+
+  const propertiesContent = (
+    <div style={{ width: isMobile ? '100%' : propertiesPanelWidth, borderLeft: isMobile ? 'none' : '1px solid #27273a', display: 'flex', flexDirection: 'column', background: isMobile ? '#0d0d14' : undefined }}>
+      <div style={{ height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', borderBottom: '1px solid #27273a' }}>
+        <span style={{ fontSize: 16, fontWeight: 600 }}>Class Properties</span>
+        <Button type="text" size="small" icon={<X size={20} />} onClick={() => setPropertiesOpen(false)} />
+      </div>
+      <div style={{ flex: 1, padding: 16, overflow: 'auto' }}>
+        <span style={{ fontSize: 12, color: '#a1a1aa' }}>SELECTED CLASS</span>
+        <div style={{ padding: 12, marginTop: 8, marginBottom: 16, backgroundColor: '#111118', border: '1px solid #27273a', borderRadius: 4 }}>
+          <span style={{ fontSize: 14 }}>Person</span>
+        </div>
+        <Divider style={{ margin: '16px 0', borderColor: '#27273a' }} />
+        <span style={{ fontSize: 12, color: '#a1a1aa' }}>BASIC PROPERTIES</span>
+        <div>
+          {['name', 'email', 'birthDate', 'address'].map((prop) => (
+            <div key={prop} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', minHeight: isMobile ? 44 : undefined, borderRadius: 8, cursor: 'pointer', backgroundColor: 'transparent' }}>
+              <span style={{ fontSize: 14 }}>{prop}</span>
+            </div>
+          ))}
+        </div>
+        <Divider style={{ margin: '16px 0', borderColor: '#27273a' }} />
+        <span style={{ fontSize: 12, color: '#a1a1aa' }}>RELATIONS</span>
+        <div>
+          {['worksAt → Organization', 'knows → Person', 'livesIn → Location'].map((rel) => (
+            <div key={rel} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', minHeight: isMobile ? 44 : undefined, borderRadius: 8, cursor: 'pointer', backgroundColor: 'transparent' }}>
+              <span style={{ fontSize: 14 }}>{rel}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ display: 'flex', height: '100vh' }}>
+      {/* Sidebar: Drawer on mobile, inline on desktop */}
+      {isMobile ? (
+        <Drawer
+          placement="left"
+          open={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          width={drawerWidth}
+          styles={{ header: { display: 'none' }, body: { padding: 0, background: '#0d0d14' } }}
+        >
+          {sidebarContent}
+        </Drawer>
+      ) : (
+        sidebarContent
+      )}
+
       {/* Main Content */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         {/* Header */}
-        <div style={{ height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', borderBottom: '1px solid #27273a' }}>
+        <div style={{ height: isMobile ? 56 : 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: isMobile ? '0 12px' : '0 24px', borderBottom: '1px solid #27273a', gap: 8 }}>
+          {isMobile && (
+            <div onClick={() => setSidebarOpen(true)} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', width: 44, height: 44, justifyContent: 'center' }}>
+              <Menu size={22} color="#e4e4e7" />
+            </div>
+          )}
           <Breadcrumb
             separator={<ChevronRight size={14} />}
             items={[
@@ -146,76 +212,63 @@ export default function OntologyLayout() {
               { title: <Typography.Text strong>{selectedNav}</Typography.Text> },
             ]}
           />
-          <div style={{ display: 'flex', gap: 12 }}>
-            <Input
-              placeholder="Search classes..."
-              prefix={<Search size={16} />}
-              style={{ width: 240 }}
-            />
-            <Button type="primary" icon={<Plus size={16} />}>New Class</Button>
+          <div style={{ display: 'flex', gap: isMobile ? 8 : 12, flexShrink: 0 }}>
+            {!isMobile && (
+              <Input
+                placeholder="Search classes..."
+                prefix={<Search size={16} />}
+                style={{ width: isTablet ? 180 : 240 }}
+              />
+            )}
+            <Button type="primary" icon={<Plus size={16} />}>{isMobile ? '' : 'New Class'}</Button>
           </div>
         </div>
 
         {/* Content Area */}
-        <div style={{ flex: 1, display: 'flex' }}>
-          {/* Search Panel */}
-          <div style={{ width: 280, borderRight: '1px solid #27273a', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: 16, borderBottom: '1px solid #27273a' }}>
-              <span style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, display: 'block' }}>Classes</span>
-              <Input
-                placeholder="Filter classes..."
-                prefix={<Search size={16} />}
-                style={{ width: '100%' }}
-              />
+        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+          {/* Search Panel — hidden on mobile */}
+          {!isMobile && (
+            <div style={{ width: isTablet ? 220 : 280, borderRight: '1px solid #27273a', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+              <div style={{ padding: 16, borderBottom: '1px solid #27273a' }}>
+                <span style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, display: 'block' }}>Classes</span>
+                <Input
+                  placeholder="Filter classes..."
+                  prefix={<Search size={16} />}
+                  style={{ width: '100%' }}
+                />
+              </div>
+              <div style={{ flex: 1, overflow: 'auto' }}>
+                {['Person', 'Organization', 'Product', 'Event', 'Location'].map((cls) => (
+                  <div key={cls} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 8, cursor: 'pointer', backgroundColor: 'transparent' }}>
+                    <span style={{ fontSize: 14 }}>{cls}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div style={{ flex: 1, overflow: 'auto' }}>
-              {['Person', 'Organization', 'Product', 'Event', 'Location'].map((cls) => (
-                <div key={cls} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 8, cursor: 'pointer', backgroundColor: 'transparent' }}>
-                  <span style={{ fontSize: 14 }}>{cls}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+          )}
 
           {/* Canvas */}
-          <div style={{ flex: 1, padding: 20, display: 'flex', flexDirection: 'column' }}>
+          <div style={{ flex: 1, padding: isMobile ? 12 : 20, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
             <span style={{ fontSize: 16, fontWeight: 600, marginBottom: 8, display: 'block' }}>Graph Canvas</span>
             <div style={{ flex: 1, border: '1px solid #27273a', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <span style={{ color: '#71717a' }}>Topology Visualization</span>
             </div>
           </div>
 
-          {/* Properties Panel */}
-          <div style={{ width: propertiesPanelWidth, borderLeft: '1px solid #27273a', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', borderBottom: '1px solid #27273a' }}>
-              <span style={{ fontSize: 16, fontWeight: 600 }}>Class Properties</span>
-              <Button type="text" size="small" icon={<X size={20} />} />
-            </div>
-            <div style={{ flex: 1, padding: 16, overflow: 'auto' }}>
-              <span style={{ fontSize: 12, color: '#a1a1aa' }}>SELECTED CLASS</span>
-              <div style={{ padding: 12, marginTop: 8, marginBottom: 16, backgroundColor: '#111118', border: '1px solid #27273a', borderRadius: 4 }}>
-                <span style={{ fontSize: 14 }}>Person</span>
-              </div>
-              <Divider style={{ margin: '16px 0', borderColor: '#27273a' }} />
-              <span style={{ fontSize: 12, color: '#a1a1aa' }}>BASIC PROPERTIES</span>
-              <div>
-                {['name', 'email', 'birthDate', 'address'].map((prop) => (
-                  <div key={prop} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 8, cursor: 'pointer', backgroundColor: 'transparent' }}>
-                    <span style={{ fontSize: 14 }}>{prop}</span>
-                  </div>
-                ))}
-              </div>
-              <Divider style={{ margin: '16px 0', borderColor: '#27273a' }} />
-              <span style={{ fontSize: 12, color: '#a1a1aa' }}>RELATIONS</span>
-              <div>
-                {['worksAt → Organization', 'knows → Person', 'livesIn → Location'].map((rel) => (
-                  <div key={rel} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 8, cursor: 'pointer', backgroundColor: 'transparent' }}>
-                    <span style={{ fontSize: 14 }}>{rel}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+          {/* Properties Panel: Drawer on mobile, inline on desktop */}
+          {isMobile ? (
+            <Drawer
+              placement="right"
+              open={propertiesOpen}
+              onClose={() => setPropertiesOpen(false)}
+              width={300}
+              styles={{ header: { display: 'none' }, body: { padding: 0, background: '#0d0d14' } }}
+            >
+              {propertiesContent}
+            </Drawer>
+          ) : (
+            propertiesContent
+          )}
         </div>
       </div>
     </div>

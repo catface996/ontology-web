@@ -5,6 +5,7 @@ import {
   ChevronRight, Save, FileText, Globe, Settings, Upload, Plus, Trash2, File, Share2,
 } from 'lucide-react';
 import SuccessModal from '../components/SuccessModal';
+import { useResponsive } from '../hooks/useResponsive';
 import {
   getOntology, createOntology, updateOntology,
   type OntologyDTO,
@@ -27,6 +28,7 @@ export default function OntologyFormPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { message } = App.useApp();
+  const { isMobile } = useResponsive();
   const isEditing = id !== undefined;
 
   const [loading, setLoading] = useState(isEditing);
@@ -137,7 +139,7 @@ export default function OntologyFormPage() {
         </Flex>
       </Flex>
 
-      <div style={{ flex: 1, overflow: 'auto', padding: 24, display: 'flex', gap: 24 }}>
+      <div style={{ flex: 1, overflow: 'auto', padding: isMobile ? 12 : 24, display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 16 : 24 }}>
         {/* Left Column */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 24 }}>
           {/* Basic Information Form */}
@@ -207,7 +209,7 @@ export default function OntologyFormPage() {
         </div>
 
         {/* Right Column */}
-        <div style={{ width: 380, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 24 }}>
+        <div style={{ width: isMobile ? '100%' : 380, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 24 }}>
           {/* Namespaces */}
           <div style={{ borderRadius: 12, border: '1px solid #27273a', padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

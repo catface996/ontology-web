@@ -7,6 +7,7 @@ import {
 import SuccessModal from '../components/SuccessModal';
 import { useHeader } from '../contexts/HeaderContext';
 import { useCurrentOntology } from '../contexts/OntologyContext';
+import { useResponsive } from '../hooks/useResponsive';
 import {
   getTopology, createTopology, updateTopology, listClasses,
   type TopologyDTO, type ClassDTO,
@@ -18,6 +19,7 @@ export default function TopologyEditorPage() {
   const { message } = App.useApp();
   const { currentOntologyId } = useCurrentOntology();
   const { setBreadcrumbs, setActions } = useHeader();
+  const { isMobile } = useResponsive();
 
   const isEditing = topologyId !== undefined;
   const [loading, setLoading] = useState(isEditing);
@@ -177,10 +179,10 @@ export default function TopologyEditorPage() {
 
   return (
     <>
-      <div style={{ flex: 1, padding: 24, display: 'flex', flexDirection: 'column', gap: 24, overflow: 'hidden' }}>
+      <div style={{ flex: 1, padding: isMobile ? 12 : 24, display: 'flex', flexDirection: 'column', gap: isMobile ? 16 : 24, overflow: isMobile ? 'auto' : 'hidden' }}>
         {/* Top section: Name, Description, Stats */}
         <Card style={{ flexShrink: 0 }}>
-          <div style={{ display: 'flex', gap: 24 }}>
+          <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 16 : 24 }}>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
                 <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>Topology Name *</label>
@@ -218,7 +220,7 @@ export default function TopologyEditorPage() {
         </Card>
 
         {/* Dual-column class picker */}
-        <div style={{ flex: 1, display: 'flex', gap: 24, minHeight: 0, overflow: 'hidden' }}>
+        <div style={{ flex: isMobile ? undefined : 1, display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 16 : 24, minHeight: isMobile ? undefined : 0, overflow: isMobile ? undefined : 'hidden' }}>
           {/* Available Classes */}
           <Card
             style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}

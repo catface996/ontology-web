@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Breadcrumb, Input, Button, Checkbox, Typography, Flex, App, Select, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import { useResponsive } from '../hooks/useResponsive';
 import {
   Search, Plus, LayoutGrid, List,
   Pencil, Share2, Trash2,
@@ -51,6 +52,7 @@ function dtoToRow(dto: InstanceDTO & Record<string, unknown>): InstanceRow {
 /* -- Page -- */
 export default function InstancesPage() {
   const navigate = useNavigate();
+  const { isMobile } = useResponsive();
   const { message } = App.useApp();
   const { setBreadcrumbs, setActions } = useHeader();
   const { currentOntologyId } = useCurrentOntology();
@@ -214,7 +216,7 @@ export default function InstancesPage() {
     setSelected(e.target.checked ? pageData.map((c) => c.id) : []);
   };
 
-  const columns: ColumnsType<InstanceRow> = [
+  const allColumns: ColumnsType<InstanceRow> = [
     {
       title: () => (
         <Checkbox
@@ -271,6 +273,7 @@ export default function InstancesPage() {
       dataIndex: 'description',
       key: 'description',
       ellipsis: true,
+      responsive: ['md'],
       render: (text: string) => (
         <Typography.Text style={{ fontSize: 13, color: '#a1a1aa' }}>{text}</Typography.Text>
       ),
@@ -293,6 +296,7 @@ export default function InstancesPage() {
       dataIndex: 'relations',
       key: 'relations',
       width: 100,
+      responsive: ['lg'],
       align: 'center',
       render: (val: number) => (
         <span style={{ display: 'inline-block', borderRadius: 100, background: 'rgba(255,255,255,0.06)', padding: '4px 10px', fontSize: 13, fontWeight: 500 }}>
@@ -305,6 +309,7 @@ export default function InstancesPage() {
       dataIndex: 'created',
       key: 'created',
       width: 120,
+      responsive: ['lg'],
       align: 'center',
       render: (text: string) => (
         <span style={{ display: 'inline-block', borderRadius: 100, background: 'rgba(255,255,255,0.04)', padding: '4px 10px', fontSize: 13, fontWeight: 500, color: '#a1a1aa' }}>
@@ -315,7 +320,7 @@ export default function InstancesPage() {
     {
       title: <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', letterSpacing: 0.5 }}>Actions</Typography.Text>,
       key: 'actions',
-      width: 110,
+      width: isMobile ? 80 : 110,
       align: 'center',
       render: (_: unknown, record: InstanceRow) => (
         <Flex justify="center" gap={4}>
@@ -343,6 +348,8 @@ export default function InstancesPage() {
     },
   ];
 
+  const columns = isMobile ? allColumns.filter(c => c.key !== 'checkbox') : allColumns;
+
   if (!currentOntologyId) {
     return (
       <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column', gap: 16 }}>
@@ -354,7 +361,7 @@ export default function InstancesPage() {
   }
 
   return (
-    <div className="list-page">
+    <div className="list-page" style={isMobile ? { padding: 12, gap: 12 } : undefined}>
       <TableCard<InstanceRow>
         columns={columns}
         dataSource={pageData}

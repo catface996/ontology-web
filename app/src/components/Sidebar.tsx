@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Layout, Typography, Divider, Flex } from 'antd';
+import { Layout, Typography, Divider, Flex, Drawer } from 'antd';
 import {
   Share2,
   ChevronDown,
@@ -103,7 +103,16 @@ const adminItems: NavItem[] = [
 
 type SectionKey = 'ontology' | 'tools' | 'aiAgent' | 'data' | 'admin';
 
-export default function Sidebar() {
+interface SidebarProps {
+  isMobile?: boolean;
+  isTablet?: boolean;
+  collapsed?: boolean;
+  drawerOpen?: boolean;
+  onDrawerClose?: () => void;
+  onNavClick?: () => void;
+}
+
+export default function Sidebar({ isMobile, isTablet, collapsed, drawerOpen, onDrawerClose, onNavClick }: SidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { primaryColor, setPrimaryColor } = useThemeColor();
@@ -124,6 +133,15 @@ export default function Sidebar() {
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };
 
+  const handleNavClick = (item: NavItem) => {
+    if (item.openInNewTab) {
+      window.open(item.path, '_blank');
+    } else {
+      navigate(item.path);
+    }
+    onNavClick?.();
+  };
+
   const renderNavItems = (items: NavItem[]) => (
     <div style={{ padding: '0 4px' }}>
       {items.map((item) => (
@@ -131,9 +149,10 @@ export default function Sidebar() {
           key={item.label}
           align="center"
           gap={12}
-          onClick={() => item.openInNewTab ? window.open(item.path, '_blank') : navigate(item.path)}
+          onClick={() => handleNavClick(item)}
           style={{
-            padding: '8px 16px',
+            padding: isMobile ? '10px 16px' : '8px 16px',
+            minHeight: isMobile ? 44 : undefined,
             borderRadius: 100,
             cursor: 'pointer',
             background: isSelected(item.path) ? 'rgba(var(--primary-rgb), 0.12)' : 'transparent',
@@ -144,7 +163,9 @@ export default function Sidebar() {
           <span style={{ fontSize: 18, display: 'flex', alignItems: 'center', color: item.iconColor || 'inherit', filter: isSelected(item.path) ? 'brightness(1.4) drop-shadow(0 0 4px currentColor)' : 'none' }}>
             {item.icon}
           </span>
-          <Typography.Text style={{ fontSize: 14, color: 'inherit' }}>{item.label}</Typography.Text>
+          {!collapsed && (
+            <Typography.Text style={{ fontSize: 14, color: 'inherit' }}>{item.label}</Typography.Text>
+          )}
         </Flex>
       ))}
     </div>
@@ -157,34 +178,29 @@ export default function Sidebar() {
         onClick={() => toggleSection(key)}
         style={{ padding: '8px 16px', cursor: 'pointer' }}
       >
-        <Typography.Text style={{ flex: 1, fontSize: 12, color: '#a1a1aa', letterSpacing: 0.5 }}>
-          {title}
-        </Typography.Text>
+        {!collapsed && (
+          <Typography.Text style={{ flex: 1, fontSize: 12, color: '#a1a1aa', letterSpacing: 0.5 }}>
+            {title}
+          </Typography.Text>
+        )}
         {openSections[key] ? <ChevronDown size={14} color="#a1a1aa" /> : <ChevronRight size={14} color="#a1a1aa" />}
       </Flex>
       {openSections[key] && renderNavItems(items)}
     </div>
   );
 
-  return (
-    <Layout.Sider
-      width={drawerWidth}
-      style={{
-        background: '#0d0d14',
-        borderRight: '1px solid #1e1e2a',
-        height: '100vh',
-        overflow: 'hidden',
-      }}
-    >
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+  const sidebarContent = (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Header */}
       <Flex align="center" justify="center" gap={8} style={{ height: 64, flexShrink: 0, borderBottom: '1px solid #1e1e2a' }}>
         <Share2 size={28} color="#e4e4e7" />
-        <Typography.Text style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#e4e4e7' }}>Ontology</Typography.Text>
+        {!collapsed && (
+          <Typography.Text style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#e4e4e7' }}>Ontology</Typography.Text>
+        )}
       </Flex>
 
       {/* Ontology Selector */}
-      {currentOntology && currentOntology.name && (
+      {!collapsed && currentOntology && currentOntology.name && (
         <div style={{ padding: '16px 16px 12px 16px', borderBottom: '1px solid #1e1e2a', flexShrink: 0 }}>
           <Typography.Text style={{ fontSize: 10, fontWeight: 600, color: '#a1a1aa', letterSpacing: 1, display: 'block', marginBottom: 8 }}>
             CURRENT ONTOLOGY
@@ -192,7 +208,7 @@ export default function Sidebar() {
           <Flex
             align="center"
             justify="space-between"
-            onClick={() => navigate('/select-ontology')}
+            onClick={() => { navigate('/select-ontology'); onNavClick?.(); }}
             style={{
               padding: '10px 12px',
               borderRadius: 8,
@@ -230,9 +246,11 @@ export default function Sidebar() {
             onClick={() => toggleSection('aiAgent')}
             style={{ padding: '8px 16px', cursor: 'pointer' }}
           >
-            <Typography.Text style={{ flex: 1, fontSize: 12, color: '#a1a1aa', letterSpacing: 0.5 }}>
-              AI AGENT
-            </Typography.Text>
+            {!collapsed && (
+              <Typography.Text style={{ flex: 1, fontSize: 12, color: '#a1a1aa', letterSpacing: 0.5 }}>
+                AI AGENT
+              </Typography.Text>
+            )}
             {openSections.aiAgent ? <ChevronDown size={14} color="#a1a1aa" /> : <ChevronRight size={14} color="#a1a1aa" />}
           </Flex>
           {openSections.aiAgent && (
@@ -258,8 +276,8 @@ export default function Sidebar() {
             key={c}
             onClick={() => setPrimaryColor(c)}
             style={{
-              width: 20,
-              height: 20,
+              width: isMobile ? 28 : 20,
+              height: isMobile ? 28 : 20,
               borderRadius: '50%',
               backgroundColor: c,
               cursor: 'pointer',
@@ -270,11 +288,46 @@ export default function Sidebar() {
               outlineOffset: 2,
             }}
           >
-            {primaryColor === c && <Check size={10} color="#fff" />}
+            {primaryColor === c && <Check size={isMobile ? 14 : 10} color="#fff" />}
           </div>
         ))}
       </Flex>
-      </div>
+    </div>
+  );
+
+  // Mobile: render as Drawer
+  if (isMobile) {
+    return (
+      <Drawer
+        placement="left"
+        open={drawerOpen}
+        onClose={onDrawerClose}
+        width={drawerWidth}
+        styles={{
+          header: { display: 'none' },
+          body: { padding: 0, background: '#0d0d14' },
+        }}
+      >
+        {sidebarContent}
+      </Drawer>
+    );
+  }
+
+  // Tablet: collapsible sider
+  const siderWidth = isTablet && collapsed ? 64 : drawerWidth;
+
+  return (
+    <Layout.Sider
+      width={siderWidth}
+      style={{
+        background: '#0d0d14',
+        borderRight: '1px solid #1e1e2a',
+        height: '100vh',
+        overflow: 'hidden',
+        transition: 'width 0.2s',
+      }}
+    >
+      {sidebarContent}
     </Layout.Sider>
   );
 }

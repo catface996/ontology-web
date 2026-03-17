@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Breadcrumb, Input, Button, Typography, Flex, App, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import { useResponsive } from '../hooks/useResponsive';
 import {
   Type, Hash, Calendar, List,
   Search, Plus, Pencil, Trash2,
@@ -27,6 +28,7 @@ const dataTypeIcons: Record<string, React.ComponentType<{ size?: number; color?:
 
 export default function PropertiesPage() {
   const navigate = useNavigate();
+  const { isMobile } = useResponsive();
   const { message } = App.useApp();
   const { setBreadcrumbs, setActions } = useHeader();
   const { currentOntologyId } = useCurrentOntology();
@@ -140,6 +142,7 @@ export default function PropertiesPage() {
       title: <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', letterSpacing: 0.5 }}>Description</Typography.Text>,
       dataIndex: 'description',
       key: 'description',
+      responsive: ['md'],
       render: (text: string) => (
         <Typography.Text style={{ fontSize: 14, color: '#a1a1aa' }}>{text || '—'}</Typography.Text>
       ),
@@ -149,6 +152,7 @@ export default function PropertiesPage() {
       dataIndex: 'dataType',
       key: 'dataType',
       width: 140,
+      responsive: ['md'],
       render: (dataType: string) => {
         const DtIcon = dataTypeIcons[dataType] || Type;
         return (
@@ -162,7 +166,7 @@ export default function PropertiesPage() {
     {
       title: <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', letterSpacing: 0.5 }}>Actions</Typography.Text>,
       key: 'actions',
-      width: 100,
+      width: isMobile ? 80 : 100,
       align: 'center',
       render: (_: unknown, record: PropertyDTO) => (
         <Flex justify="center" gap={4}>
@@ -178,7 +182,7 @@ export default function PropertiesPage() {
   ];
 
   return (
-    <div className="list-page">
+    <div className="list-page" style={isMobile ? { padding: 12, gap: 12 } : undefined}>
       <TableCard<PropertyDTO>
         columns={columns}
         dataSource={filtered.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)}

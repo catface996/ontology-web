@@ -7,6 +7,7 @@ import {
   User, Landmark, MapPin, Calendar, Folder,
 } from 'lucide-react';
 import SuccessModal from '../components/SuccessModal';
+import { useResponsive } from '../hooks/useResponsive';
 import { useModal } from '../contexts/ModalContext';
 import { useHeader } from '../contexts/HeaderContext';
 import { useCurrentOntology } from '../contexts/OntologyContext';
@@ -57,6 +58,7 @@ export default function InstanceEditorPage() {
   const { message } = App.useApp();
   const { setBreadcrumbs, setActions } = useHeader();
   const { currentOntologyId } = useCurrentOntology();
+  const { isMobile } = useResponsive();
   const isNew = !instanceId || instanceId === 'new';
 
   // Form state
@@ -337,7 +339,7 @@ export default function InstanceEditorPage() {
   return (
     <>
       {/* Content */}
-      <div style={{ flex: 1, padding: 24, display: 'flex', gap: 24, overflow: 'auto' }}>
+      <div style={{ flex: 1, padding: isMobile ? 12 : 24, display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 16 : 24, overflow: 'auto' }}>
         {/* Left Column */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 24 }}>
           {/* Basic Information Card */}
@@ -422,7 +424,7 @@ export default function InstanceEditorPage() {
         </div>
 
         {/* Right Column */}
-        <div style={{ width: 360, display: 'flex', flexDirection: 'column', gap: 24 }}>
+        <div style={{ width: isMobile ? '100%' : 360, display: 'flex', flexDirection: 'column', gap: 24 }}>
           {/* Instance Preview Card */}
           <Card>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>

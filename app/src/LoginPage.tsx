@@ -3,10 +3,12 @@ import { useNavigate, Navigate } from 'react-router-dom';
 import { Card, Input, Button, Typography, Divider, Flex, App } from 'antd';
 import { login, isAuthenticated } from './utils/auth';
 import { RequestError } from './utils/request';
+import { useResponsive } from './hooks/useResponsive';
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const { message } = App.useApp();
+  const { isMobile } = useResponsive();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -35,8 +37,8 @@ export default function LoginPage() {
   };
 
   return (
-    <Flex align="center" justify="center" style={{ minHeight: '100vh', background: '#0a0a0f' }}>
-      <Card style={{ width: 420, padding: 20, background: '#0d0d14', border: '1px solid #27273a', borderRadius: 16 }}>
+    <Flex align="center" justify="center" style={{ minHeight: '100vh', background: '#0a0a0f', padding: isMobile ? 16 : 0 }}>
+      <Card style={{ width: isMobile ? '100%' : 420, maxWidth: 420, padding: isMobile ? 16 : 20, background: '#0d0d14', border: '1px solid #27273a', borderRadius: 16 }}>
         {/* Logo */}
         <Flex align="center" justify="center" gap={12} style={{ marginBottom: 24 }}>
           <div style={{ width: 48, height: 48, background: 'var(--primary-color)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

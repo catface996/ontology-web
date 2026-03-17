@@ -4,10 +4,12 @@ import { Card, Input, Button, Typography, Divider, Flex, App } from 'antd';
 import { isAuthenticated } from './utils/auth';
 import { register } from './services/authService';
 import { RequestError } from './utils/request';
+import { useResponsive } from './hooks/useResponsive';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
   const { message } = App.useApp();
+  const { isMobile } = useResponsive();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -53,8 +55,8 @@ export default function RegisterPage() {
   };
 
   return (
-    <Flex align="center" justify="center" style={{ minHeight: '100vh', background: '#0a0a0f' }}>
-      <Card style={{ width: 420, padding: 20, background: '#0d0d14', border: '1px solid #27273a', borderRadius: 16 }}>
+    <Flex align="center" justify="center" style={{ minHeight: '100vh', background: '#0a0a0f', padding: isMobile ? 16 : 0 }}>
+      <Card style={{ width: isMobile ? '100%' : 420, maxWidth: 420, padding: isMobile ? 16 : 20, background: '#0d0d14', border: '1px solid #27273a', borderRadius: 16 }}>
         {/* Logo */}
         <Flex align="center" justify="center" gap={12} style={{ marginBottom: 24 }}>
           <div style={{ width: 48, height: 48, background: 'var(--primary-color)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

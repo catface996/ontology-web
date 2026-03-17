@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Breadcrumb, Input, Button, Checkbox, Tag, Typography, Flex, App, Spin, Tooltip } from 'antd';
+import { Breadcrumb, Input, Button, Checkbox, Tag, Typography, Flex, App, Spin, Tooltip, Drawer } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
   Search, Plus, Boxes, List, Pencil, Brain, Trash2, Share2,
@@ -11,6 +11,7 @@ import ForceTopologyGraph, { type ForceGraphNode, type ForceGraphEdge, type View
 import { useModal } from '../contexts/ModalContext';
 import { useHeader } from '../contexts/HeaderContext';
 import { useCurrentOntology } from '../contexts/OntologyContext';
+import { useResponsive } from '../hooks/useResponsive';
 import {
   listClasses, deleteClass, getClassTopology, saveClassPositions,
   listClassProperties,
@@ -46,6 +47,7 @@ export default function ClassesPage() {
   const { message } = App.useApp();
   const { setBreadcrumbs, setActions } = useHeader();
   const { currentOntologyId } = useCurrentOntology();
+  const { isMobile, isTablet } = useResponsive();
   const [view, setView] = useState('topology');
   const [selected, setSelected] = useState<string[]>([]);
   const [page, setPage] = useState(0);
@@ -332,7 +334,7 @@ export default function ClassesPage() {
     setSelected(e.target.checked ? classesData.map((c) => c.id) : []);
   };
 
-  const columns: ColumnsType<ClassData> = [
+  const allColumns: ColumnsType<ClassData> = [
     {
       title: () => (
         <Checkbox
@@ -392,6 +394,7 @@ export default function ClassesPage() {
       title: <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', letterSpacing: 0.5 }}>Description</Typography.Text>,
       dataIndex: 'description',
       key: 'description',
+      responsive: ['md'],
       render: (text: string) => (
         <Typography.Text style={{ fontSize: 14, color: '#a1a1aa' }}>{text}</Typography.Text>
       ),
@@ -402,6 +405,7 @@ export default function ClassesPage() {
       key: 'instanceCount',
       width: 100,
       align: 'center',
+      responsive: ['lg'],
       render: (val: number) => <Tag>{val}</Tag>,
     },
     {
@@ -410,6 +414,7 @@ export default function ClassesPage() {
       key: 'status',
       width: 100,
       align: 'center',
+      responsive: ['md'],
       render: (val: string) => (
         <Tag color={val === 'ACTIVE' ? 'green' : 'orange'}>{val}</Tag>
       ),
@@ -417,26 +422,30 @@ export default function ClassesPage() {
     {
       title: <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', letterSpacing: 0.5 }}>Actions</Typography.Text>,
       key: 'actions',
-      width: 110,
+      width: isMobile ? 80 : 110,
       align: 'center',
       render: (_: unknown, record: ClassData) => (
         <Flex justify="center" gap={4}>
-          <Tooltip title="View Topology">
-            <Button
-              type="text"
-              size="small"
-              icon={<Share2 size={16} />}
-              onClick={() => navigate(`/classes/${record.id}/topology`)}
-            />
-          </Tooltip>
-          <Tooltip title="Logic Rules">
-            <Button
-              type="text"
-              size="small"
-              icon={<Brain size={16} />}
-              onClick={() => navigate(`/classes/${record.id}/logic`)}
-            />
-          </Tooltip>
+          {!isMobile && (
+            <>
+              <Tooltip title="View Topology">
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<Share2 size={16} />}
+                  onClick={() => navigate(`/classes/${record.id}/topology`)}
+                />
+              </Tooltip>
+              <Tooltip title="Logic Rules">
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<Brain size={16} />}
+                  onClick={() => navigate(`/classes/${record.id}/logic`)}
+                />
+              </Tooltip>
+            </>
+          )}
           <Tooltip title="Edit">
             <Button
               type="text"
@@ -453,6 +462,9 @@ export default function ClassesPage() {
     },
   ];
 
+  // On mobile, hide checkbox column
+  const columns = isMobile ? allColumns.filter((c) => c.key !== 'checkbox') : allColumns;
+
   if (!currentOntologyId) {
     return (
       <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column', gap: 16 }}>
@@ -463,11 +475,85 @@ export default function ClassesPage() {
     );
   }
 
+  const detailPanelContent = (
+    <>
+      {selectedClassInfo ? (
+        <>
+          {/* Header */}
+          <div style={{ padding: 20, borderBottom: '1px solid #27273a' }}>
+            <Flex align="center" gap={8} style={{ marginBottom: 12 }}>
+              <Boxes size={18} color={selectedClassInfo.color || 'var(--primary-color)'} />
+              <Typography.Text style={{ fontSize: 16, fontWeight: 600 }}>Class Details</Typography.Text>
+            </Flex>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <Typography.Text style={{ fontSize: 20, fontWeight: 600 }}>{selectedClassInfo.name}</Typography.Text>
+              {selectedClassInfo.description && (
+                <Typography.Text style={{ color: '#71717a', fontSize: 13 }}>{selectedClassInfo.description}</Typography.Text>
+              )}
+            </div>
+          </div>
+
+          {/* Properties */}
+          <div style={{ padding: 20, borderBottom: '1px solid #27273a' }}>
+            <Typography.Text style={{ color: '#a1a1aa', fontSize: 12, fontWeight: 600 }}>
+              Properties ({detailProperties.length})
+            </Typography.Text>
+            {detailProperties.length === 0 ? (
+              <Typography.Text style={{ color: '#71717a', fontSize: 13, display: 'block', marginTop: 8 }}>No properties</Typography.Text>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
+                {detailProperties.map((p) => (
+                  <Flex key={p.propertyId} justify="space-between" align="center">
+                    <Typography.Text style={{ color: '#a1a1aa', fontSize: 13 }}>{p.propertyName}</Typography.Text>
+                    <Tag style={{ fontSize: 11, margin: 0 }}>{p.dataType}</Tag>
+                  </Flex>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Relations */}
+          <div style={{ padding: 20 }}>
+            <Typography.Text style={{ color: '#a1a1aa', fontSize: 12, fontWeight: 600 }}>
+              Relations ({detailRelations.length})
+            </Typography.Text>
+            {detailRelations.length === 0 ? (
+              <Typography.Text style={{ color: '#71717a', fontSize: 13, display: 'block', marginTop: 8 }}>No relations</Typography.Text>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+                {detailRelations.map((r) => (
+                  <div
+                    key={r.id}
+                    style={{
+                      display: 'flex', flexDirection: 'column', gap: 2,
+                      padding: 10, backgroundColor: '#1a1a24', borderRadius: 8,
+                    }}
+                  >
+                    <Typography.Text style={{ fontSize: 13, fontWeight: 500 }}>{r.name}</Typography.Text>
+                    <Typography.Text style={{ color: '#a1a1aa', fontSize: 11 }}>
+                      {r.sourceClassName} → {r.targetClassName}
+                    </Typography.Text>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      ) : (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 120 }}>
+          <Typography.Text style={{ color: '#52525b', fontSize: 13 }}>
+            Click a class to see details
+          </Typography.Text>
+        </div>
+      )}
+    </>
+  );
+
   if (view === 'topology') {
     return (
-      <div style={{ flex: 1, display: 'flex', gap: 16, padding: '16px 24px 24px', overflow: 'hidden' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 0 : 16, padding: isMobile ? '8px 12px 12px' : '16px 24px 24px', overflow: 'hidden' }}>
         {/* Topology Canvas */}
-        <div style={{ flex: 1, borderRadius: 12, border: '1px solid #27273a', overflow: 'hidden', position: 'relative', minHeight: 0 }}>
+        <div style={{ flex: 1, borderRadius: 12, border: '1px solid #27273a', overflow: 'hidden', position: 'relative', minHeight: isMobile ? 300 : 0 }}>
           {topoLoading ? (
             <div style={{ position: 'absolute', inset: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#0a0a0f' }}>
               <Spin size="large" />
@@ -496,87 +582,36 @@ export default function ClassesPage() {
           )}
         </div>
 
-        {/* Detail Panel — always rendered to keep layout stable */}
-        <div style={{
-          width: 300, borderRadius: 12, border: '1px solid #27273a',
-          display: 'flex', flexDirection: 'column', overflow: 'auto', flexShrink: 0,
-        }}>
-          {selectedClassInfo ? (
-            <>
-              {/* Header */}
-              <div style={{ padding: 20, borderBottom: '1px solid #27273a' }}>
-                <Flex align="center" gap={8} style={{ marginBottom: 12 }}>
-                  <Boxes size={18} color={selectedClassInfo.color || 'var(--primary-color)'} />
-                  <Typography.Text style={{ fontSize: 16, fontWeight: 600 }}>Class Details</Typography.Text>
-                </Flex>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <Typography.Text style={{ fontSize: 20, fontWeight: 600 }}>{selectedClassInfo.name}</Typography.Text>
-                  {selectedClassInfo.description && (
-                    <Typography.Text style={{ color: '#71717a', fontSize: 13 }}>{selectedClassInfo.description}</Typography.Text>
-                  )}
-                </div>
-              </div>
-
-              {/* Properties */}
-              <div style={{ padding: 20, borderBottom: '1px solid #27273a' }}>
-                <Typography.Text style={{ color: '#a1a1aa', fontSize: 12, fontWeight: 600 }}>
-                  Properties ({detailProperties.length})
-                </Typography.Text>
-                {detailProperties.length === 0 ? (
-                  <Typography.Text style={{ color: '#71717a', fontSize: 13, display: 'block', marginTop: 8 }}>No properties</Typography.Text>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
-                    {detailProperties.map((p) => (
-                      <Flex key={p.propertyId} justify="space-between" align="center">
-                        <Typography.Text style={{ color: '#a1a1aa', fontSize: 13 }}>{p.propertyName}</Typography.Text>
-                        <Tag style={{ fontSize: 11, margin: 0 }}>{p.dataType}</Tag>
-                      </Flex>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Relations */}
-              <div style={{ padding: 20 }}>
-                <Typography.Text style={{ color: '#a1a1aa', fontSize: 12, fontWeight: 600 }}>
-                  Relations ({detailRelations.length})
-                </Typography.Text>
-                {detailRelations.length === 0 ? (
-                  <Typography.Text style={{ color: '#71717a', fontSize: 13, display: 'block', marginTop: 8 }}>No relations</Typography.Text>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
-                    {detailRelations.map((r) => (
-                      <div
-                        key={r.id}
-                        style={{
-                          display: 'flex', flexDirection: 'column', gap: 2,
-                          padding: 10, backgroundColor: '#1a1a24', borderRadius: 8,
-                        }}
-                      >
-                        <Typography.Text style={{ fontSize: 13, fontWeight: 500 }}>{r.name}</Typography.Text>
-                        <Typography.Text style={{ color: '#a1a1aa', fontSize: 11 }}>
-                          {r.sourceClassName} → {r.targetClassName}
-                        </Typography.Text>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </>
-          ) : (
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Typography.Text style={{ color: '#52525b', fontSize: 13 }}>
-                Click a class to see details
-              </Typography.Text>
-            </div>
-          )}
-        </div>
+        {/* Detail Panel — Drawer on mobile, inline on desktop/tablet */}
+        {isMobile ? (
+          <Drawer
+            placement="bottom"
+            open={!!selectedClassId}
+            onClose={() => {
+              setSelectedClassId(null);
+              setSelectedTopoClassIds(new Set());
+              setDetailProperties([]);
+              setDetailRelations([]);
+            }}
+            height="60vh"
+            styles={{ header: { display: 'none' }, body: { padding: 0 } }}
+          >
+            {detailPanelContent}
+          </Drawer>
+        ) : (
+          <div style={{
+            width: isTablet ? 260 : 300, borderRadius: 12, border: '1px solid #27273a',
+            display: 'flex', flexDirection: 'column', overflow: 'auto', flexShrink: 0,
+          }}>
+            {detailPanelContent}
+          </div>
+        )}
       </div>
     );
   }
 
   return (
-    <div className="list-page">
+    <div className="list-page" style={isMobile ? { padding: 12, gap: 12 } : undefined}>
       <TableCard<ClassData>
         columns={columns}
         dataSource={classesData}

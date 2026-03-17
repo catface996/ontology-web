@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Breadcrumb, Input, Button, Tag, Typography, Flex, App, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import { useResponsive } from '../hooks/useResponsive';
 import {
   ArrowRight, Search, Plus, Pencil, Trash2, Brain,
   ChevronRight,
@@ -14,6 +15,7 @@ import { listRelations, deleteRelation, type RelationDTO } from '../services/cor
 
 export default function RelationsPage() {
   const navigate = useNavigate();
+  const { isMobile } = useResponsive();
   const { message } = App.useApp();
   const { setBreadcrumbs, setActions } = useHeader();
   const { currentOntologyId } = useCurrentOntology();
@@ -120,6 +122,7 @@ export default function RelationsPage() {
       title: <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', letterSpacing: 0.5 }}>Description</Typography.Text>,
       dataIndex: 'description',
       key: 'description',
+      responsive: ['md'],
       render: (text: string) => (
         <Typography.Text style={{ fontSize: 14, color: '#a1a1aa' }}>{text || '—'}</Typography.Text>
       ),
@@ -129,6 +132,7 @@ export default function RelationsPage() {
       dataIndex: 'domainClassName',
       key: 'domainClassName',
       width: 140,
+      responsive: ['md'],
       render: (text: string) => (
         <Typography.Text style={{ fontSize: 14, color: text ? undefined : '#a1a1aa' }}>{text || 'Any'}</Typography.Text>
       ),
@@ -138,6 +142,7 @@ export default function RelationsPage() {
       dataIndex: 'cardinality',
       key: 'cardinality',
       width: 130,
+      responsive: ['lg'],
       align: 'center',
       render: (val: string) => {
         const labels: Record<string, string> = {
@@ -154,6 +159,7 @@ export default function RelationsPage() {
       dataIndex: 'rangeClassName',
       key: 'rangeClassName',
       width: 140,
+      responsive: ['md'],
       render: (text: string) => (
         <Typography.Text style={{ fontSize: 14, color: text ? undefined : '#a1a1aa' }}>{text || 'Any'}</Typography.Text>
       ),
@@ -162,6 +168,7 @@ export default function RelationsPage() {
       title: <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', letterSpacing: 0.5 }}>Properties</Typography.Text>,
       key: 'properties',
       width: 200,
+      responsive: ['lg'],
       render: (_: unknown, record: RelationDTO) => {
         const tags: string[] = [];
         if (record.isFunctional) tags.push('Functional');
@@ -176,7 +183,7 @@ export default function RelationsPage() {
     {
       title: <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', letterSpacing: 0.5 }}>Actions</Typography.Text>,
       key: 'actions',
-      width: 120,
+      width: isMobile ? 80 : 120,
       align: 'center',
       render: (_: unknown, record: RelationDTO) => (
         <Flex justify="center" gap={4}>
@@ -195,7 +202,7 @@ export default function RelationsPage() {
   ];
 
   return (
-    <div className="list-page">
+    <div className="list-page" style={isMobile ? { padding: 12, gap: 12 } : undefined}>
       <TableCard<RelationDTO>
         columns={columns}
         dataSource={filtered.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)}

@@ -7,6 +7,7 @@ import {
 import { useCurrentOntology } from '../contexts/OntologyContext';
 import { getUser, logout } from '../utils/auth';
 import { listOntologies, type OntologyDTO } from '../services/coreService';
+import { useResponsive } from '../hooks/useResponsive';
 
 /* -- Icon palette -- */
 const ICON_MAP: Record<string, { icon: React.ComponentType<{ size?: number; color?: string }>; color: string; bg: string }> = {
@@ -66,6 +67,7 @@ function dtoToCard(dto: OntologyDTO & Record<string, unknown>, index: number): C
 export default function OntologySelectionPage() {
   const navigate = useNavigate();
   const { setCurrentOntology } = useCurrentOntology();
+  const { isMobile, isTablet } = useResponsive();
   const [ontologies, setOntologies] = useState<CardData[]>([]);
   const [loading, setLoading] = useState(true);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -92,16 +94,17 @@ export default function OntologySelectionPage() {
     navigate('/classes');
   };
 
-  // Group cards into rows of 3
+  // Group cards into rows based on screen size
+  const cardsPerRow = isMobile ? 1 : isTablet ? 2 : 3;
   const rows: CardData[][] = [];
-  for (let i = 0; i < ontologies.length; i += 3) {
-    rows.push(ontologies.slice(i, i + 3));
+  for (let i = 0; i < ontologies.length; i += cardsPerRow) {
+    rows.push(ontologies.slice(i, i + cardsPerRow));
   }
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0f', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
-      <div style={{ height: 64, padding: '0 48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #1e1e2a', flexShrink: 0 }}>
+      <div style={{ height: isMobile ? 56 : 64, padding: isMobile ? '0 16px' : '0 48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #1e1e2a', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <Share2 size={24} color="#e4e4e7" />
           <Typography.Text style={{ fontSize: 18, fontWeight: 600, color: '#e4e4e7' }}>Ontology</Typography.Text>
@@ -196,13 +199,13 @@ export default function OntologySelectionPage() {
       )}
 
       {/* Main Content */}
-      <div style={{ flex: 1, padding: '60px 120px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 40, overflow: 'auto' }}>
+      <div style={{ flex: 1, padding: isMobile ? '24px 16px' : isTablet ? '40px 40px' : '60px 120px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: isMobile ? 24 : 40, overflow: 'auto' }}>
         {/* Title Section */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
           <div style={{ width: 64, height: 64, borderRadius: 16, background: 'rgba(var(--primary-rgb), 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <LayoutGrid size={32} color="var(--primary-color)" />
           </div>
-          <Typography.Text style={{ fontSize: 28, fontWeight: 700, color: '#f4f4f5' }}>Select an Ontology</Typography.Text>
+          <Typography.Text style={{ fontSize: isMobile ? 22 : 28, fontWeight: 700, color: '#f4f4f5' }}>Select an Ontology</Typography.Text>
           <Typography.Text style={{ fontSize: 15, color: '#a1a1aa', textAlign: 'center', maxWidth: 720, lineHeight: '1.6' }}>
             Choose an ontology to explore its knowledge graph, classes, relations and properties.
           </Typography.Text>
@@ -303,7 +306,7 @@ export default function OntologySelectionPage() {
                   </div>
                 ))}
                 {/* Fill empty slots */}
-                {row.length < 3 && Array.from({ length: 3 - row.length }).map((_, i) => (
+                {row.length < cardsPerRow && Array.from({ length: cardsPerRow - row.length }).map((_, i) => (
                   <div key={`empty-${i}`} style={{ flex: 1 }} />
                 ))}
               </div>

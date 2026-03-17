@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Layout, Typography, Divider, Flex } from 'antd';
-import { Bell, Globe, Check, LogOut } from 'lucide-react';
+import { Bell, Globe, Check, LogOut, Menu } from 'lucide-react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { logout, getUser } from './utils/auth';
 import Sidebar from './components/Sidebar';
 import { HeaderProvider, useHeader } from './contexts/HeaderContext';
+import { useResponsive } from './hooks/useResponsive';
 
-function GlobalHeader() {
+function GlobalHeader({ isMobile, isTablet, onMenuClick }: { isMobile: boolean; isTablet: boolean; onMenuClick: () => void }) {
   const navigate = useNavigate();
   const user = getUser();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -17,10 +18,35 @@ function GlobalHeader() {
     <>
       <Flex
         align="center"
-        style={{ height: 64, padding: '0 24px', borderBottom: '1px solid #27273a', flexShrink: 0 }}
+        style={{
+          height: isMobile ? 56 : 64,
+          padding: isMobile ? '0 12px' : '0 24px',
+          borderBottom: '1px solid #27273a',
+          flexShrink: 0,
+        }}
       >
+        {/* Hamburger menu for mobile/tablet */}
+        {(isMobile || isTablet) && (
+          <div
+            onClick={onMenuClick}
+            style={{
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 44,
+              height: 44,
+              marginRight: 8,
+              borderRadius: 8,
+              flexShrink: 0,
+            }}
+          >
+            <Menu size={22} color="#e4e4e7" />
+          </div>
+        )}
+
         {/* Left: Breadcrumbs */}
-        <div style={{ flex: '0 0 auto' }}>
+        <div style={{ flex: '0 0 auto', overflow: 'hidden' }}>
           {breadcrumbs}
         </div>
 
@@ -28,16 +54,23 @@ function GlobalHeader() {
         <div style={{ flex: 1 }} />
 
         {/* Right: Page Actions + Bell + User */}
-        <Flex align="center" gap={12}>
-          {/* Page Actions */}
-          {actions}
+        <Flex align="center" gap={isMobile ? 8 : 12}>
+          {/* Page Actions — hide on mobile, show on tablet+ */}
+          {!isMobile && actions}
 
           {/* Divider between actions and global icons */}
-          {actions && <div style={{ width: 1, height: 24, background: '#27273a', margin: '0 4px' }} />}
+          {!isMobile && actions && <div style={{ width: 1, height: 24, background: '#27273a', margin: '0 4px' }} />}
 
           {/* Bell Icon */}
           <div
-            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+            style={{
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 44,
+              height: 44,
+            }}
             onClick={() => navigate('/notifications')}
           >
             <Bell size={20} color="#a1a1aa" />
@@ -59,12 +92,29 @@ function GlobalHeader() {
         </Flex>
       </Flex>
 
+      {/* Mobile action bar — show page actions below header on mobile */}
+      {isMobile && actions && (
+        <div
+          style={{
+            padding: '8px 12px',
+            borderBottom: '1px solid #27273a',
+            overflowX: 'auto',
+            flexShrink: 0,
+          }}
+          className="mobile-actions-bar"
+        >
+          <Flex gap={8} align="center" style={{ minWidth: 'max-content' }}>
+            {actions}
+          </Flex>
+        </div>
+      )}
+
       {/* User Menu Popover */}
       {userMenuOpen && (
         <div style={{ position: 'relative' }}>
           <div
             style={{
-              position: 'absolute', top: 0, right: 24, zIndex: 1300,
+              position: 'absolute', top: 0, right: isMobile ? 12 : 24, zIndex: 1300,
               width: 248, background: '#1a1a24',
               border: '1px solid #27273a', borderRadius: 12, padding: '8px 0',
             }}
@@ -107,6 +157,7 @@ function GlobalHeader() {
                   onClick={() => setSelectedLanguage(lang)}
                   style={{
                     padding: '8px 16px', margin: '0 8px', borderRadius: 8, cursor: 'pointer',
+                    minHeight: 44,
                     background: isActive ? 'rgba(var(--primary-rgb), 0.13)' : 'transparent',
                   }}
                 >
@@ -127,6 +178,7 @@ function GlobalHeader() {
               onClick={() => { void logout().then(() => navigate('/login')); }}
               style={{
                 padding: '8px 16px', margin: '0 8px', borderRadius: 8, cursor: 'pointer',
+                minHeight: 44,
               }}
             >
               <LogOut size={14} color="#f87171" />
@@ -140,12 +192,31 @@ function GlobalHeader() {
 }
 
 export default function MainLayout() {
+  const { isMobile, isTablet } = useResponsive();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [siderCollapsed, setSiderCollapsed] = useState(false);
+
+  const handleMenuClick = () => {
+    if (isMobile) {
+      setDrawerOpen(true);
+    } else if (isTablet) {
+      setSiderCollapsed((prev) => !prev);
+    }
+  };
+
   return (
     <Layout style={{ height: '100vh' }}>
-      <Sidebar />
+      <Sidebar
+        isMobile={isMobile}
+        isTablet={isTablet}
+        collapsed={isTablet ? siderCollapsed : false}
+        drawerOpen={drawerOpen}
+        onDrawerClose={() => setDrawerOpen(false)}
+        onNavClick={() => { if (isMobile) setDrawerOpen(false); }}
+      />
       <Layout style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <HeaderProvider>
-          <GlobalHeader />
+          <GlobalHeader isMobile={isMobile} isTablet={isTablet} onMenuClick={handleMenuClick} />
           {/* Page Content */}
           <Layout.Content style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
             <Outlet />

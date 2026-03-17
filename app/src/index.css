@@ -189,3 +189,133 @@ input:-webkit-autofill:active,
 .markdown-body input[type="checkbox"] {
   margin-right: 0.5em;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   Responsive Design
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Mobile: < 768px ── */
+@media (max-width: 767px) {
+  /* Font scaling for mobile readability */
+  body {
+    font-size: 14px;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Ensure buttons have adequate touch targets */
+  .ant-btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .ant-btn-sm {
+    min-height: 36px;
+    min-width: 36px;
+  }
+
+  /* List page mobile overrides */
+  .list-page {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  /* Table: enable horizontal scroll */
+  .ant-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Table compact on mobile */
+  .ant-table-cell {
+    padding: 8px !important;
+    font-size: 13px;
+  }
+
+  /* Card padding reduction */
+  .ant-card-body {
+    padding: 12px;
+  }
+
+  /* Form inputs: full width */
+  .ant-input,
+  .ant-select,
+  .ant-input-affix-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Mobile actions bar scroll */
+  .mobile-actions-bar {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .mobile-actions-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Drawer override for dark theme */
+  .ant-drawer .ant-drawer-body {
+    background: #0d0d14;
+  }
+
+  /* Breadcrumb text truncation */
+  .ant-breadcrumb {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Header view toggle touch targets */
+  .header-view-toggle > div {
+    width: 44px;
+    min-height: 44px;
+  }
+  .header-view-toggle {
+    height: 44px;
+  }
+
+  /* Markdown: smaller on mobile */
+  .markdown-body h1 { font-size: 1.4em; }
+  .markdown-body h2 { font-size: 1.2em; }
+  .markdown-body h3 { font-size: 1.1em; }
+  .markdown-body pre {
+    padding: 10px;
+    font-size: 0.8em;
+  }
+}
+
+/* ── Tablet: 768px ~ 1023px ── */
+@media (min-width: 768px) and (max-width: 1023px) {
+  /* Slightly reduce paddings */
+  .list-page {
+    padding: 16px;
+    gap: 16px;
+  }
+
+  /* Touch-friendly buttons */
+  .ant-btn {
+    min-height: 40px;
+  }
+
+  /* Card padding moderate */
+  .ant-card-body {
+    padding: 16px;
+  }
+}
+
+/* ── Desktop ≥ 1024px: no changes, keep as-is ── */
+
+/* ── Safe area for mobile notch devices ── */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .ant-layout {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* ── Viewport meta helper: prevent iOS zoom on focus ── */
+@media (max-width: 767px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}

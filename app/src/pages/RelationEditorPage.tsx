@@ -6,6 +6,7 @@ import {
   Boxes, ArrowRight, Brain,
 } from 'lucide-react';
 import SuccessModal from '../components/SuccessModal';
+import { useResponsive } from '../hooks/useResponsive';
 import { useHeader } from '../contexts/HeaderContext';
 import { useCurrentOntology } from '../contexts/OntologyContext';
 import {
@@ -26,6 +27,7 @@ export default function RelationEditorPage() {
   const { message } = App.useApp();
   const { setBreadcrumbs, setActions } = useHeader();
   const { currentOntologyId } = useCurrentOntology();
+  const { isMobile } = useResponsive();
   const isEditing = relationId && relationId !== 'new';
 
   const [loading, setLoading] = useState(!!isEditing);
@@ -159,7 +161,7 @@ export default function RelationEditorPage() {
 
   return (
     <>
-      <div style={{ flex: 1, padding: 24, display: 'flex', gap: 24, overflow: 'auto' }}>
+      <div style={{ flex: 1, padding: isMobile ? 12 : 24, display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 16 : 24, overflow: 'auto' }}>
         {/* Left Column */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 24 }}>
           {/* Basic Info Card */}
@@ -239,7 +241,7 @@ export default function RelationEditorPage() {
         </div>
 
         {/* Right Column */}
-        <div style={{ width: 360, display: 'flex', flexDirection: 'column', gap: 24 }}>
+        <div style={{ width: isMobile ? '100%' : 360, display: 'flex', flexDirection: 'column', gap: 24 }}>
           {/* Preview Card */}
           <Card style={{ overflow: 'hidden' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
