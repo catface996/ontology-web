@@ -53,24 +53,26 @@ export default function RelationsPage() {
     );
     setActions(
       <Flex gap={8} align="center">
-        <Input
-          placeholder="Search relations..."
-          prefix={<Search size={16} />}
-          style={{ width: 200 }}
-          value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(0); }}
-          allowClear
-        />
+        {!isMobile && (
+          <Input
+            placeholder="Search relations..."
+            prefix={<Search size={16} />}
+            style={{ width: 200 }}
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(0); }}
+            allowClear
+          />
+        )}
         <Button
           type="primary"
           icon={<Plus size={16} />}
           onClick={() => navigate('/relations/new/edit')}
         >
-          New Relation
+          {!isMobile && 'New Relation'}
         </Button>
       </Flex>
     );
-  }, [setBreadcrumbs, setActions, navigate, search]);
+  }, [setBreadcrumbs, setActions, navigate, search, isMobile]);
 
   const handleDelete = (record: RelationDTO) => {
     confirmModal.confirm.delete({

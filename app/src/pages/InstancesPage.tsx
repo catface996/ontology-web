@@ -158,16 +158,18 @@ export default function InstancesPage() {
         <Select
           value={activeClass}
           onChange={(val) => { setActiveClass(val); setPage(0); }}
-          style={{ minWidth: 160 }}
+          style={{ minWidth: isMobile ? 120 : 160 }}
           options={classOptions}
         />
-        <Input
-          placeholder="Search instances..."
-          prefix={<Search size={16} />}
-          style={{ width: 200 }}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        {!isMobile && (
+          <Input
+            placeholder="Search instances..."
+            prefix={<Search size={16} />}
+            style={{ width: 200 }}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        )}
         <div className="header-view-toggle">
           {[
             { key: 'list', Icon: List },
@@ -187,11 +189,11 @@ export default function InstancesPage() {
           icon={<Plus size={16} />}
           onClick={() => navigate('/instances/new/edit')}
         >
-          New Instance
+          {!isMobile && 'New Instance'}
         </Button>
       </Flex>
     );
-  }, [setBreadcrumbs, setActions, navigate, search, activeClass, classOptions, view]);
+  }, [setBreadcrumbs, setActions, navigate, search, activeClass, classOptions, view, isMobile]);
 
   // Delete handler
   const handleDelete = (record: InstanceRow) => {

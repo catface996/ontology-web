@@ -260,12 +260,16 @@ input:-webkit-autofill:active,
     background: #0d0d14;
   }
 
-  /* Breadcrumb text truncation */
-  .ant-breadcrumb {
-    max-width: 200px;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  /* Breadcrumb: only show last item on mobile */
+  .mobile-breadcrumb .ant-breadcrumb {
     white-space: nowrap;
+    overflow: hidden;
+  }
+  .mobile-breadcrumb .ant-breadcrumb li:not(:last-child) {
+    display: none;
+  }
+  .mobile-breadcrumb .ant-breadcrumb li:last-child .ant-breadcrumb-separator {
+    display: none;
   }
 
   /* Header view toggle touch targets */

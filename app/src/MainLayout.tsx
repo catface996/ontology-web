@@ -46,7 +46,7 @@ function GlobalHeader({ isMobile, isTablet, onMenuClick }: { isMobile: boolean; 
         )}
 
         {/* Left: Breadcrumbs */}
-        <div style={{ flex: '0 0 auto', overflow: 'hidden' }}>
+        <div style={{ flex: '0 1 auto', overflow: 'hidden', minWidth: 0 }} className={isMobile ? 'mobile-breadcrumb' : ''}>
           {breadcrumbs}
         </div>
 

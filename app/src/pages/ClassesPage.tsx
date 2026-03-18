@@ -271,20 +271,22 @@ export default function ClassesPage() {
     );
     setActions(
       <Flex gap={8} align="center">
-        <Input
-          placeholder="Search classes..."
-          prefix={<Search size={16} />}
-          style={{ width: 200 }}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        {!isMobile && (
+          <Input
+            placeholder="Search classes..."
+            prefix={<Search size={16} />}
+            style={{ width: 200 }}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        )}
         {view === 'topology' && (
           <Button
             icon={<Save size={14} />}
             loading={savingPositions}
             onClick={handleSavePositions}
           >
-            Save Position
+            {!isMobile && 'Save Position'}
           </Button>
         )}
         <div className="header-view-toggle">
@@ -306,11 +308,11 @@ export default function ClassesPage() {
           icon={<Plus size={16} />}
           onClick={() => navigate('/classes/new/edit')}
         >
-          New Class
+          {!isMobile && 'New Class'}
         </Button>
       </Flex>
     );
-  }, [setBreadcrumbs, setActions, navigate, search, view, savingPositions, handleSavePositions]);
+  }, [setBreadcrumbs, setActions, navigate, search, view, savingPositions, handleSavePositions, isMobile]);
 
   const handleDelete = (record: ClassData) => {
     confirmModal.confirm.delete({

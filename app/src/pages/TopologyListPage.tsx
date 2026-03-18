@@ -83,20 +83,22 @@ export default function TopologyListPage() {
       />,
     );
     setActions(
-      <Flex gap={8}>
-        <Input
-          placeholder="Search topologies..."
-          prefix={<Search size={16} />}
-          style={{ width: 240 }}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+      <Flex gap={8} align="center">
+        {!isMobile && (
+          <Input
+            placeholder="Search topologies..."
+            prefix={<Search size={16} />}
+            style={{ width: 240 }}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        )}
         <Button
           type="primary"
           icon={<Plus size={16} />}
           onClick={() => navigate('/topology/new')}
         >
-          New Topology
+          {!isMobile && 'New Topology'}
         </Button>
         <div className="header-view-toggle">
           {([
@@ -114,7 +116,7 @@ export default function TopologyListPage() {
         </div>
       </Flex>,
     );
-  }, [setBreadcrumbs, setActions, navigate, search, view]);
+  }, [setBreadcrumbs, setActions, navigate, search, view, isMobile]);
 
   const handleDelete = (record: TopologyDTO) => {
     confirmModal.confirm.delete({

@@ -101,25 +101,27 @@ function ReportCard({ report, onClick }: { report: ReportDTO; onClick: () => voi
 }
 
 /* -- Header Search (lives in header actions slot) -- */
-function HeaderSearch({ searchRef, onTemplates }: { searchRef: React.RefObject<(value: string) => void>; onTemplates: () => void }) {
+function HeaderSearch({ searchRef, onTemplates, isMobile }: { searchRef: React.RefObject<(value: string) => void>; onTemplates: () => void; isMobile: boolean }) {
   const [value, setValue] = useState('');
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-      <Input
-        placeholder="Search reports..."
-        value={value}
-        onChange={(e) => {
-          setValue(e.target.value);
-          searchRef.current(e.target.value);
-        }}
-        prefix={<Search size={16} color="#a1a1aa" />}
-        style={{ width: 220, borderRadius: 8, background: '#1a1a24', fontSize: 13 }}
-      />
+      {!isMobile && (
+        <Input
+          placeholder="Search reports..."
+          value={value}
+          onChange={(e) => {
+            setValue(e.target.value);
+            searchRef.current(e.target.value);
+          }}
+          prefix={<Search size={16} color="#a1a1aa" />}
+          style={{ width: 220, borderRadius: 8, background: '#1a1a24', fontSize: 13 }}
+        />
+      )}
       <Button
         icon={<LayoutTemplate size={14} />}
         onClick={onTemplates}
       >
-        Templates
+        {!isMobile && 'Templates'}
       </Button>
     </div>
   );
@@ -193,9 +195,9 @@ export default function ReportManagementPage() {
   handleSearchRef.current = handleSearchChange;
 
   useEffect(() => {
-    setActions(<HeaderSearch searchRef={handleSearchRef} onTemplates={() => navigate('/report-templates')} />);
+    setActions(<HeaderSearch searchRef={handleSearchRef} onTemplates={() => navigate('/report-templates')} isMobile={isMobile} />);
     return () => setActions(null);
-  }, [setActions, navigate]);
+  }, [setActions, navigate, isMobile]);
 
   return (
     <>

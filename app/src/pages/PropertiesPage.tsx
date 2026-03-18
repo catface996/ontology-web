@@ -66,24 +66,26 @@ export default function PropertiesPage() {
     );
     setActions(
       <Flex gap={8} align="center">
-        <Input
-          placeholder="Search properties..."
-          prefix={<Search size={16} />}
-          style={{ width: 200 }}
-          value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(0); }}
-          allowClear
-        />
+        {!isMobile && (
+          <Input
+            placeholder="Search properties..."
+            prefix={<Search size={16} />}
+            style={{ width: 200 }}
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(0); }}
+            allowClear
+          />
+        )}
         <Button
           type="primary"
           icon={<Plus size={16} />}
           onClick={() => navigate('/properties/new/edit')}
         >
-          New Property
+          {!isMobile && 'New Property'}
         </Button>
       </Flex>
     );
-  }, [setBreadcrumbs, setActions, navigate, search]);
+  }, [setBreadcrumbs, setActions, navigate, search, isMobile]);
 
   const handleDelete = (record: PropertyDTO) => {
     confirmModal.confirm.delete({
