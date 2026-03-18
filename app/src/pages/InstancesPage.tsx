@@ -158,8 +158,7 @@ export default function InstancesPage() {
         <Select
           value={activeClass}
           onChange={(val) => { setActiveClass(val); setPage(0); }}
-          size="middle"
-          style={{ minWidth: isMobile ? 120 : 160 }}
+          style={{ minWidth: isMobile ? 120 : 160, height: 32, lineHeight: '32px' }}
           options={classOptions}
         />
         {!isMobile && (
