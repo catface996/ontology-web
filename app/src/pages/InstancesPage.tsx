@@ -159,7 +159,7 @@ export default function InstancesPage() {
           value={activeClass}
           onChange={(val) => { setActiveClass(val); setPage(0); }}
           style={{ minWidth: isMobile ? 120 : 160 }}
-          className="header-select"
+          styles={{ selector: { height: 32 } }}
           options={classOptions}
         />
         {!isMobile && (
