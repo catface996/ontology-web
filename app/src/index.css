@@ -35,6 +35,13 @@ input:-webkit-autofill:active,
 .ant-layout-header .ant-select .ant-select-selector {
   height: 32px !important;
 }
+.header-select .ant-select-selector {
+  height: 32px !important;
+  min-height: 32px !important;
+}
+.header-select .ant-select-selection-item {
+  line-height: 30px !important;
+}
 .ant-layout-header .ant-input-affix-wrapper .ant-input {
   height: auto !important;
 }

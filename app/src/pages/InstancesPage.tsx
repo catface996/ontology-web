@@ -158,7 +158,8 @@ export default function InstancesPage() {
         <Select
           value={activeClass}
           onChange={(val) => { setActiveClass(val); setPage(0); }}
-          style={{ minWidth: isMobile ? 120 : 160, height: 32, lineHeight: '32px' }}
+          style={{ minWidth: isMobile ? 120 : 160 }}
+          className="header-select"
           options={classOptions}
         />
         {!isMobile && (
