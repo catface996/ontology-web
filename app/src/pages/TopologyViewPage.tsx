@@ -571,24 +571,24 @@ export default function TopologyViewPage() {
       />,
     );
     setActions(
-      <Flex gap={8}>
+      <Flex gap={8} wrap="wrap">
         {topology && (
           <>
             <Button icon={<Save size={16} />} loading={saving} onClick={handleSavePositions}>
-              Save Position
+              {!isMobile && 'Save Position'}
             </Button>
             <Button icon={<RotateCcw size={16} />} loading={resetting} onClick={handleResetLayout}>
-              Reset Layout
+              {!isMobile && 'Reset Layout'}
             </Button>
             <Button icon={<Pencil size={16} />} onClick={() => navigate(`/topology/${topologyId}/edit`)}>
-              Edit
+              {!isMobile && 'Edit'}
             </Button>
           </>
         )}
-        <Button icon={<Download size={16} />}>Export</Button>
+        <Button icon={<Download size={16} />}>{!isMobile && 'Export'}</Button>
       </Flex>,
     );
-  }, [setBreadcrumbs, setActions, navigate, topology, topologyId, saving, resetting, handleSavePositions, handleResetLayout]);
+  }, [setBreadcrumbs, setActions, navigate, topology, topologyId, saving, resetting, handleSavePositions, handleResetLayout, isMobile]);
 
   if (loadingTopology) {
     return <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Spin size="large" /></div>;
@@ -632,17 +632,18 @@ export default function TopologyViewPage() {
           <div
             style={{
               display: 'flex',
-              alignItems: 'center',
-              padding: '8px 16px',
+              flexDirection: isMobile ? 'column' : 'row',
+              alignItems: isMobile ? 'flex-start' : 'center',
+              padding: isMobile ? '6px 12px' : '8px 16px',
               borderBottom: '1px solid #303030',
               flexShrink: 0,
-              gap: 8,
-              minHeight: 40,
+              gap: isMobile ? 2 : 8,
+              minHeight: isMobile ? 36 : 40,
             }}
           >
-            <Typography.Text style={{ fontSize: 13, fontWeight: 600 }}>Class Topology</Typography.Text>
-            <Typography.Text style={{ fontSize: 11, color: '#71717a', marginLeft: 8 }}>
-              — dashed = subClassOf, solid = Relation
+            <Typography.Text style={{ fontSize: isMobile ? 12 : 13, fontWeight: 600 }}>Class Topology</Typography.Text>
+            <Typography.Text style={{ fontSize: isMobile ? 10 : 11, color: '#71717a', marginLeft: isMobile ? 0 : 8 }}>
+              {isMobile ? 'dashed=subClassOf, solid=Relation' : '— dashed = subClassOf, solid = Relation'}
             </Typography.Text>
           </div>
           <div style={{ flex: 1, overflow: 'hidden' }}>
