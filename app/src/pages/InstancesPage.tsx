@@ -158,6 +158,7 @@ export default function InstancesPage() {
         <Select
           value={activeClass}
           onChange={(val) => { setActiveClass(val); setPage(0); }}
+          size="middle"
           style={{ minWidth: isMobile ? 120 : 160 }}
           options={classOptions}
         />
@@ -165,6 +166,7 @@ export default function InstancesPage() {
           <Input
             placeholder="Search instances..."
             prefix={<Search size={16} />}
+            size="middle"
             style={{ width: 200 }}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
