@@ -14,6 +14,7 @@ import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import MermaidBlock from '../components/MermaidBlock';
 import EChartsBlock from '../components/EChartsBlock';
+import { useResponsive } from '../hooks/useResponsive';
 import {
   getReportTemplateDetail,
   deleteReportTemplate,
@@ -52,6 +53,7 @@ export default function ReportTemplateDetailPage() {
   const navigate = useNavigate();
   const { templateId } = useParams();
   const confirmModal = useModal();
+  const { isMobile } = useResponsive();
   const { setBreadcrumbs, setActions } = useHeader();
   const [template, setTemplate] = useState<ReportTemplateDetailDTO | null>(null);
   const [loading, setLoading] = useState(true);
@@ -107,16 +109,16 @@ export default function ReportTemplateDetailPage() {
       });
     };
     setActions(
-      <div style={{ display: 'flex', gap: 8 }}>
-        <Button icon={<Pencil size={16} />} onClick={() => navigate(`/report-templates/${templateId}/edit`)}>Edit</Button>
-        <Button danger icon={<Trash2 size={16} />} onClick={handleDelete}>Delete</Button>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <Button icon={<Pencil size={16} />} onClick={() => navigate(`/report-templates/${templateId}/edit`)}>{!isMobile && 'Edit'}</Button>
+        <Button danger icon={<Trash2 size={16} />} onClick={handleDelete}>{!isMobile && 'Delete'}</Button>
       </div>
     );
     return () => {
       setBreadcrumbs(null);
       setActions(null);
     };
-  }, [setBreadcrumbs, setActions, template, templateId, navigate, confirmModal]);
+  }, [setBreadcrumbs, setActions, template, templateId, navigate, confirmModal, isMobile]);
 
   const handleViewVersion = async (versionId: number) => {
     setVersionLoading(true);
@@ -180,11 +182,11 @@ export default function ReportTemplateDetailPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
       {/* -- Content -- */}
-      <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={{ padding: isMobile ? '16px 12px' : 24, display: 'flex', flexDirection: 'column', gap: isMobile ? 16 : 24 }}>
 
         {/* -- Title Section -- */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             <div
               style={{
                 width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -193,7 +195,7 @@ export default function ReportTemplateDetailPage() {
             >
               <Icon size={22} color={template.iconColor || '#8b5cf6'} />
             </div>
-            <Typography.Text style={{ fontSize: 22, fontWeight: 600, fontFamily: 'JetBrains Mono, monospace' }}>
+            <Typography.Text style={{ fontSize: isMobile ? 18 : 22, fontWeight: 600, fontFamily: 'JetBrains Mono, monospace' }}>
               {template.title}
             </Typography.Text>
             <Typography.Text style={{ fontSize: 14, color: '#71717a' }}>
@@ -206,7 +208,7 @@ export default function ReportTemplateDetailPage() {
           <Typography.Text type="secondary" style={{ fontSize: 14 }}>
             {template.description}
           </Typography.Text>
-          <div style={{ display: 'flex', gap: 20 }}>
+          <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 8 : 20 }}>
             {[
               { icon: <Calendar size={14} color="#71717a" />, text: `Created: ${formatDate(template.createdAt)}` },
               { icon: <Clock size={14} color="#71717a" />, text: `Updated: ${formatRelativeTime(template.updatedAt)}` },
@@ -263,7 +265,7 @@ export default function ReportTemplateDetailPage() {
           <div
             className="markdown-body"
             style={{
-              padding: 24,
+              padding: isMobile ? '16px 12px' : 24,
               fontSize: 14,
               lineHeight: 1.7,
               color: '#d4d4d8',
@@ -312,7 +314,7 @@ export default function ReportTemplateDetailPage() {
             <History size={18} color="var(--primary-color)" />
             <Typography.Text style={{ fontSize: 15, fontWeight: 600 }}>Version History</Typography.Text>
           </div>
-          <div style={{ padding: 16 }}>
+          <div style={{ padding: isMobile ? 12 : 16 }}>
             {versions.length === 0 ? (
               <Typography.Text type="secondary" style={{ fontSize: 13 }}>暂无版本历史</Typography.Text>
             ) : (

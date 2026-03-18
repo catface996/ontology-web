@@ -14,6 +14,7 @@ import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import MermaidBlock from '../components/MermaidBlock';
 import EChartsBlock from '../components/EChartsBlock';
+import { useResponsive } from '../hooks/useResponsive';
 import { getReportDetail, deleteReport, type ReportDetailDTO } from '../services/coreService';
 
 /* -- Extract plain text from React children (handles rehype-highlight spans) -- */
@@ -44,6 +45,7 @@ export default function ReportDetailPage() {
   const navigate = useNavigate();
   const { reportId } = useParams();
   const confirmModal = useModal();
+  const { isMobile } = useResponsive();
   const { setBreadcrumbs, setActions } = useHeader();
   const [report, setReport] = useState<ReportDetailDTO | null>(null);
   const [loading, setLoading] = useState(true);
@@ -89,18 +91,18 @@ export default function ReportDetailPage() {
       });
     };
     setActions(
-      <div style={{ display: 'flex', gap: 8 }}>
-        <Button icon={<Pencil size={16} />} onClick={() => navigate(`/report-management/${reportId}/edit`)}>Edit</Button>
-        <Button icon={<Download size={16} />}>Export</Button>
-        <Button icon={<Share2 size={16} />}>Share</Button>
-        <Button danger icon={<Trash2 size={16} />} onClick={handleDelete}>Delete</Button>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <Button icon={<Pencil size={16} />} onClick={() => navigate(`/report-management/${reportId}/edit`)}>{!isMobile && 'Edit'}</Button>
+        <Button icon={<Download size={16} />}>{!isMobile && 'Export'}</Button>
+        <Button icon={<Share2 size={16} />}>{!isMobile && 'Share'}</Button>
+        <Button danger icon={<Trash2 size={16} />} onClick={handleDelete}>{!isMobile && 'Delete'}</Button>
       </div>
     );
     return () => {
       setBreadcrumbs(null);
       setActions(null);
     };
-  }, [setBreadcrumbs, setActions, report, reportId, navigate, confirmModal]);
+  }, [setBreadcrumbs, setActions, report, reportId, navigate, confirmModal, isMobile]);
 
   if (loading) {
     return (
@@ -144,11 +146,11 @@ export default function ReportDetailPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
       {/* -- Content -- */}
-      <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={{ padding: isMobile ? '16px 12px' : 24, display: 'flex', flexDirection: 'column', gap: isMobile ? 16 : 24 }}>
 
         {/* -- Title Section -- */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             <div
               style={{
                 width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -157,7 +159,7 @@ export default function ReportDetailPage() {
             >
               <Icon size={22} color={report.iconColor} />
             </div>
-            <Typography.Text style={{ fontSize: 22, fontWeight: 600, fontFamily: 'JetBrains Mono, monospace' }}>
+            <Typography.Text style={{ fontSize: isMobile ? 18 : 22, fontWeight: 600, fontFamily: 'JetBrains Mono, monospace' }}>
               {report.title}
             </Typography.Text>
             <div style={{ padding: '4px 10px', borderRadius: 4, background: st.bg }}>
@@ -167,7 +169,7 @@ export default function ReportDetailPage() {
           <Typography.Text type="secondary" style={{ fontSize: 14 }}>
             {report.description}
           </Typography.Text>
-          <div style={{ display: 'flex', gap: 20 }}>
+          <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 8 : 20 }}>
             {[
               { icon: <Calendar size={14} color="#71717a" />, text: `Created: ${formatDate(report.createdAt)}` },
               { icon: <Clock size={14} color="#71717a" />, text: `Updated: ${formatRelativeTime(report.updatedAt)}` },
@@ -197,7 +199,7 @@ export default function ReportDetailPage() {
           <div
             className="markdown-body"
             style={{
-              padding: 24,
+              padding: isMobile ? '16px 12px' : 24,
               fontSize: 14,
               lineHeight: 1.7,
               color: '#d4d4d8',
