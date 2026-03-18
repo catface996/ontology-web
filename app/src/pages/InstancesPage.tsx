@@ -250,7 +250,7 @@ export default function InstancesPage() {
       ),
       dataIndex: 'name',
       key: 'name',
-      width: 200,
+      minWidth: 200,
       render: (_: string, record: InstanceRow) => (
         <Flex align="center" gap={10} style={{ whiteSpace: 'nowrap' }}>
           <div
@@ -272,7 +272,8 @@ export default function InstancesPage() {
       title: <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', letterSpacing: 0.5 }}>Description</Typography.Text>,
       dataIndex: 'description',
       key: 'description',
-      ellipsis: true,
+      minWidth: 200,
+      ellipsis: { showTitle: true },
       responsive: ['md'],
       render: (text: string) => (
         <Typography.Text style={{ fontSize: 13, color: '#a1a1aa' }}>{text}</Typography.Text>
@@ -282,6 +283,7 @@ export default function InstancesPage() {
       title: <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', letterSpacing: 0.5 }}>Class</Typography.Text>,
       dataIndex: 'className',
       key: 'className',
+      minWidth: 150,
       render: (_: string, record: InstanceRow) => (
         <Flex align="center" gap={6} style={{ color: 'var(--primary-color)', whiteSpace: 'nowrap' }}>
           <record.classIcon size={12} />

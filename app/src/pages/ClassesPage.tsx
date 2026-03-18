@@ -368,6 +368,7 @@ export default function ClassesPage() {
       ),
       dataIndex: 'name',
       key: 'name',
+      minWidth: 150,
       render: (_: string, record: ClassData) => (
         <Flex align="center" gap={10} style={{ whiteSpace: 'nowrap' }}>
           <div
@@ -394,6 +395,8 @@ export default function ClassesPage() {
       title: <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', letterSpacing: 0.5 }}>Description</Typography.Text>,
       dataIndex: 'description',
       key: 'description',
+      minWidth: 200,
+      ellipsis: { showTitle: true },
       responsive: ['md'],
       render: (text: string) => (
         <Typography.Text style={{ fontSize: 14, color: '#a1a1aa' }}>{text}</Typography.Text>

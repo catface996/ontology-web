@@ -170,6 +170,7 @@ export default function FieldMappingListPage() {
         </Typography.Text>
       ),
       key: 'mapping',
+      minWidth: 200,
       render: (_: unknown, record: FieldMappingConfigDTO) => (
         <Flex align="center" gap={10}>
           <div
@@ -196,7 +197,8 @@ export default function FieldMappingListPage() {
       title: <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', letterSpacing: 0.5 }}>Target Class</Typography.Text>,
       dataIndex: 'targetClassName',
       key: 'targetClassName',
-      width: 160,
+      minWidth: 160,
+      ellipsis: { showTitle: true },
       render: (name: string, record) => (
         <Typography.Text style={{ fontSize: 14 }}>{name || `Class #${record.targetClassId}`}</Typography.Text>
       ),

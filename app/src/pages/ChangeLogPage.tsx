@@ -135,6 +135,8 @@ export default function ChangeLogPage() {
       title: <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', letterSpacing: 0.5 }}>Description</Typography.Text>,
       dataIndex: 'description',
       key: 'description',
+      minWidth: 200,
+      ellipsis: { showTitle: true },
       render: (text: string) => (
         <Typography.Text style={{ fontSize: 13 }}>{text}</Typography.Text>
       ),

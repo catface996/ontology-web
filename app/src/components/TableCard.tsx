@@ -45,6 +45,7 @@ export default function TableCard<T extends object>({
             pagination={false}
             size="middle"
             sticky
+            scroll={{ x: 'max-content' }}
             rowClassName={rowClassName}
           />
         </div>

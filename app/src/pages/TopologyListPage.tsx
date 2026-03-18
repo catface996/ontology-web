@@ -172,7 +172,7 @@ export default function TopologyListPage() {
       ),
       dataIndex: 'name',
       key: 'name',
-      width: 220,
+      minWidth: 220,
       render: (_: string, record: TopologyDTO) => (
         <Flex align="center" gap={10}>
           <div
@@ -198,6 +198,8 @@ export default function TopologyListPage() {
       title: <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', letterSpacing: 0.5 }}>Description</Typography.Text>,
       dataIndex: 'description',
       key: 'description',
+      minWidth: 200,
+      ellipsis: { showTitle: true },
       render: (text: string) => (
         <Typography.Text style={{ fontSize: 14, color: '#a1a1aa' }}>{text}</Typography.Text>
       ),

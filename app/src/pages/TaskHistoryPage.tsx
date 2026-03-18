@@ -125,6 +125,7 @@ export default function TaskHistoryPage() {
       title: <Typography.Text style={{ fontSize: 12, fontWeight: 600, color: '#a1a1aa', letterSpacing: 0.5 }}>Task</Typography.Text>,
       dataIndex: 'title',
       key: 'title',
+      minWidth: 250,
       render: (_: unknown, record: TaskItem) => {
         const Icon = record.icon;
         return (
