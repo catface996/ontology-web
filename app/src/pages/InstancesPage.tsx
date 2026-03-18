@@ -189,6 +189,7 @@ export default function InstancesPage() {
         <Button
           type="primary"
           size="middle"
+          style={{ height: 32, minWidth: 32 }}
           icon={<Plus size={16} />}
           onClick={() => navigate('/instances/new/edit')}
         >
