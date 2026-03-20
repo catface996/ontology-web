@@ -161,7 +161,7 @@ function HeaderActions({
 /* -- Page -- */
 export default function ReportTemplateListPage() {
   const navigate = useNavigate();
-  const { isMobile } = useResponsive();
+  const { isMobile, isTablet, isDesktop } = useResponsive();
   const { setBreadcrumbs, setActions } = useHeader();
   const { currentOntologyId } = useCurrentOntology();
   const [search, setSearch] = useState('');
@@ -246,7 +246,12 @@ export default function ReportTemplateListPage() {
 
           {/* Cards grid */}
           <Spin spinning={loading}>
-            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(220px, 1fr))', gap: isMobile ? 12 : 20, minHeight: 200 }}>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: isMobile ? '1fr' : isTablet ? 'repeat(3, 1fr)' : 'repeat(4, 1fr)',
+              gap: isMobile ? 12 : 20,
+              minHeight: 200
+            }}>
               {templates.map((t) => (
                 <TemplateCard key={t.id} template={t} onClick={() => navigate(`/report-templates/${t.id}`)} />
               ))}
