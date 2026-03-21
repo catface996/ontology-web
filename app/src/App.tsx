@@ -38,6 +38,8 @@ import ReportEditPage from './pages/ReportEditPage';
 import ReportTemplateListPage from './pages/ReportTemplateListPage';
 import ReportTemplateDetailPage from './pages/ReportTemplateDetailPage';
 import ReportTemplateEditPage from './pages/ReportTemplateEditPage';
+import ActionsPage from './pages/ActionsPage';
+import ActionTypePage from './pages/ActionTypePage';
 import UserManagementPage from './pages/UserManagementPage';
 import RolesPermissionsPage from './pages/RolesPermissionsPage';
 import AgentConversationFlowPage from './pages/AgentConversationFlowPage';
@@ -124,6 +126,9 @@ function ThemedApp() {
             <Route path="report-templates/new" element={<ReportTemplateEditPage />} />
             <Route path="report-templates/:templateId" element={<ReportTemplateDetailPage />} />
             <Route path="report-templates/:templateId/edit" element={<ReportTemplateEditPage />} />
+            <Route path="actions" element={<ActionsPage />} />
+            <Route path="actions/new" element={<ActionTypePage />} />
+            <Route path="actions/:actionTypeId" element={<ActionTypePage />} />
             <Route path="user-management" element={<UserManagementPage />} />
             <Route path="user-management/:userId" element={<UserDetailPage />} />
             <Route path="search" element={<GlobalSearchPage />} />

@@ -37,6 +37,7 @@ import {
   GitCompare,
   ScanLine,
   Building2,
+  Zap,
 } from 'lucide-react';
 import { useThemeColor, THEME_COLORS } from '../contexts/ThemeColorContext';
 import { useCurrentOntology } from '../contexts/OntologyContext';
@@ -65,6 +66,7 @@ const toolsItems: NavItem[] = [
   { icon: <Brain size={20} />, label: 'Reasoning', path: '/reasoning', iconColor: '#f472b6' },
   { icon: <GitFork size={20} />, label: 'Reasoning Graph', path: '/reasoning-graph', iconColor: '#a78bfa' },
   { icon: <CircleCheck size={20} />, label: 'Validation', path: '/validation', iconColor: '#4ade80' },
+  { icon: <Zap size={20} />, label: 'Actions', path: '/actions', iconColor: '#8b5cf6' },
   { icon: <FileText size={20} />, label: 'Reports', path: '/report-management', iconColor: '#fbbf24' },
   { icon: <History size={20} />, label: 'Version History', path: '/version-history', iconColor: '#94a3b8' },
 ];
