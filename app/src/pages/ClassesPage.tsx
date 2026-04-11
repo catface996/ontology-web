@@ -137,7 +137,6 @@ export default function ClassesPage() {
           const nodes: ForceGraphNode[] = res.data.nodes.map((n) => ({
             id: n.id,
             name: n.name,
-            sublabel: 'Class',
             color: n.color,
             icon: n.icon,
           }));

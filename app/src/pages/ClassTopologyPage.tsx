@@ -94,7 +94,6 @@ export default function ClassTopologyPage() {
             setGraphNodes(nodes.map((n) => ({
               id: n.id,
               name: n.name,
-              sublabel: 'Class',
               color: n.color || (n.center ? 'var(--primary-color)' : FALLBACK_COLORS[++colorIndex % FALLBACK_COLORS.length]),
               icon: n.icon,
               isCenter: n.center,

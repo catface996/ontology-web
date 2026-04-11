@@ -217,7 +217,6 @@ export default function TopologyViewPage() {
           const nodes: ForceGraphNode[] = res.data.nodes.map((n) => ({
             id: n.id,
             name: n.name,
-            sublabel: 'Class',
             color: colorMap.get(n.id),
             icon: n.icon,
           }));
@@ -310,7 +309,6 @@ export default function TopologyViewPage() {
         const nodes: ForceGraphNode[] = res.data.nodes.map((n) => ({
           id: n.id,
           name: n.name,
-          sublabel: 'Class',
           color: colorMap.get(n.id),
           icon: n.icon,
         }));
